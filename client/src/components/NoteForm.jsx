@@ -1,0 +1,85 @@
+function NoteForm({
+  contact,
+  note,
+  onChange,
+  onSave,
+  onCancel,
+}) {
+  if (!contact) {
+    return null;
+  }
+
+  const handleSubmit = event => {
+    event.preventDefault();
+    onSave();
+  };
+
+  return (
+    <div className="note-popup-overlay">
+      <div
+        className="note-popup"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="note-popup-title"
+      >
+        <div className="note-popup-header">
+          <div className="note-popup-title-container">
+            <span className="note-popup-icon">
+              📝
+            </span>
+
+            <div>
+              <h3 id="note-popup-title">
+                Nota
+              </h3>
+
+              <p>{contact.contact}</p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="note-popup-close"
+            onClick={onCancel}
+            aria-label="Cerrar"
+          >
+            ×
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="note-popup-body">
+            <textarea
+              value={note}
+              onChange={event =>
+                onChange(event.target.value)
+              }
+              placeholder="Escribe una nota..."
+              rows="5"
+              autoFocus
+            />
+          </div>
+
+          <div className="note-popup-actions">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={onCancel}
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              className="primary-button"
+            >
+              Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export default NoteForm;

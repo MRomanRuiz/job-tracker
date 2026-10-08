@@ -12,12 +12,19 @@ const HTTP_STATUS = {
   BAD_REQUEST: 400,
 };
 const LABEL_CANT_READ = 'No se pudo leer jobs.json';
+const LABEL_FORBIDDEN_STATE = 'Estado no permitido';
 
 const MAX_PENDING_DAYS = 30;
 const ALLOWED_MANUAL_STATUSES = new Set([
   'pending',
   'interview',
   'offer',
+  'rejected',
+]);
+
+const ALLOWED_CONTACT_STATUSES = new Set([
+  'pending',
+  'replied',
   'rejected',
 ]);
 
@@ -41,13 +48,22 @@ app.use(
   }),
 );
 
-const dataFile = path.join(
+const jobsDataFile = path.join(
   __dirname,
   '..',
   'client',
   'src',
   'data',
   'jobs.json',
+);
+
+const contactsDataFile = path.join(
+  __dirname,
+  '..',
+  'client',
+  'src',
+  'data',
+  'contacts.json',
 );
 
 const isOlderThanPendingLimit = appliedAt => {
@@ -64,8 +80,22 @@ const isOlderThanPendingLimit = appliedAt => {
   return ageInDays > MAX_PENDING_DAYS;
 };
 
+const isOlderThanContactPendingLimit = contactedAt => {
+  const contactedDate = new Date(contactedAt);
+
+  if (Number.isNaN(contactedDate.getTime())) {
+    return false;
+  }
+
+  const now = new Date();
+  const ageInDays =
+    (now - contactedDate) / (1000 * 60 * 60 * 24);
+
+  return ageInDays > MAX_PENDING_DAYS;
+};
+
 app.get('/api/applications', (_req, res) => {
-  fs.readFile(dataFile, 'utf8', (err, data) => {
+  fs.readFile(jobsDataFile, 'utf8', (err, data) => {
     if (err) {
       console.info(err);
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
@@ -79,7 +109,7 @@ app.get('/api/applications', (_req, res) => {
 
 app.patch('/api/applications/:id', async (req, res) => {
   try {
-    const data = await fs.promises.readFile(dataFile, 'utf8');
+    const data = await fs.promises.readFile(jobsDataFile, 'utf8');
     const jobsData = JSON.parse(data);
 
     const application = jobsData.applications.find(
@@ -96,14 +126,14 @@ app.patch('/api/applications/:id', async (req, res) => {
 
     if (!ALLOWED_MANUAL_STATUSES.has(status)) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        error: 'Estado no permitido',
+        error: LABEL_FORBIDDEN_STATE,
       });
     }
 
     application.status = status;
 
     await fs.promises.writeFile(
-      dataFile,
+      jobsDataFile,
       JSON.stringify(jobsData, null, 2),
       'utf8',
     );
@@ -119,7 +149,7 @@ app.patch('/api/applications/:id', async (req, res) => {
 });
 
 app.post('/api/applications', (req, res) => {
-  fs.readFile(dataFile, 'utf8', (err, data) => {
+  fs.readFile(jobsDataFile, 'utf8', (err, data) => {
     if (err) {
       console.info(err);
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
@@ -137,7 +167,7 @@ app.post('/api/applications', (req, res) => {
     jobsData.applications.push(newApplication);
 
     return fs.writeFile(
-      dataFile,
+      jobsDataFile,
       JSON.stringify(jobsData, null, 2),
       'utf8',
       error => {
@@ -156,7 +186,7 @@ app.post('/api/applications', (req, res) => {
 
 app.get('/api/applications/old', async (_req, res) => {
   try {
-    const data = await fs.promises.readFile(dataFile, 'utf8');
+    const data = await fs.promises.readFile(jobsDataFile, 'utf8');
     const jobsData = JSON.parse(data);
 
     const oldApplications = jobsData.applications.filter(
@@ -179,7 +209,7 @@ app.get('/api/applications/old', async (_req, res) => {
 
 app.patch('/api/applications/:id/suspend', async (req, res) => {
   try {
-    const data = await fs.promises.readFile(dataFile, 'utf8');
+    const data = await fs.promises.readFile(jobsDataFile, 'utf8');
     const jobsData = JSON.parse(data);
 
     const application = jobsData.applications.find(
@@ -207,7 +237,7 @@ app.patch('/api/applications/:id/suspend', async (req, res) => {
     application.status = 'suspended';
 
     await fs.promises.writeFile(
-      dataFile,
+      jobsDataFile,
       JSON.stringify(jobsData, null, 2),
       'utf8',
     );
@@ -218,6 +248,165 @@ app.patch('/api/applications/:id/suspend', async (req, res) => {
 
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       error: 'No se pudo suspender la candidatura',
+    });
+  }
+});
+
+app.get('/api/contacts', async (_req, res) => {
+  try {
+    const data = await fs.promises.readFile(
+      contactsDataFile,
+      'utf8',
+    );
+
+    const contactsData = JSON.parse(data);
+
+    return res.json(contactsData.contacts);
+  } catch (err) {
+    console.info(err);
+
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      error: 'No se pudo leer contacts.json',
+    });
+  }
+});
+
+app.post('/api/contacts', async (req, res) => {
+  try {
+    const data = await fs.promises.readFile(
+      contactsDataFile,
+      'utf8',
+    );
+
+    const contactsData = JSON.parse(data);
+
+    const {
+      contact,
+      center,
+      contactedAt,
+      status,
+      notes,
+    } = req.body;
+
+    if (
+      !contact ||
+      !center ||
+      !contactedAt ||
+      !ALLOWED_CONTACT_STATUSES.has(status)
+    ) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        error: 'Datos del contacto no válidos',
+      });
+    }
+
+    const newContact = {
+      contact,
+      center,
+      contactedAt,
+      status,
+      id: Date.now(),
+      notes: notes || '',
+    };
+
+    contactsData.contacts.push(newContact);
+
+    await fs.promises.writeFile(
+      contactsDataFile,
+      JSON.stringify(contactsData, null, 2),
+      'utf8',
+    );
+
+    return res
+      .status(HTTP_STATUS.CREATED)
+      .json(newContact);
+  } catch (err) {
+    console.info(err);
+
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      error: 'No se pudo guardar el contacto',
+    });
+  }
+});
+
+app.get('/api/contacts/old', async (_req, res) => {
+  try {
+    const data = await fs.promises.readFile(
+      contactsDataFile,
+      'utf8',
+    );
+
+    const contactsData = JSON.parse(data);
+
+    const oldContacts = contactsData.contacts.filter(
+      contact =>
+        contact.status === 'pending' &&
+        isOlderThanContactPendingLimit(
+          contact.contactedAt,
+        ),
+    );
+
+    return res.json({
+      contacts: oldContacts,
+    });
+  } catch (err) {
+    console.info(err);
+
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      error: 'No se pudo leer contacts.json',
+    });
+  }
+});
+
+app.patch('/api/contacts/:id', async (req, res) => {
+  try {
+    const data = await fs.promises.readFile(
+      contactsDataFile,
+      'utf8',
+    );
+
+    const contactsData = JSON.parse(data);
+
+    const contact = contactsData.contacts.find(
+      item => item.id === Number(req.params.id),
+    );
+
+    if (!contact) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        error: 'Contacto no encontrado',
+      });
+    }
+
+    const { status, notes } = req.body;
+
+    if (
+      status !== undefined &&
+      !ALLOWED_CONTACT_STATUSES.has(status)
+    ) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        error: LABEL_FORBIDDEN_STATE,
+      });
+    }
+
+    if (status !== undefined) {
+      contact.status = status;
+    }
+
+    if (notes !== undefined) {
+      contact.notes = notes;
+    }
+
+    await fs.promises.writeFile(
+      contactsDataFile,
+      JSON.stringify(contactsData, null, 2),
+      'utf8',
+    );
+
+    return res.json(contact);
+  } catch (err) {
+    console.info(err);
+
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      error: 'No se pudo actualizar el contacto',
     });
   }
 });

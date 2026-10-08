@@ -1,21 +1,26 @@
 # Job Tracker
 
-A small full-stack application for tracking job applications. The React interface lets you review and update application statuses, while an Express API stores the records in a local JSON file.
+A small full-stack application for tracking job applications and professional contacts. The React interface lets you review and update application and contact statuses, while an Express API stores the records in local JSON files.
 
 ## Features
 
+- Track job applications and professional contacts in the same dashboard.
 - Add applications with a company, position, location, type, application date, and status.
 - Search applications by company, position, location, type, or field.
 - Filter by application type or status and view summary counts.
 - Browse results in pages of 10, sorted by application date (newest first).
 - Review pending applications that have been open for more than 30 days and suspend them.
-- Persist application data in a JSON file without requiring a database.
+- Manage contacts with a name, center/company, date of contact, status, and personal notes.
+- Search, filter, and paginate contacts, including notes-based searches.
+- Add and edit notes for each contact through a dedicated modal window.
+- Review stale pending contacts older than 30 days and suspend them automatically.
+- Persist all data in local JSON files without requiring a database.
 
 ## Tech stack
 
 - **Frontend:** React 19, Vite 8
 - **Backend:** Node.js, Express 5
-- **Storage:** `client/src/data/jobs.json`
+- **Storage:** `client/src/data/jobs.json` and `client/src/data/contacts.json`
 
 ## Prerequisites
 
@@ -66,6 +71,13 @@ The backend currently has no npm start script; run it with `node server.js` from
 
 ## Data format
 
+The application stores two JSON collections:
+
+- `client/src/data/jobs.json` for job applications.
+- `client/src/data/contacts.json` for contacts and notes.
+
+### Applications
+
 Application records are stored in `client/src/data/jobs.json` as an object with an `applications` array. A record can contain:
 
 | Field | Description |
@@ -104,9 +116,43 @@ Example `jobs.json`:
 
 Use a top-level `applications` array. Each entry should have a unique numeric `id`, an `appliedAt` date in `YYYY-MM-DD` format, and a valid `status`. The other fields shown above can be empty strings when they do not apply. When creating an application through the API, omit `id`; the server generates it.
 
+### Contacts
+
+Contact records are stored in `client/src/data/contacts.json` as an object with a `contacts` array. A record can contain:
+
+| Field | Description |
+| --- | --- |
+| `id` | Numeric record identifier. |
+| `contact` | Contact person name. |
+| `center` | Company or center name. |
+| `contactedAt` | Date of first contact in `YYYY-MM-DD` format. |
+| `status` | `pending`, `replied`, `rejected`, or `suspended`. |
+| `notes` | Free-text notes or follow-up comments. |
+
+Example `contacts.json`:
+
+```json
+{
+  "contacts": [
+    {
+      "id": 1,
+      "contact": "Ana García",
+      "center": "Acme Labs",
+      "contactedAt": "2026-10-02",
+      "status": "pending",
+      "notes": "Asked for a meeting next week."
+    }
+  ]
+}
+```
+
+When creating or updating a contact through the API, omit `id`; the server generates it. The `notes` field may be empty.
+
 ## API
 
 The frontend expects the API at `http://localhost:3001`.
+
+### Applications
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
@@ -116,6 +162,16 @@ The frontend expects the API at `http://localhost:3001`.
 | `GET` | `/api/applications/old` | Return pending applications older than 30 days. |
 | `PATCH` | `/api/applications/:id/suspend` | Suspend an eligible pending application older than 30 days. |
 
+### Contacts
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/contacts` | Return all contacts. |
+| `POST` | `/api/contacts` | Create a contact. The server assigns its ID. Requires `contact`, `center`, `contactedAt`, and a valid `status` (`pending`, `replied`, or `rejected`). |
+| `PATCH` | `/api/contacts/:id` | Update a contact status and/or notes. Accepts a JSON body such as `{ "status": "replied", "notes": "Followed up" }`. |
+| `GET` | `/api/contacts/old` | Return pending contacts older than 30 days. |
+| `PATCH` | `/api/contacts/:id/suspend` | Suspend an eligible pending contact older than 30 days. |
+
 The API allows browser requests from `http://localhost:3000` and `http://localhost:5173`.
 
 ## Project structure
@@ -123,9 +179,11 @@ The API allows browser requests from `http://localhost:3000` and `http://localho
 ```text
 client/
   src/
-    components/       React UI components
-    data/jobs.json    Local application data
-    App.jsx           Main application and API integration
+    components/         React UI components
+    data/
+      jobs.json         Local application data
+      contacts.json     Local contact data and notes
+    App.jsx             Main application and API integration
 server/
-  server.js           Express API
+  server.js             Express API
 ```
