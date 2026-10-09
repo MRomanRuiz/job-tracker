@@ -18,7 +18,6 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
     rules: {
-      '@stylistic/js/comma-dangle': ['error', 'always-multiline'],
       'comma-dangle': ['error', 'always-multiline'],
     },
   },

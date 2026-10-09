@@ -21,6 +21,7 @@ function ApplicationForm({
         <input
           type="text"
           name="company"
+          required
           placeholder="Empresa"
           value={formData.company}
           onChange={handleChange}
@@ -29,6 +30,7 @@ function ApplicationForm({
         <input
           type="text"
           name="position"
+          required
           placeholder="Puesto"
           value={formData.position}
           onChange={handleChange}
@@ -37,6 +39,7 @@ function ApplicationForm({
         <input
           type="text"
           name="location"
+          required
           placeholder="Ubicación"
           value={formData.location}
           onChange={handleChange}
@@ -45,6 +48,7 @@ function ApplicationForm({
         <input
           type="text"
           name="type"
+          required
           placeholder="Tipo"
           value={formData.type}
           onChange={handleChange}
@@ -53,6 +57,7 @@ function ApplicationForm({
         <input
           type="date"
           name="appliedAt"
+          required
           value={formData.appliedAt}
           onChange={handleChange}
         />
