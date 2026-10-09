@@ -53,7 +53,7 @@ From the project root:
 | --- | --- |
 | `npm run dev` | Start the API and the Vite development server. |
 | `npm run lint` | Run ESLint on the API and the frontend. |
-| `npm test` | Run the API tests (Node test runner) and frontend tests (Vitest). |
+| `npm test` | Run the API and frontend tests with the Node test runner. |
 | `npm run build` | Build the frontend for production in `client/dist`. |
 
 From `client`: `npm run dev`, `npm run build`, `npm run preview`, `npm run lint`, `npm test`.

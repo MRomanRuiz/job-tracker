@@ -1,4 +1,4 @@
-import { ALL_STATUSES, MAX_PENDING_DAYS } from './constants';
+import { ALL_STATUSES, MAX_PENDING_DAYS } from './constants.js';
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 

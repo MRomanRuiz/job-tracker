@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { ALL_STATUSES } from './constants';
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+import { ALL_STATUSES } from './constants.js';
 import {
   countByStatus,
   getStalePending,
@@ -8,15 +9,15 @@ import {
   matchesText,
   replaceById,
   sortByDateDesc,
-} from './utils';
+} from './utils.js';
 
 describe('isOlderThanPendingLimit', () => {
   const now = new Date('2026-02-01');
 
   it('detects dates older than 30 days', () => {
-    expect(isOlderThanPendingLimit('2025-12-01', now)).toBe(true);
-    expect(isOlderThanPendingLimit('2026-01-15', now)).toBe(false);
-    expect(isOlderThanPendingLimit('', now)).toBe(false);
+    assert.equal(isOlderThanPendingLimit('2025-12-01', now), true);
+    assert.equal(isOlderThanPendingLimit('2026-01-15', now), false);
+    assert.equal(isOlderThanPendingLimit('', now), false);
   });
 });
 
@@ -28,17 +29,18 @@ describe('getStalePending', () => {
       { id: 3, status: 'pending', appliedAt: new Date().toISOString() },
     ];
 
-    expect(getStalePending(items, 'appliedAt').map(item => item.id)).toEqual([
-      1,
-    ]);
+    assert.deepEqual(
+      getStalePending(items, 'appliedAt').map(item => item.id),
+      [1],
+    );
   });
 });
 
 describe('matchesStatus', () => {
   it('treats suspended as rejected', () => {
-    expect(matchesStatus({ status: 'suspended' }, 'rejected')).toBe(true);
-    expect(matchesStatus({ status: 'pending' }, 'rejected')).toBe(false);
-    expect(matchesStatus({ status: 'pending' }, ALL_STATUSES)).toBe(true);
+    assert.equal(matchesStatus({ status: 'suspended' }, 'rejected'), true);
+    assert.equal(matchesStatus({ status: 'pending' }, 'rejected'), false);
+    assert.equal(matchesStatus({ status: 'pending' }, ALL_STATUSES), true);
   });
 
   it('counts items by status', () => {
@@ -48,26 +50,27 @@ describe('matchesStatus', () => {
       { status: 'pending' },
     ];
 
-    expect(countByStatus(items, 'rejected')).toBe(2);
-    expect(countByStatus(items, ALL_STATUSES)).toBe(3);
+    assert.equal(countByStatus(items, 'rejected'), 2);
+    assert.equal(countByStatus(items, ALL_STATUSES), 3);
   });
 });
 
 describe('helpers', () => {
   it('matches text case-insensitively and ignores empty values', () => {
-    expect(matchesText(['Acme Labs', undefined], 'labs')).toBe(true);
-    expect(matchesText([null], 'x')).toBe(false);
+    assert.equal(matchesText(['Acme Labs', undefined], 'labs'), true);
+    assert.equal(matchesText([null], 'x'), false);
   });
 
   it('sorts by date descending without mutating the input', () => {
     const items = [{ d: '2026-01-01' }, { d: '2026-03-01' }];
 
-    expect(sortByDateDesc(items, 'd')[0].d).toBe('2026-03-01');
-    expect(items[0].d).toBe('2026-01-01');
+    assert.equal(sortByDateDesc(items, 'd')[0].d, '2026-03-01');
+    assert.equal(items[0].d, '2026-01-01');
   });
 
   it('replaces an item by id', () => {
-    expect(replaceById([{ id: 1, a: 1 }, { id: 2 }], { id: 1, a: 2 })).toEqual(
+    assert.deepEqual(
+      replaceById([{ id: 1, a: 1 }, { id: 2 }], { id: 1, a: 2 }),
       [{ id: 1, a: 2 }, { id: 2 }],
     );
   });
