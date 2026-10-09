@@ -15,10 +15,10 @@ import StatCards from './StatCards';
 import Toolbar from './Toolbar';
 
 const FORM_FIELDS = [
-  { name: 'company', placeholder: 'Empresa' },
-  { name: 'position', placeholder: 'Puesto' },
-  { name: 'location', placeholder: 'Ubicación' },
-  { name: 'type', placeholder: 'Tipo' },
+  { name: 'company', placeholder: 'Empresa', required: true },
+  { name: 'position', placeholder: 'Puesto', required: true },
+  { name: 'location', placeholder: 'Ubicación', required: true },
+  { name: 'type', placeholder: 'Tipo', required: true },
   { name: 'appliedAt', type: 'date', required: true },
 ];
 
