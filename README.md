@@ -53,7 +53,7 @@ From the project root:
 | --- | --- |
 | `npm run dev` | Start the API and the Vite development server. |
 | `npm run lint` | Run ESLint on the API and the frontend. |
-| `npm test` | Run the API and frontend tests with the Node test runner. |
+| `npm test` | Run the API tests (Node test runner) and the frontend tests (Vitest + React Testing Library). |
 | `npm run build` | Build the frontend for production in `client/dist`. |
 
 From `client`: `npm run dev`, `npm run build`, `npm run preview`, `npm run lint`, `npm test`.
@@ -177,6 +177,7 @@ client/
       jobs.json         Local application data
       contacts.json     Local contact data and notes
     hooks/              Shared React hooks (data loading, pagination)
+    test/               Frontend test setup and API mock
     api.js              API client
     App.jsx             Main application
 server/

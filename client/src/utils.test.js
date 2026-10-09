@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import { ALL_STATUSES } from './constants.js';
 import {
   countByStatus,
@@ -11,9 +10,9 @@ import {
 
 describe('matchesStatus', () => {
   it('treats suspended as rejected', () => {
-    assert.equal(matchesStatus({ status: 'suspended' }, 'rejected'), true);
-    assert.equal(matchesStatus({ status: 'pending' }, 'rejected'), false);
-    assert.equal(matchesStatus({ status: 'pending' }, ALL_STATUSES), true);
+    expect(matchesStatus({ status: 'suspended' }, 'rejected')).toBe(true);
+    expect(matchesStatus({ status: 'pending' }, 'rejected')).toBe(false);
+    expect(matchesStatus({ status: 'pending' }, ALL_STATUSES)).toBe(true);
   });
 
   it('counts items by status', () => {
@@ -23,28 +22,27 @@ describe('matchesStatus', () => {
       { status: 'pending' },
     ];
 
-    assert.equal(countByStatus(items, 'rejected'), 2);
-    assert.equal(countByStatus(items, ALL_STATUSES), 3);
+    expect(countByStatus(items, 'rejected')).toBe(2);
+    expect(countByStatus(items, ALL_STATUSES)).toBe(3);
   });
 });
 
 describe('helpers', () => {
   it('matches text case-insensitively and ignores empty values', () => {
-    assert.equal(matchesText(['Acme Labs', undefined], 'labs'), true);
-    assert.equal(matchesText([null], 'x'), false);
+    expect(matchesText(['Acme Labs', undefined], 'labs')).toBe(true);
+    expect(matchesText([null], 'x')).toBe(false);
   });
 
   it('sorts by date descending without mutating the input', () => {
     const items = [{ d: '2026-01-01' }, { d: '2026-03-01' }];
 
-    assert.equal(sortByDateDesc(items, 'd')[0].d, '2026-03-01');
-    assert.equal(items[0].d, '2026-01-01');
+    expect(sortByDateDesc(items, 'd')[0].d).toBe('2026-03-01');
+    expect(items[0].d).toBe('2026-01-01');
   });
 
   it('replaces an item by id', () => {
-    assert.deepEqual(
+    expect(
       replaceById([{ id: 1, a: 1 }, { id: 2 }], { id: 1, a: 2 }),
-      [{ id: 1, a: 2 }, { id: 2 }],
-    );
+    ).toEqual([{ id: 1, a: 2 }, { id: 2 }]);
   });
 });
