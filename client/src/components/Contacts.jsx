@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -436,9 +435,14 @@ function Contacts({
       CONTACTS_PER_PAGE,
   );
 
+  const page = Math.min(
+    currentPage,
+    Math.max(totalPages, 1),
+  );
+
   const paginatedContacts = useMemo(() => {
     const startIndex =
-      (currentPage - 1) *
+      (page - 1) *
       CONTACTS_PER_PAGE;
 
     return filteredContacts.slice(
@@ -447,21 +451,8 @@ function Contacts({
     );
   }, [
     filteredContacts,
-    currentPage,
+    page,
   ]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter]);
-
-  useEffect(() => {
-    if (
-      totalPages > 0 &&
-      currentPage > totalPages
-    ) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
 
   const handleStatClick = status => {
     setStatusFilter(current => {
@@ -471,6 +462,12 @@ function Contacts({
 
       return status;
     });
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = event => {
+    setSearch(event.target.value);
+    setCurrentPage(1);
   };
 
   const handleSubmit = async event => {
@@ -591,9 +588,7 @@ function Contacts({
             type="search"
             placeholder="Buscar contacto, centro o notas..."
             value={search}
-            onChange={event =>
-              setSearch(event.target.value)
-            }
+            onChange={handleSearchChange}
           />
         </section>
 
@@ -611,17 +606,13 @@ function Contacts({
         </section>
 
         <ContactPagination
-          currentPage={currentPage}
+          currentPage={page}
           totalPages={totalPages}
           onPrevious={() =>
-            setCurrentPage(
-              current => current - 1,
-            )
+            setCurrentPage(page - 1)
           }
           onNext={() =>
-            setCurrentPage(
-              current => current + 1,
-            )
+            setCurrentPage(page + 1)
           }
         />
       </main>

@@ -75,10 +75,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter, typeFilter]);
-
-  useEffect(() => {
     const loadContacts = async () => {
       try {
         const response = await fetch(
@@ -167,6 +163,17 @@ function App() {
 
   const handleStatClick = status => {
     setStatusFilter(status);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = value => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const handleTypeChange = value => {
+    setTypeFilter(value);
+    setCurrentPage(1);
   };
 
   const handleStatusChange = async (id, status) => {
@@ -477,8 +484,8 @@ function App() {
             <Toolbar
               search={search}
               typeFilter={typeFilter}
-              onSearchChange={setSearch}
-              onTypeChange={setTypeFilter}
+              onSearchChange={handleSearchChange}
+              onTypeChange={handleTypeChange}
             />
 
             <p>
