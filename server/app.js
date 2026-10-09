@@ -90,7 +90,7 @@ const createCollectionStore = (filePath, key) => {
     const data = JSON.parse(await fs.readFile(filePath, 'utf8'));
 
     if (!Array.isArray(data[key])) {
-      throw new Error(`${path.basename(filePath)} no contiene "${key}"`);
+      throw new TypeError(`${path.basename(filePath)} no contiene "${key}"`);
     }
 
     return data;
@@ -103,7 +103,10 @@ const createCollectionStore = (filePath, key) => {
     await fs.rename(tempFile, filePath);
   };
 
-  const list = async () => (await read())[key];
+  const list = async () => {
+    const data = await read();
+    return data[key];
+  };
 
   // Serializes read-modify-write cycles so concurrent requests can't lose updates.
   const update = mutate => {
@@ -146,7 +149,7 @@ const handle = (errorMessage, handler) => async (req, res) => {
       return;
     }
 
-    console.error(err);
+    console.info(err);
     res
       .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
       .json({ error: errorMessage });
@@ -201,12 +204,20 @@ const parseApplication = body => {
 const parseContact = body => {
   const { contact, center, contactedAt, status, notes = '' } = body;
 
+  const hasInvalidTypes =
+  typeof contact !== 'string' ||
+  typeof center !== 'string' ||
+  typeof notes !== 'string';
+
+  const hasEmptyRequiredFields =
+  typeof contact === 'string' &&
+  !contact.trim() ||
+  typeof center === 'string' &&
+  !center.trim();
+
   if (
-    typeof contact !== 'string' ||
-    typeof center !== 'string' ||
-    typeof notes !== 'string' ||
-    !contact.trim() ||
-    !center.trim() ||
+    hasInvalidTypes ||
+    hasEmptyRequiredFields ||
     !isValidDate(contactedAt) ||
     !ALLOWED_CONTACT_STATUSES.has(status)
   ) {
@@ -425,7 +436,7 @@ const createApp = ({
       return;
     }
 
-    console.error(err);
+    console.info(err);
     res
       .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
       .json({ error: 'Error interno del servidor' });

@@ -14,7 +14,7 @@ export default function useCollection(name) {
       try {
         return await apiRequest(url, options);
       } catch (error) {
-        console.error(`Error en ${options.method ?? 'GET'} /api${url}:`, error);
+        console.info(`Error en ${options.method ?? 'GET'} /api${url}:`, error);
         return null;
       }
     },
@@ -23,7 +23,8 @@ export default function useCollection(name) {
 
   // Ignores responses from older requests so the alert never goes back in time.
   const loadStale = useCallback(async () => {
-    const requestId = ++latestStaleRequest.current;
+    latestStaleRequest.current += 1;
+    const requestId = latestStaleRequest.current;
     const data = await request('/old');
 
     if (data && requestId === latestStaleRequest.current) {
@@ -32,13 +33,13 @@ export default function useCollection(name) {
   }, [name, request]);
 
   useEffect(() => {
-    request().then(data => {
+    void request().then(data => {
       if (data) {
         setItems(data[name]);
       }
     });
 
-    loadStale();
+    void loadStale();
   }, [name, request, loadStale]);
 
   const replace = async (path, body) => {
@@ -61,7 +62,7 @@ export default function useCollection(name) {
     }
 
     setItems(current => [...current, created]);
-    loadStale();
+    void loadStale();
 
     return true;
   };
@@ -70,7 +71,7 @@ export default function useCollection(name) {
     const updated = await replace(`/${id}`, changes);
 
     if (updated && changes.status !== undefined) {
-      loadStale();
+      void loadStale();
     }
 
     return updated;
@@ -78,7 +79,7 @@ export default function useCollection(name) {
 
   const suspend = async id => {
     if (await replace(`/${id}/suspend`)) {
-      loadStale();
+      void loadStale();
     }
   };
 

@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import HTTP_STATUS from '../server/app.js';
 
 // Routes are keyed by "METHOD /api/path"; a handler returns the JSON body or
 // { httpStatus, body } for other responses, optionally asynchronously.
@@ -11,11 +12,11 @@ export const mockApi = routes => {
         : handler;
     const { httpStatus = 200, body: data } =
       result?.httpStatus === undefined ? { body: result } : result;
-    const status = handler === undefined ? 404 : httpStatus;
+    const status = handler === undefined ? HTTP_STATUS.NOT_FOUND : httpStatus;
 
     return {
-      ok: status < 400,
       status,
+      ok: status < HTTP_STATUS.BAD_REQUEST,
       json: async () => data ?? { error: 'Not found' },
     };
   });
