@@ -143,7 +143,7 @@ When creating or updating a contact through the API, omit `id`; the server gener
 
 ## API
 
-The API runs at `http://localhost:3001`; the frontend calls it through the Vite proxy at `/api`. Invalid input returns `400`, unknown IDs return `404`, and errors are returned as `{ "error": "..." }`.
+The API runs at `http://localhost:3001`; the frontend calls it through the Vite proxy at `/api`. Invalid input (including dates that do not exist, such as `2026-02-31`) returns `400`, unknown IDs return `404`, and errors are returned as `{ "error": "..." }`.
 
 ### Applications
 
@@ -176,7 +176,7 @@ client/
     data/
       jobs.json         Local application data
       contacts.json     Local contact data and notes
-    hooks/              Shared React hooks
+    hooks/              Shared React hooks (data loading, pagination)
     api.js              API client
     App.jsx             Main application
 server/

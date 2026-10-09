@@ -1,32 +1,14 @@
-function Toolbar({
-  search,
-  typeFilter,
-  onSearchChange,
-  onTypeChange,
-}) {
+function Toolbar({ search, placeholder, onSearchChange, children }) {
   return (
-    <section className="toolbar">
+    <section className={children ? 'toolbar' : 'toolbar search-only'}>
       <input
-        type="text"
-        placeholder="Buscar empresa, puesto..."
+        type="search"
+        placeholder={placeholder}
         value={search}
-        onChange={event =>
-          onSearchChange(event.target.value)
-        }
+        onChange={event => onSearchChange(event.target.value)}
       />
 
-      <select
-        value={typeFilter}
-        onChange={event =>
-          onTypeChange(event.target.value)
-        }
-      >
-        <option value="">Todos los tipos</option>
-        <option value="Empresa">Empresa</option>
-        <option value="Investigación">
-          Investigación
-        </option>
-      </select>
+      {children}
     </section>
   );
 }

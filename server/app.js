@@ -68,10 +68,20 @@ const isOlderThanPendingLimit = (date, now = new Date()) => {
   return (now - parsedDate) / MS_PER_DAY > MAX_PENDING_DAYS;
 };
 
-const isValidDate = value =>
-  typeof value === 'string' &&
-  DATE_PATTERN.test(value) &&
-  !Number.isNaN(new Date(value).getTime());
+const isStalePending = (record, dateField) =>
+  record.status === 'pending' && isOlderThanPendingLimit(record[dateField]);
+
+const isValidDate = value => {
+  if (typeof value !== 'string' || !DATE_PATTERN.test(value)) {
+    return false;
+  }
+
+  const date = new Date(value);
+
+  return (
+    !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
+  );
+};
 
 const createCollectionStore = (filePath, key) => {
   let queue = Promise.resolve();
@@ -273,11 +283,7 @@ const createApp = ({
       const items = await applications.list();
 
       res.json({
-        applications: items.filter(
-          item =>
-            item.status === 'pending' &&
-            isOlderThanPendingLimit(item.appliedAt),
-        ),
+        applications: items.filter(item => isStalePending(item, 'appliedAt')),
       });
     }),
   );
@@ -353,11 +359,7 @@ const createApp = ({
       const items = await contacts.list();
 
       res.json({
-        contacts: items.filter(
-          item =>
-            item.status === 'pending' &&
-            isOlderThanPendingLimit(item.contactedAt),
-        ),
+        contacts: items.filter(item => isStalePending(item, 'contactedAt')),
       });
     }),
   );

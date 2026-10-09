@@ -1,11 +1,4 @@
-function Pagination({
-  currentPage,
-  totalPages,
-  onPageChange,
-  buttonClassName,
-  previousLabel = 'Anterior',
-  nextLabel = 'Siguiente',
-}) {
+function Pagination({ currentPage, totalPages, onPageChange }) {
   if (totalPages <= 1) {
     return null;
   }
@@ -14,11 +7,10 @@ function Pagination({
     <div className="pagination">
       <button
         type="button"
-        className={buttonClassName}
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
       >
-        {previousLabel}
+        ← Anterior
       </button>
 
       <span>
@@ -27,11 +19,10 @@ function Pagination({
 
       <button
         type="button"
-        className={buttonClassName}
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
       >
-        {nextLabel}
+        Siguiente →
       </button>
     </div>
   );

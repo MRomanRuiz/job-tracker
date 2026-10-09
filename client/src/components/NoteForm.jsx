@@ -1,17 +1,11 @@
-function NoteForm({
-  contact,
-  note,
-  onChange,
-  onSave,
-  onCancel,
-}) {
-  if (!contact) {
-    return null;
-  }
+import { useState } from 'react';
+
+function NoteForm({ contact, onSave, onCancel }) {
+  const [note, setNote] = useState(contact.notes || '');
 
   const handleSubmit = event => {
     event.preventDefault();
-    onSave();
+    onSave(note);
   };
 
   return (
@@ -23,16 +17,11 @@ function NoteForm({
         aria-labelledby="note-popup-title"
       >
         <div className="note-popup-header">
-          <div className="note-popup-title-container">
-            <span className="note-popup-icon">
-              📝
-            </span>
+          <div>
+            <span className="note-popup-icon">📝</span>
 
             <div>
-              <h3 id="note-popup-title">
-                Nota
-              </h3>
-
+              <h3 id="note-popup-title">Nota</h3>
               <p>{contact.contact}</p>
             </div>
           </div>
@@ -51,9 +40,7 @@ function NoteForm({
           <div className="note-popup-body">
             <textarea
               value={note}
-              onChange={event =>
-                onChange(event.target.value)
-              }
+              onChange={event => setNote(event.target.value)}
               placeholder="Escribe una nota..."
               rows="5"
               autoFocus
@@ -69,10 +56,7 @@ function NoteForm({
               Cancelar
             </button>
 
-            <button
-              type="submit"
-              className="primary-button"
-            >
+            <button type="submit" className="primary-button">
               Guardar
             </button>
           </div>

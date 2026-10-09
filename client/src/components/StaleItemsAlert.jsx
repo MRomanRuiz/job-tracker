@@ -17,7 +17,7 @@ function StaleItemsAlert({
 
   return (
     <>
-      <div className="old-applications-alert">
+      <div className="stale-alert">
         <span className="warning-icon">⚠️</span>
 
         <strong>
@@ -30,9 +30,9 @@ function StaleItemsAlert({
       </div>
 
       {isOpen && (
-        <div className="old-applications-panel">
+        <div className="stale-panel">
           {items.map(item => (
-            <div className="old-application-row" key={item.id}>
+            <div className="stale-row" key={item.id}>
               {renderCells(item)}
 
               <button

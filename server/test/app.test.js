@@ -115,6 +115,7 @@ describe('applications', () => {
       { company: 'Acme' },
       { appliedAt: RECENT_DATE, status: 'bogus' },
       { appliedAt: RECENT_DATE, company: 42 },
+      { appliedAt: '2026-02-31' },
     ]) {
       const response = await request('POST', '/api/applications', { body });
       assert.equal(response.status, 400);
@@ -215,11 +216,18 @@ describe('contacts', () => {
   });
 
   it('rejects invalid contacts', async () => {
-    const { status } = await request('POST', '/api/contacts', {
-      body: { contact: 'Eva', center: '', contactedAt: RECENT_DATE },
-    });
-
-    assert.equal(status, 400);
+    for (const body of [
+      { contact: 'Eva', center: '', contactedAt: RECENT_DATE },
+      {
+        contact: 'Eva',
+        center: 'Acme',
+        contactedAt: '2026-02-31',
+        status: 'pending',
+      },
+    ]) {
+      const response = await request('POST', '/api/contacts', { body });
+      assert.equal(response.status, 400);
+    }
   });
 
   it('updates status and notes', async () => {
