@@ -21,6 +21,7 @@ function ContactForm({
         <input
           type="text"
           name="contact"
+          required
           placeholder="Contacto / Email"
           value={formData.contact}
           onChange={handleChange}
@@ -29,6 +30,7 @@ function ContactForm({
         <input
           type="text"
           name="center"
+          required
           placeholder="Centro / Empresa"
           value={formData.center}
           onChange={handleChange}
@@ -37,6 +39,7 @@ function ContactForm({
         <input
           type="date"
           name="contactedAt"
+          required
           value={formData.contactedAt}
           onChange={handleChange}
         />

@@ -1,14 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { apiRequest } from './api';
+import {
+  ALL_STATUSES,
+  APPLICATION_STATUS_LABELS,
+  ITEMS_PER_PAGE,
+} from './constants';
+import usePagination from './hooks/usePagination';
+import {
+  countByStatus,
+  getStalePending,
+  matchesStatus,
+  matchesText,
+  replaceById,
+  sortByDateDesc,
+} from './utils';
 import Header from './components/Header';
-import Stats from './components/Stats';
+import StatCards from './components/StatCards';
 import Toolbar from './components/Toolbar';
 import ApplicationForm from './components/ApplicationForm';
-import OldApplicationsAlert from './components/OldApplicationsAlert';
+import StaleItemsAlert from './components/StaleItemsAlert';
 import ApplicationsTable from './components/ApplicationsTable';
 import Pagination from './components/Pagination';
 import Contacts from './components/Contacts';
-
-const ITEMS_PER_PAGE = 10;
 
 const EMPTY_FORM = {
   company: '',
@@ -19,424 +32,171 @@ const EMPTY_FORM = {
   status: 'pending',
 };
 
+const STAT_ITEMS = [
+  { status: ALL_STATUSES, label: 'Total' },
+  { status: 'pending', label: 'En espera' },
+  { status: 'interview', label: 'Entrevistas' },
+  { status: 'rejected', label: 'Rechazadas' },
+];
+
+const renderStaleApplication = application => (
+  <>
+    <span className="application-company">{application.company}</span>
+    <span>{application.position}</span>
+    <span>{application.location}</span>
+    <span>{application.type}</span>
+    <span className="application-date">{application.appliedAt}</span>
+  </>
+);
+
 function App() {
   const [applications, setApplications] = useState([]);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
   const [typeFilter, setTypeFilter] = useState('');
-  const [oldApplications, setOldApplications] = useState([]);
-  const [showOldApplications, setShowOldApplications] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState(EMPTY_FORM);
 
   const [view, setView] = useState('applications');
   const [showContactForm, setShowContactForm] = useState(false);
   const [contacts, setContacts] = useState([]);
-  const [oldContacts, setOldContacts] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/applications')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('No se pudieron cargar las candidaturas');
-        }
+    apiRequest('/applications')
+      .then(data => setApplications(data.applications))
+      .catch(error =>
+        console.error('Error cargando las candidaturas:', error),
+      );
 
-        return response.json();
-      })
-      .then(data => {
-        setApplications(data.applications);
-      })
-      .catch(error => {
-        console.info('Error cargando las candidaturas:', error);
-      });
+    apiRequest('/contacts')
+      .then(data => setContacts(data.contacts))
+      .catch(error =>
+        console.error('Error cargando los contactos:', error),
+      );
   }, []);
 
-  useEffect(() => {
-    fetch('http://localhost:3001/api/applications/old')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(
-            'No se pudieron comprobar las candidaturas antiguas',
-          );
-        }
+  const oldApplications = useMemo(
+    () => getStalePending(applications, 'appliedAt'),
+    [applications],
+  );
 
-        return response.json();
-      })
-      .then(data => {
-        setOldApplications(data.applications);
-      })
-      .catch(error => {
-        console.info(
-          'Error comprobando candidaturas antiguas:',
-          error,
-        );
-      });
-  }, []);
+  const oldContacts = useMemo(
+    () => getStalePending(contacts, 'contactedAt'),
+    [contacts],
+  );
 
-  useEffect(() => {
-    const loadContacts = async () => {
-      try {
-        const response = await fetch(
-          'http://localhost:3001/api/contacts',
-        );
+  const filteredApplications = useMemo(() => {
+    const searchText = search.toLowerCase();
 
-        if (!response.ok) {
-          throw new Error(
-            'No se pudieron cargar los contactos',
-          );
-        }
+    return sortByDateDesc(
+      applications.filter(
+        job =>
+          matchesText(
+            [job.company, job.position, job.location, job.type, job.field],
+            searchText,
+          ) &&
+          matchesStatus(job, statusFilter) &&
+          (typeFilter === '' || job.type === typeFilter),
+      ),
+      'appliedAt',
+    );
+  }, [applications, search, statusFilter, typeFilter]);
 
-        const data = await response.json();
+  const {
+    page,
+    totalPages,
+    pageItems: paginatedApplications,
+    setPage,
+  } = usePagination(filteredApplications, ITEMS_PER_PAGE);
 
-        setContacts(data);
-      } catch (error) {
-        console.info(
-          'Error cargando los contactos:',
-          error,
-        );
-      }
-    };
-
-    void loadContacts();
-  }, []);
-
-  useEffect(() => {
-    const loadOldContacts = async () => {
-      try {
-        const response = await fetch(
-          'http://localhost:3001/api/contacts/old',
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            'No se pudieron cargar los contactos antiguos',
-          );
-        }
-
-        const data = await response.json();
-
-        setOldContacts(data.contacts);
-      } catch (error) {
-        console.info(
-          'Error comprobando contactos antiguos:',
-          error,
-        );
-      }
-    };
-
-    void loadOldContacts();
-  }, []);
+  const statItems = STAT_ITEMS.map(item => ({
+    ...item,
+    value: countByStatus(applications, item.status),
+  }));
 
   const handleSubmit = async event => {
     event.preventDefault();
 
     try {
-      const response = await fetch(
-        'http://localhost:3001/api/applications',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData),
-        },
-      );
+      const newApplication = await apiRequest('/applications', {
+        method: 'POST',
+        body: formData,
+      });
 
-      if (!response.ok) {
-        throw new Error('No se pudo guardar la candidatura');
-      }
-
-      const newApplication = await response.json();
-
-      setApplications(currentApplications => [
-        ...currentApplications,
-        newApplication,
-      ]);
-
+      setApplications(current => [...current, newApplication]);
       setFormData(EMPTY_FORM);
       setShowForm(false);
     } catch (error) {
-      console.info('Error guardando la candidatura:', error);
+      console.error('Error guardando la candidatura:', error);
     }
   };
 
   const handleStatClick = status => {
     setStatusFilter(status);
-    setCurrentPage(1);
+    setPage(1);
   };
 
   const handleSearchChange = value => {
     setSearch(value);
-    setCurrentPage(1);
+    setPage(1);
   };
 
   const handleTypeChange = value => {
     setTypeFilter(value);
-    setCurrentPage(1);
+    setPage(1);
   };
 
   const handleStatusChange = async (id, status) => {
     try {
-      const response = await fetch(
-        `http://localhost:3001/api/applications/${id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ status }),
-        },
-      );
+      const updatedApplication = await apiRequest(`/applications/${id}`, {
+        method: 'PATCH',
+        body: { status },
+      });
 
-      if (!response.ok) {
-        throw new Error('No se pudo actualizar el estado');
-      }
-
-      const updatedApplication = await response.json();
-
-      setApplications(currentApplications =>
-        currentApplications.map(application => {
-          if (application.id === id) {
-            return updatedApplication;
-          }
-
-          return application;
-        }),
-      );
+      setApplications(current => replaceById(current, updatedApplication));
     } catch (error) {
-      console.info(
-        'Error actualizando el estado:',
-        error,
-      );
+      console.error('Error actualizando el estado:', error);
     }
   };
 
   const handleSuspend = async id => {
     try {
-      const response = await fetch(
-        `http://localhost:3001/api/applications/${id}/suspend`,
-        {
-          method: 'PATCH',
-        },
+      const updatedApplication = await apiRequest(
+        `/applications/${id}/suspend`,
+        { method: 'PATCH' },
       );
 
-      if (!response.ok) {
-        throw new Error(
-          'No se pudo suspender la candidatura',
-        );
-      }
-
-      const updatedApplication = await response.json();
-
-      setApplications(currentApplications =>
-        currentApplications.map(application => {
-          if (application.id === id) {
-            return updatedApplication;
-          }
-
-          return application;
-        }),
-      );
-
-      setOldApplications(currentApplications => {
-        const remainingApplications =
-          currentApplications.filter(
-            application => application.id !== id,
-          );
-
-        if (remainingApplications.length === 0) {
-          setShowOldApplications(false);
-        }
-
-        return remainingApplications;
-      });
+      setApplications(current => replaceById(current, updatedApplication));
     } catch (error) {
-      console.info(
-        'Error suspendiendo la candidatura:',
-        error,
-      );
+      console.error('Error suspendiendo la candidatura:', error);
     }
   };
-
-  const matchesSearch = job => {
-    const searchText = search.toLowerCase();
-
-    const searchableFields = [
-      job.company,
-      job.position,
-      job.location,
-      job.type,
-      job.field,
-    ];
-
-    return searchableFields.some(value =>
-      (value || '').toLowerCase().includes(searchText),
-    );
-  };
-
-  const matchesStatus = job => {
-    if (statusFilter === '') {
-      return true;
-    }
-
-    if (statusFilter === 'rejected') {
-      return (
-        job.status === 'rejected' ||
-        job.status === 'suspended'
-      );
-    }
-
-    return job.status === statusFilter;
-  };
-
-  const filteredApplications = applications
-    .filter(matchesSearch)
-    .filter(matchesStatus)
-    .filter(
-      job =>
-        typeFilter === '' ||
-        job.type === typeFilter,
-    )
-    .sort(
-      (a, b) =>
-        new Date(b.appliedAt) -
-        new Date(a.appliedAt),
-    );
-
-  const totalPages = Math.ceil(
-    filteredApplications.length / ITEMS_PER_PAGE,
-  );
-
-  const startIndex =
-    (currentPage - 1) * ITEMS_PER_PAGE;
-
-  const paginatedApplications =
-    filteredApplications.slice(
-      startIndex,
-      startIndex + ITEMS_PER_PAGE,
-    );
 
   const createContact = async contact => {
-    try {
-      const response = await fetch(
-        'http://localhost:3001/api/contacts',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(contact),
-        },
-      );
+    const newContact = await apiRequest('/contacts', {
+      method: 'POST',
+      body: contact,
+    });
 
-      if (!response.ok) {
-        throw new Error(
-          'No se pudo crear el contacto',
-        );
-      }
-
-      const newContact = await response.json();
-
-      setContacts(prev => [
-        ...prev,
-        newContact,
-      ]);
-
-      setShowContactForm(false);
-    } catch (error) {
-      console.info(
-        'Error creando el contacto:',
-        error,
-      );
-      throw error;
-    }
+    setContacts(current => [...current, newContact]);
+    setShowContactForm(false);
   };
 
   const updateContact = async (id, changes) => {
-    try {
-      const response = await fetch(
-        `http://localhost:3001/api/contacts/${id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(changes),
-        },
-      );
+    const updatedContact = await apiRequest(`/contacts/${id}`, {
+      method: 'PATCH',
+      body: changes,
+    });
 
-      if (!response.ok) {
-        throw new Error(
-          'No se pudo actualizar el contacto',
-        );
-      }
-
-      const updatedContact =
-        await response.json();
-
-      setContacts(prev =>
-        prev.map(contact => {
-          if (contact.id === updatedContact.id) {
-            return updatedContact;
-          }
-
-          return contact;
-        }),
-      );
-    } catch (error) {
-      console.info(
-        'Error actualizando el contacto:',
-        error,
-      );
-      throw error;
-    }
+    setContacts(current => replaceById(current, updatedContact));
   };
 
   const suspendContact = async id => {
-    try {
-      const response = await fetch(
-        `http://localhost:3001/api/contacts/${id}/suspend`,
-        {
-          method: 'PATCH',
-        },
-      );
+    const suspendedContact = await apiRequest(`/contacts/${id}/suspend`, {
+      method: 'PATCH',
+    });
 
-      if (!response.ok) {
-        throw new Error(
-          'No se pudo suspender el contacto',
-        );
-      }
-
-      const suspendedContact =
-        await response.json();
-
-      setContacts(prev => {
-        const updatedContacts = [...prev];
-        const contactIndex = updatedContacts.findIndex(
-          contact => contact.id === suspendedContact.id,
-        );
-
-        if (contactIndex !== -1) {
-          updatedContacts[contactIndex] = suspendedContact;
-        }
-
-        return updatedContacts;
-      });
-
-      setOldContacts(prev =>
-        prev.filter(
-          contact =>
-            contact.id !== suspendedContact.id,
-        ),
-      );
-    } catch (error) {
-      console.info(
-        'Error suspendiendo el contacto:',
-        error,
-      );
-      throw error;
-    }
+    setContacts(current => replaceById(current, suspendedContact));
   };
 
   return (
@@ -454,14 +214,11 @@ function App() {
 
       {view === 'applications' && (
         <>
-          <OldApplicationsAlert
-            applications={oldApplications}
-            isOpen={showOldApplications}
-            onToggle={() =>
-              setShowOldApplications(
-                current => !current,
-              )
-            }
+          <StaleItemsAlert
+            items={oldApplications}
+            singularLabel="candidatura pendiente"
+            pluralLabel="candidaturas pendientes"
+            renderCells={renderStaleApplication}
             onSuspend={handleSuspend}
           />
 
@@ -475,10 +232,10 @@ function App() {
           )}
 
           <main>
-            <Stats
-              applications={applications}
-              statusFilter={statusFilter}
-              onStatusClick={handleStatClick}
+            <StatCards
+              items={statItems}
+              activeStatus={statusFilter}
+              onSelect={handleStatClick}
             />
 
             <Toolbar
@@ -495,18 +252,14 @@ function App() {
 
             <ApplicationsTable
               applications={paginatedApplications}
+              statusLabels={APPLICATION_STATUS_LABELS}
               onStatusChange={handleStatusChange}
             />
 
             <Pagination
-              currentPage={currentPage}
+              currentPage={page}
               totalPages={totalPages}
-              onPrevious={() =>
-                setCurrentPage(currentPage - 1)
-              }
-              onNext={() =>
-                setCurrentPage(currentPage + 1)
-              }
+              onPageChange={setPage}
             />
           </main>
         </>
@@ -517,9 +270,7 @@ function App() {
           contacts={contacts}
           oldContacts={oldContacts}
           showForm={showContactForm}
-          onCloseForm={() =>
-            setShowContactForm(false)
-          }
+          onCloseForm={() => setShowContactForm(false)}
           onCreateContact={createContact}
           onUpdateContact={updateContact}
           onSuspendContact={suspendContact}

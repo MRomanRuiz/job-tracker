@@ -1,7 +1,8 @@
-function ApplicationsTable({
-  applications,
-  onStatusChange,
-}) {
+import StatusSelect from './StatusSelect';
+
+const MANUAL_STATUSES = ['pending', 'interview', 'offer', 'rejected'];
+
+function ApplicationsTable({ applications, statusLabels, onStatusChange }) {
   return (
     <section className="table-container">
       <table>
@@ -23,46 +24,14 @@ function ApplicationsTable({
               <td>{job.position}</td>
               <td>{job.location}</td>
               <td>{job.type}</td>
-
-              <td className="date-cell">
-                {job.appliedAt}
-              </td>
-
+              <td className="date-cell">{job.appliedAt}</td>
               <td>
-                <select
-                  className={`status-select ${job.status}`}
+                <StatusSelect
                   value={job.status}
-                  onChange={event =>
-                    onStatusChange(
-                      job.id,
-                      event.target.value,
-                    )
-                  }
-                >
-                  {job.status !== 'suspended' && (
-                    <option value="pending">
-                      En espera
-                    </option>
-                  )}
-
-                  <option value="interview">
-                    Entrevista
-                  </option>
-
-                  <option value="offer">
-                    Oferta
-                  </option>
-
-                  <option value="rejected">
-                    Rechazado
-                  </option>
-
-                  {job.status === 'suspended' && (
-                    <option value="suspended">
-                      Suspendido
-                    </option>
-                  )}
-                </select>
+                  statuses={MANUAL_STATUSES}
+                  labels={statusLabels}
+                  onChange={status => onStatusChange(job.id, status)}
+                />
               </td>
             </tr>
           ))}

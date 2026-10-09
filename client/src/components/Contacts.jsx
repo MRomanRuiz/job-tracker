@@ -1,18 +1,24 @@
+import { useMemo, useState } from 'react';
 import {
-  useMemo,
-  useState,
-} from 'react';
+  ALL_STATUSES,
+  CONTACT_STATUS_LABELS,
+  ITEMS_PER_PAGE,
+} from '../constants';
+import usePagination from '../hooks/usePagination';
+import {
+  countByStatus,
+  matchesStatus,
+  matchesText,
+  sortByDateDesc,
+} from '../utils';
 import ContactForm from './ContactForm';
 import NoteForm from './NoteForm';
+import Pagination from './Pagination';
+import StaleItemsAlert from './StaleItemsAlert';
+import StatCards from './StatCards';
+import StatusSelect from './StatusSelect';
 
-const STATUS_LABELS = {
-  pending: 'En espera',
-  replied: 'Respondido',
-  rejected: 'Rechazado',
-  suspended: 'Suspendido',
-};
-
-const CONTACTS_PER_PAGE = 10;
+const MANUAL_STATUSES = ['pending', 'replied', 'rejected'];
 
 const EMPTY_FORM = {
   contact: '',
@@ -22,193 +28,21 @@ const EMPTY_FORM = {
   notes: '',
 };
 
-const getContactStats = contacts => ({
-  total: contacts.length,
+const STAT_ITEMS = [
+  { status: ALL_STATUSES, label: 'Total' },
+  { status: 'pending', label: 'En espera' },
+  { status: 'replied', label: 'Respondidos' },
+  { status: 'rejected', label: 'Rechazados' },
+];
 
-  pending: contacts.filter(
-    contact => contact.status === 'pending',
-  ).length,
-
-  replied: contacts.filter(
-    contact => contact.status === 'replied',
-  ).length,
-
-  rejected: contacts.filter(
-    contact =>
-      contact.status === 'rejected' ||
-      contact.status === 'suspended',
-  ).length,
-});
-
-const matchesContactSearch = (
-  contact,
-  search,
-) => {
-  if (!search) {
-    return true;
-  }
-
-  const searchableFields = [
-    contact.contact,
-    contact.center,
-    contact.notes,
-  ];
-
-  return searchableFields.some(value =>
-    (value || '').toLowerCase().includes(search),
-  );
-};
-
-const matchesContactStatus = (
-  contact,
-  statusFilter,
-) => {
-  if (statusFilter === 'all') {
-    return true;
-  }
-
-  if (statusFilter === 'rejected') {
-    return (
-      contact.status === 'rejected' ||
-      contact.status === 'suspended'
-    );
-  }
-
-  return contact.status === statusFilter;
-};
-
-function OldContactsAlert({
-  contacts,
-  isOpen,
-  onToggle,
-  onSuspend,
-}) {
-  if (contacts.length === 0) {
-    return null;
-  }
-
-  let contactLabel = 'contactos pendientes';
-
-  if (contacts.length === 1) {
-    contactLabel = 'contacto pendiente';
-  }
-
-  let buttonLabel = 'Revisar';
-
-  if (isOpen) {
-    buttonLabel = 'Cancelar';
-  }
-
-  return (
-    <>
-      <div className="old-applications-alert">
-        <span className="warning-icon">⚠️</span>
-
-        <strong>
-          Hay {contacts.length} {contactLabel} de
-          más de 30 días.
-        </strong>
-
-        <button
-          type="button"
-          onClick={onToggle}
-        >
-          {buttonLabel}
-        </button>
-      </div>
-
-      {isOpen && (
-        <div className="old-applications-panel">
-          {contacts.map(contact => (
-            <div
-              className="old-application-row"
-              key={contact.id}
-            >
-              <span className="application-company">
-                {contact.contact}
-              </span>
-
-              <span>{contact.center}</span>
-
-              <span className="application-date">
-                {contact.contactedAt}
-              </span>
-
-              <span>
-                {contact.notes || '—'}
-              </span>
-
-              <button
-                type="button"
-                className="suspend-button"
-                onClick={() =>
-                  onSuspend(contact.id)
-                }
-              >
-                Suspender
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </>
-  );
-}
-
-function ContactStats({
-  stats,
-  statusFilter,
-  onStatusClick,
-}) {
-  const statItems = [
-    {
-      status: 'all',
-      label: 'Total',
-      value: stats.total,
-    },
-    {
-      status: 'pending',
-      label: 'En espera',
-      value: stats.pending,
-    },
-    {
-      status: 'replied',
-      label: 'Respondidos',
-      value: stats.replied,
-    },
-    {
-      status: 'rejected',
-      label: 'Rechazados',
-      value: stats.rejected,
-    },
-  ];
-
-  return (
-    <section className="stats">
-      {statItems.map(stat => {
-        let activeClass = '';
-
-        if (statusFilter === stat.status) {
-          activeClass = 'active';
-        }
-
-        return (
-          <button
-            key={stat.status}
-            type="button"
-            className={`stat-card ${activeClass}`}
-            onClick={() =>
-              onStatusClick(stat.status)
-            }
-          >
-            <span>{stat.label}</span>
-            <strong>{stat.value}</strong>
-          </button>
-        );
-      })}
-    </section>
-  );
-}
+const renderStaleContact = contact => (
+  <>
+    <span className="application-company">{contact.contact}</span>
+    <span>{contact.center}</span>
+    <span className="application-date">{contact.contactedAt}</span>
+    <span>{contact.notes || '—'}</span>
+  </>
+);
 
 function ContactNote({
   contact,
@@ -285,36 +119,12 @@ function ContactTable({
             </td>
 
             <td>
-              <select
-                className={`status-select ${contact.status}`}
+              <StatusSelect
                 value={contact.status}
-                onChange={event =>
-                  onStatusChange(
-                    contact.id,
-                    event.target.value,
-                  )
-                }
-              >
-                {contact.status !== 'suspended' && (
-                  <option value="pending">
-                    {STATUS_LABELS.pending}
-                  </option>
-                )}
-
-                <option value="replied">
-                  {STATUS_LABELS.replied}
-                </option>
-
-                <option value="rejected">
-                  {STATUS_LABELS.rejected}
-                </option>
-
-                {contact.status === 'suspended' && (
-                  <option value="suspended">
-                    {STATUS_LABELS.suspended}
-                  </option>
-                )}
-              </select>
+                statuses={MANUAL_STATUSES}
+                labels={CONTACT_STATUS_LABELS}
+                onChange={status => onStatusChange(contact.id, status)}
+              />
             </td>
 
             <td className="notes-cell">
@@ -330,45 +140,6 @@ function ContactTable({
   );
 }
 
-function ContactPagination({
-  currentPage,
-  totalPages,
-  onPrevious,
-  onNext,
-}) {
-  if (totalPages <= 1) {
-    return null;
-  }
-
-  return (
-    <div className="pagination">
-      <button
-        type="button"
-        className="secondary-button"
-        disabled={currentPage === 1}
-        onClick={onPrevious}
-      >
-        ← Anterior
-      </button>
-
-      <span>
-        Página {currentPage} de {totalPages}
-      </span>
-
-      <button
-        type="button"
-        className="secondary-button"
-        disabled={
-          currentPage === totalPages
-        }
-        onClick={onNext}
-      >
-        Siguiente →
-      </button>
-    </div>
-  );
-}
-
 function Contacts({
   contacts,
   oldContacts,
@@ -379,95 +150,48 @@ function Contacts({
   onSuspendContact,
 }) {
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] =
-    useState('all');
-  const [currentPage, setCurrentPage] =
-    useState(1);
-  const [form, setForm] =
-    useState(EMPTY_FORM);
-  const [showOldContacts, setShowOldContacts] =
-    useState(false);
+  const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [selectedNoteContact, setSelectedNoteContact] = useState(null);
+  const [noteValue, setNoteValue] = useState('');
 
-  const [
-    selectedNoteContact,
-    setSelectedNoteContact,
-  ] = useState(null);
-
-  const [noteValue, setNoteValue] =
-    useState('');
-
-  const stats = useMemo(
-    () => getContactStats(contacts),
-    [contacts],
-  );
+  const statItems = STAT_ITEMS.map(item => ({
+    ...item,
+    value: countByStatus(contacts, item.status),
+  }));
 
   const filteredContacts = useMemo(() => {
-    const normalizedSearch = search
-      .trim()
-      .toLowerCase();
+    const searchText = search.trim().toLowerCase();
 
-    return contacts
-      .filter(contact =>
-        matchesContactSearch(
-          contact,
-          normalizedSearch,
-        ),
-      )
-      .filter(contact =>
-        matchesContactStatus(
-          contact,
-          statusFilter,
-        ),
-      )
-      .sort(
-        (a, b) =>
-          new Date(b.contactedAt) -
-          new Date(a.contactedAt),
-      );
-  }, [
-    contacts,
-    search,
-    statusFilter,
-  ]);
-
-  const totalPages = Math.ceil(
-    filteredContacts.length /
-      CONTACTS_PER_PAGE,
-  );
-
-  const page = Math.min(
-    currentPage,
-    Math.max(totalPages, 1),
-  );
-
-  const paginatedContacts = useMemo(() => {
-    const startIndex =
-      (page - 1) *
-      CONTACTS_PER_PAGE;
-
-    return filteredContacts.slice(
-      startIndex,
-      startIndex + CONTACTS_PER_PAGE,
+    return sortByDateDesc(
+      contacts.filter(
+        contact =>
+          matchesText(
+            [contact.contact, contact.center, contact.notes],
+            searchText,
+          ) && matchesStatus(contact, statusFilter),
+      ),
+      'contactedAt',
     );
-  }, [
-    filteredContacts,
+  }, [contacts, search, statusFilter]);
+
+  const {
     page,
-  ]);
+    totalPages,
+    pageItems: paginatedContacts,
+    setPage,
+  } = usePagination(filteredContacts, ITEMS_PER_PAGE);
 
   const handleStatClick = status => {
-    setStatusFilter(current => {
-      if (current === status) {
-        return 'all';
-      }
-
-      return status;
-    });
-    setCurrentPage(1);
+    setStatusFilter(current =>
+      current === status ? ALL_STATUSES : status,
+    );
+    setPage(1);
   };
 
   const handleSearchChange = event => {
     setSearch(event.target.value);
-    setCurrentPage(1);
+    setPage(1);
   };
 
   const handleSubmit = async event => {
@@ -477,7 +201,7 @@ function Contacts({
       await onCreateContact(form);
       setForm(EMPTY_FORM);
     } catch (error) {
-      console.info(
+      console.error(
         'Error creando el contacto:',
         error,
       );
@@ -498,7 +222,7 @@ function Contacts({
         status,
       });
     } catch (error) {
-      console.info(
+      console.error(
         'Error actualizando el estado:',
         error,
       );
@@ -509,7 +233,7 @@ function Contacts({
     try {
       await onSuspendContact(id);
     } catch (error) {
-      console.info(
+      console.error(
         'Error suspendiendo el contacto:',
         error,
       );
@@ -541,7 +265,7 @@ function Contacts({
 
       handleCloseNote();
     } catch (error) {
-      console.info(
+      console.error(
         'Error actualizando las notas:',
         error,
       );
@@ -550,14 +274,11 @@ function Contacts({
 
   return (
     <>
-      <OldContactsAlert
-        contacts={oldContacts}
-        isOpen={showOldContacts}
-        onToggle={() =>
-          setShowOldContacts(
-            current => !current,
-          )
-        }
+      <StaleItemsAlert
+        items={oldContacts}
+        singularLabel="contacto pendiente"
+        pluralLabel="contactos pendientes"
+        renderCells={renderStaleContact}
         onSuspend={handleSuspendContact}
       />
 
@@ -568,10 +289,10 @@ function Contacts({
           </div>
         </section>
 
-        <ContactStats
-          stats={stats}
-          statusFilter={statusFilter}
-          onStatusClick={handleStatClick}
+        <StatCards
+          items={statItems}
+          activeStatus={statusFilter}
+          onSelect={handleStatClick}
         />
 
         {showForm && (
@@ -605,15 +326,13 @@ function Contacts({
           />
         </section>
 
-        <ContactPagination
+        <Pagination
           currentPage={page}
           totalPages={totalPages}
-          onPrevious={() =>
-            setCurrentPage(page - 1)
-          }
-          onNext={() =>
-            setCurrentPage(page + 1)
-          }
+          onPageChange={setPage}
+          buttonClassName="secondary-button"
+          previousLabel="← Anterior"
+          nextLabel="Siguiente →"
         />
       </main>
 

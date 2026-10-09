@@ -149,10 +149,6 @@ main {
   outline: none;
 }
 
-.contacts-toolbar input {
-  width: 100%;
-}
-
 .toolbar input:focus,
 .toolbar select:focus {
   border-color: #9ca3af;
@@ -412,19 +408,6 @@ th {
   grid-template-columns: 1fr;
 }
 
-.notes-cell textarea {
-  width: 100%;
-  min-height: 42px;
-  padding: 8px 10px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  font: inherit;
-  color: #1f2937;
-  resize: vertical;
-  outline: none;
-}
-
 .note-popup-body textarea {
   width: 100%;
   min-height: 130px;
@@ -441,23 +424,8 @@ th {
   outline: none;
 }
 
-.notes-cell textarea:hover {
-  border-color: #d1d5db;
-  background: white;
-}
-
-.notes-cell textarea:focus {
-  border-color: #9ca3af;
-  background: white;
-  box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.05);
-}
-
 .note-button span:first-child {
   font-size: 15px;
-}
-
-.note-status {
-  white-space: nowrap;
 }
 
 .notes-cell {

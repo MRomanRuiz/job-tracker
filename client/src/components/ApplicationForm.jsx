@@ -53,6 +53,7 @@ function ApplicationForm({
         <input
           type="date"
           name="appliedAt"
+          required
           value={formData.appliedAt}
           onChange={handleChange}
         />
