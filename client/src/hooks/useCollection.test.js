@@ -81,7 +81,7 @@ describe('useCollection', () => {
 
   it('logs failed requests and keeps the current items', async () => {
     const consoleError = vi
-      .spyOn(console, 'error')
+      .spyOn(console, 'info')
       .mockImplementation(() => {});
     const { result } = renderCollection({
       'PATCH /api/contacts/1': { httpStatus: 400, body: { error: 'Inválido' } },
