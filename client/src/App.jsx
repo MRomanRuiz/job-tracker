@@ -8,7 +8,6 @@ import {
 import usePagination from './hooks/usePagination';
 import {
   countByStatus,
-  getStalePending,
   matchesStatus,
   matchesText,
   replaceById,
@@ -60,6 +59,22 @@ function App() {
   const [view, setView] = useState('applications');
   const [showContactForm, setShowContactForm] = useState(false);
   const [contacts, setContacts] = useState([]);
+  const [oldApplications, setOldApplications] = useState([]);
+  const [oldContacts, setOldContacts] = useState([]);
+
+  const loadOldApplications = () =>
+    apiRequest('/applications/old')
+      .then(data => setOldApplications(data.applications))
+      .catch(error =>
+        console.error('Error cargando las candidaturas antiguas:', error),
+      );
+
+  const loadOldContacts = () =>
+    apiRequest('/contacts/old')
+      .then(data => setOldContacts(data.contacts))
+      .catch(error =>
+        console.error('Error cargando los contactos antiguos:', error),
+      );
 
   useEffect(() => {
     apiRequest('/applications')
@@ -73,17 +88,10 @@ function App() {
       .catch(error =>
         console.error('Error cargando los contactos:', error),
       );
+
+    loadOldApplications();
+    loadOldContacts();
   }, []);
-
-  const oldApplications = useMemo(
-    () => getStalePending(applications, 'appliedAt'),
-    [applications],
-  );
-
-  const oldContacts = useMemo(
-    () => getStalePending(contacts, 'contactedAt'),
-    [contacts],
-  );
 
   const filteredApplications = useMemo(() => {
     const searchText = search.toLowerCase();
@@ -124,6 +132,7 @@ function App() {
       });
 
       setApplications(current => [...current, newApplication]);
+      loadOldApplications();
       setFormData(EMPTY_FORM);
       setShowForm(false);
     } catch (error) {
@@ -154,6 +163,7 @@ function App() {
       });
 
       setApplications(current => replaceById(current, updatedApplication));
+      loadOldApplications();
     } catch (error) {
       console.error('Error actualizando el estado:', error);
     }
@@ -167,6 +177,7 @@ function App() {
       );
 
       setApplications(current => replaceById(current, updatedApplication));
+      loadOldApplications();
     } catch (error) {
       console.error('Error suspendiendo la candidatura:', error);
     }
@@ -179,6 +190,7 @@ function App() {
     });
 
     setContacts(current => [...current, newContact]);
+    loadOldContacts();
     setShowContactForm(false);
   };
 
@@ -189,6 +201,10 @@ function App() {
     });
 
     setContacts(current => replaceById(current, updatedContact));
+
+    if (changes.status !== undefined) {
+      loadOldContacts();
+    }
   };
 
   const suspendContact = async id => {
@@ -197,6 +213,7 @@ function App() {
     });
 
     setContacts(current => replaceById(current, suspendedContact));
+    loadOldContacts();
   };
 
   return (

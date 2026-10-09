@@ -1,7 +1,5 @@
 export const ITEMS_PER_PAGE = 10;
 
-export const MAX_PENDING_DAYS = 30;
-
 export const ALL_STATUSES = 'all';
 
 export const APPLICATION_STATUS_LABELS = {

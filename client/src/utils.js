@@ -1,23 +1,4 @@
-import { ALL_STATUSES, MAX_PENDING_DAYS } from './constants.js';
-
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
-
-export const isOlderThanPendingLimit = (date, now = new Date()) => {
-  const parsedDate = new Date(date);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return false;
-  }
-
-  return (now - parsedDate) / MS_PER_DAY > MAX_PENDING_DAYS;
-};
-
-export const getStalePending = (items, dateField) =>
-  items.filter(
-    item =>
-      item.status === 'pending' &&
-      isOlderThanPendingLimit(item[dateField]),
-  );
+import { ALL_STATUSES } from './constants.js';
 
 export const isRejected = item =>
   item.status === 'rejected' || item.status === 'suspended';
