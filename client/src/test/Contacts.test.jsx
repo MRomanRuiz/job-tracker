@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import Contacts from './Contacts';
+import Contacts from '../components/Contacts';
 
 const contacts = [
   {
