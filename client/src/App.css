@@ -239,7 +239,7 @@ th {
 
 /* Aviso candidaturas antiguas */
 
-.old-applications-alert {
+.stale-alert {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -256,12 +256,12 @@ th {
   line-height: 1;
 }
 
-.old-applications-alert strong {
+.stale-alert strong {
   flex: 1;
   font-size: 14px;
 }
 
-.old-applications-alert button {
+.stale-alert button {
   border: none;
   background: #9a4b00;
   color: white;
@@ -283,13 +283,13 @@ th {
   cursor: pointer;
 }
 
-.old-applications-alert button:hover {
+.stale-alert button:hover {
   background: #7c3900;
 }
 
 /* Panel candidaturas antiguas */
 
-.old-applications-panel {
+.stale-panel {
   margin: 12px 40px 0;
   background: white;
   border: 1px solid #e5e7eb;
@@ -297,7 +297,7 @@ th {
   overflow: hidden;
 }
 
-.old-application-row {
+.stale-row {
   display: grid;
   grid-template-columns: 1.3fr 1.5fr 1.2fr 1fr 110px auto;
   align-items: center;
@@ -306,11 +306,11 @@ th {
   border-bottom: 1px solid #e5e7eb;
 }
 
-.old-application-row:last-child {
+.stale-row:last-child {
   border-bottom: none;
 }
 
-.old-application-row span {
+.stale-row span {
   color: #6b7280;
   font-size: 14px;
   white-space: nowrap;
@@ -318,12 +318,12 @@ th {
   text-overflow: ellipsis;
 }
 
-.old-application-row .application-company {
+.stale-row .stale-primary {
   color: #1f2937;
   font-weight: 600;
 }
 
-.old-application-row .application-date {
+.stale-row .stale-date {
   white-space: nowrap;
 }
 
@@ -404,7 +404,7 @@ th {
   align-items: center;
 }
 
-.contacts-toolbar {
+.search-only {
   grid-template-columns: 1fr;
 }
 

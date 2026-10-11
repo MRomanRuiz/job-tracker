@@ -1,74 +1,47 @@
-function ApplicationsTable({
-  applications,
-  onStatusChange,
-}) {
+import { APPLICATION_STATUS_LABELS } from '../constants';
+import EmptyState from './EmptyState';
+import StatusSelect from './StatusSelect';
+
+const MANUAL_STATUSES = ['pending', 'interview', 'offer', 'rejected'];
+
+function ApplicationsTable({ applications, onStatusChange }) {
+  if (applications.length === 0) {
+    return <EmptyState label="candidaturas" />;
+  }
+
   return (
-    <section className="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Empresa</th>
-            <th>Puesto</th>
-            <th>Ubicación</th>
-            <th>Tipo</th>
-            <th>Fecha</th>
-            <th>Estado</th>
+    <table>
+      <thead>
+        <tr>
+          <th>Empresa</th>
+          <th>Puesto</th>
+          <th>Ubicación</th>
+          <th>Tipo</th>
+          <th>Fecha</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {applications.map(job => (
+          <tr key={job.id}>
+            <td>{job.company}</td>
+            <td>{job.position}</td>
+            <td>{job.location}</td>
+            <td>{job.type}</td>
+            <td className="date-cell">{job.appliedAt}</td>
+            <td>
+              <StatusSelect
+                value={job.status}
+                statuses={MANUAL_STATUSES}
+                labels={APPLICATION_STATUS_LABELS}
+                onChange={status => onStatusChange(job.id, status)}
+              />
+            </td>
           </tr>
-        </thead>
-
-        <tbody>
-          {applications.map(job => (
-            <tr key={job.id}>
-              <td>{job.company}</td>
-              <td>{job.position}</td>
-              <td>{job.location}</td>
-              <td>{job.type}</td>
-
-              <td className="date-cell">
-                {job.appliedAt}
-              </td>
-
-              <td>
-                <select
-                  className={`status-select ${job.status}`}
-                  value={job.status}
-                  onChange={event =>
-                    onStatusChange(
-                      job.id,
-                      event.target.value,
-                    )
-                  }
-                >
-                  {job.status !== 'suspended' && (
-                    <option value="pending">
-                      En espera
-                    </option>
-                  )}
-
-                  <option value="interview">
-                    Entrevista
-                  </option>
-
-                  <option value="offer">
-                    Oferta
-                  </option>
-
-                  <option value="rejected">
-                    Rechazado
-                  </option>
-
-                  {job.status === 'suspended' && (
-                    <option value="suspended">
-                      Suspendido
-                    </option>
-                  )}
-                </select>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
+        ))}
+      </tbody>
+    </table>
   );
 }
 

@@ -1,64 +1,40 @@
-function Header({
-  onNewApplication,
-  onContacts,
-  onBackToApplications,
-  onNewContact,
-  view,
-}) {
-  const viewDescriptions = {
-    applications: 'Control de tus candidaturas',
-    contacts: 'Control de tus contactos',
-  };
+const VIEWS = {
+  applications: {
+    description: 'Control de tus candidaturas',
+    switchLabel: 'Contactos',
+    switchTo: 'contacts',
+    newLabel: '+ Nueva candidatura',
+  },
+  contacts: {
+    description: 'Control de tus contactos',
+    switchLabel: '← Candidaturas',
+    switchTo: 'applications',
+    newLabel: '+ Nuevo contacto',
+  },
+};
 
-  let headerActions;
-
-  if (view === 'applications') {
-    headerActions = (
-      <>
-        <button
-          className="secondary-button"
-          onClick={onContacts}
-        >
-          Contactos
-        </button>
-
-        <button
-          className="primary-button"
-          onClick={onNewApplication}
-        >
-          + Nueva candidatura
-        </button>
-      </>
-    );
-  } else {
-    headerActions = (
-      <>
-        <button
-          className="secondary-button"
-          onClick={onBackToApplications}
-        >
-          ← Candidaturas
-        </button>
-
-        <button
-          className="primary-button"
-          onClick={onNewContact}
-        >
-          + Nuevo contacto
-        </button>
-      </>
-    );
-  }
+function Header({ view, onSwitchView, onNew }) {
+  const { description, switchLabel, switchTo, newLabel } = VIEWS[view];
 
   return (
     <header className="header">
       <div>
         <h1>Job Tracker</h1>
-        <p>{viewDescriptions[view]}</p>
+        <p>{description}</p>
       </div>
 
       <div className="header-actions">
-        {headerActions}
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => onSwitchView(switchTo)}
+        >
+          {switchLabel}
+        </button>
+
+        <button type="button" className="primary-button" onClick={onNew}>
+          {newLabel}
+        </button>
       </div>
     </header>
   );
