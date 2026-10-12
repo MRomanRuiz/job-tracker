@@ -189,11 +189,9 @@ The API allows browser requests from `http://localhost:3000` and `http://localho
 │   └── src/
 │       ├── main.jsx                Mounts <App /> and loads the global styles
 │       ├── App.jsx                 Switches between the applications and contacts views and opens/closes the form
-│       ├── App.test.jsx            Tests view switching and the form of each view
 │       ├── api.js                  apiRequest(): fetch wrapper for /api that sends JSON and throws on error responses
 │       ├── constants.js            Page size, the "all statuses" filter value and the status labels
 │       ├── utils.js                Pure helpers to filter by status or text, sort by date, count and replace by id
-│       ├── utils.test.js           Tests for utils.js
 │       ├── index.css               Base page styles (font, background)
 │       ├── App.css                 Styles for the layout and all components
 │       ├── data/                   Local data, not tracked by Git (see "Data format")
@@ -201,15 +199,12 @@ The API allows browser requests from `http://localhost:3000` and `http://localho
 │       │   └── contacts.json       Contacts and their notes
 │       ├── hooks/
 │       │   ├── useCollection.js    Loads a collection and its stale list from the API; create, update and suspend
-│       │   ├── useCollection.test.js  Tests loading, updates, stale reloads and error handling
 │       │   └── usePagination.js    Splits a list into pages and keeps the current page in range
 │       ├── components/
 │       │   ├── Header.jsx          Title, button to switch view and "new" button for the current view
 │       │   ├── Applications.jsx    Applications view: stale alert, form, stats, search, type filter, table and pagination
-│       │   ├── Applications.test.jsx  Tests for the applications view
 │       │   ├── ApplicationsTable.jsx  Applications table with a status selector per row
 │       │   ├── Contacts.jsx        Contacts view: stale alert, stats, form, search, table, pagination and note dialog
-│       │   ├── Contacts.test.jsx   Tests for the contacts view
 │       │   ├── ContactsTable.jsx   Contacts table with a status selector and note button per row
 │       │   ├── RecordForm.jsx      Generic create form built from a list of fields
 │       │   ├── NoteButton.jsx      Opens the note of a contact; the icon shows whether it has one
@@ -222,7 +217,12 @@ The API allows browser requests from `http://localhost:3000` and `http://localho
 │       │   └── EmptyState.jsx      Message shown when no records match
 │       └── test/
 │           ├── setup.js            Vitest setup: cleans up the DOM and mocks after each test
-│           └── mockApi.js          mockApi(): replaces fetch with fake responses per "METHOD /api/path"
+│           ├── mockApi.js          mockApi(): replaces fetch with fake responses per "METHOD /api/path"
+│           ├── utils.test.js       Tests for utils.js
+│           ├── App.test.jsx        Tests view switching and the form of each view
+│           ├── useCollection.test.js  Tests loading, updates, stale reloads and error handling
+│           ├── Applications.test.jsx  Tests for the applications view
+│           └── Contacts.test.jsx   Tests for the contacts view
 │
 └── server/                         Express API
     ├── server.js                   Starts the API on port 3001
