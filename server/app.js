@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('node:path');
 const { getDB } = require('./db');
 
 const HTTP_STATUS = {
@@ -43,7 +44,8 @@ const APPLICATION_TEXT_FIELDS = [
 const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:5173',
-];
+  process.env.RENDER_EXTERNAL_URL,
+].filter(Boolean);
 
 class HttpError extends Error {
   constructor(status, message) {
@@ -525,6 +527,26 @@ const createApp = ({
   addSecurityMiddleware(app, origins);
   addApplicationRoutes(app, database);
   addContactRoutes(app, database);
+
+  const clientDistPath = path.resolve(__dirname, '../client/dist');
+
+  app.use(express.static(clientDistPath));
+
+  app.get('/{*splat}', (req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      next();
+      return;
+    }
+
+    res.sendFile(
+      path.join(clientDistPath, 'index.html'),
+      error => {
+        if (error) {
+          next(error);
+        }
+      },
+    );
+  });
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {

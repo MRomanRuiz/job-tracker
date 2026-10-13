@@ -2,7 +2,8 @@ const { createApp } = require('./app');
 const { connectDB, closeDB } = require('./db');
 require('dotenv').config();
 
-const PORT = 3001;
+const DEFAULT_PORT = 3001;
+const PORT = process.env.PORT || DEFAULT_PORT;
 let server;
 
 async function closeServer(serverInstance) {
