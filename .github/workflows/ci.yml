@@ -8,6 +8,11 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB: ${{ secrets.MONGODB_DB }}
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
