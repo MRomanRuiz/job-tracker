@@ -25,3 +25,5 @@ dist-ssr
 
 # Personal information
 client/src/data/*
+.env
+.env.test
