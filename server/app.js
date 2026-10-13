@@ -176,7 +176,9 @@ const publicRecord = record => {
     return record;
   }
 
-  const { _id, ...data } = record;
+  const data = { ...record };
+  delete data._id;
+
   return data;
 };
 
@@ -223,14 +225,7 @@ const findRecordById = async (collection, id, notFoundMessage) => {
   return record;
 };
 
-const createApp = ({
-  db: injectedDB,
-  allowedOrigins = DEFAULT_ALLOWED_ORIGINS,
-} = {}) => {
-  const app = express();
-  const origins = new Set(allowedOrigins);
-  const database = () => injectedDB || getDB();
-
+const addSecurityMiddleware = (app, origins) => {
   app.disable('x-powered-by');
 
   app.use((req, res, next) => {
@@ -253,7 +248,9 @@ const createApp = ({
     req.body ??= {};
     next();
   });
+};
 
+const addApplicationRoutes = (app, database) => {
   app.get(
     '/api/applications',
     handle('No se pudieron leer las candidaturas', async (_req, res) => {
@@ -373,7 +370,9 @@ const createApp = ({
       res.json(application);
     }),
   );
+};
 
+const addContactRoutes = (app, database) => {
   app.get(
     '/api/contacts',
     handle('No se pudieron leer los contactos', async (_req, res) => {
@@ -513,6 +512,19 @@ const createApp = ({
       res.json(contact);
     }),
   );
+};
+
+const createApp = ({
+  db: injectedDB,
+  allowedOrigins = DEFAULT_ALLOWED_ORIGINS,
+} = {}) => {
+  const app = express();
+  const origins = new Set(allowedOrigins);
+  const database = () => injectedDB || getDB();
+
+  addSecurityMiddleware(app, origins);
+  addApplicationRoutes(app, database);
+  addContactRoutes(app, database);
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
