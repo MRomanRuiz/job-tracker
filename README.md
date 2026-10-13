@@ -225,8 +225,9 @@ The API allows browser requests from `http://localhost:3000` and `http://localho
 │           └── Contacts.test.jsx   Tests for the contacts view
 │
 └── server/                         Express API
-    ├── server.js                   Starts the API on port 3001
-    ├── app.js                      createApp(): CORS, validation, routes, error handling and serialized, atomic JSON storage
+    ├── server.js                   Starts the API (on port 3001 by default).
+    ├── app.js                      createApp(): CORS, validation, routes, error handling and serialized, atomic MongoDB storage
+    ├── db.js                       Connects, gets and closes DB conection
     ├── eslint.config.js            ESLint rules for the API
     ├── package.json                API scripts and dependencies
     ├── package-lock.json           Locked versions of the API dependencies
