@@ -30,3 +30,8 @@ client/src/data/*
 
 # Auxiliary files
 GenerateCodes.ps1
+
+# Coverage directory used by tools like istanbul
+coverage/
+server/coverage/
+client/coverage/
