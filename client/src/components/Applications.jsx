@@ -19,7 +19,6 @@ const FORM_FIELDS = [
   { name: 'position', placeholder: 'Puesto', required: true },
   { name: 'location', placeholder: 'Ubicación', required: true },
   { name: 'type', placeholder: 'Tipo', required: true },
-  { name: 'appliedAt', type: 'date', required: true },
 ];
 
 const STAT_ITEMS = [
@@ -76,7 +75,14 @@ function Applications({ collection, showForm, onCloseForm }) {
   }));
 
   const handleCreate = async values => {
-    if (await create(values)) {
+    const today = new Date();
+    const appliedAt = [
+      today.getFullYear(),
+      String(today.getMonth() + 1).padStart(2, '0'),
+      String(today.getDate()).padStart(2, '0'),
+    ].join('-');
+
+    if (await create({ ...values, appliedAt })) {
       onCloseForm();
     }
   };

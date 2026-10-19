@@ -1,16 +1,30 @@
-name: CI
+name: Job Tracker CI
 
 on:
   push:
-    branches: [master]
+    branches:
+      - master
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  check:
+  quality:
+    name: Lint, tests, coverage and build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -18,7 +32,32 @@ jobs:
             package-lock.json
             server/package-lock.json
             client/package-lock.json
-      - run: npm ci && npm ci --prefix server && npm ci --prefix client
-      - run: npm run lint
-      - run: npm test
-      - run: npm run build
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: npm ci --prefix server
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix client
+
+      - name: Lint backend and frontend
+        run: npm run lint
+
+      - name: Run tests with coverage
+        run: npm test
+
+      - name: Upload coverage reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: job-tracker-coverage
+          path: |
+            server/coverage/
+            client/coverage/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Build frontend for production
+        run: npm run build

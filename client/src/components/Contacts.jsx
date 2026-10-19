@@ -18,7 +18,6 @@ import Toolbar from './Toolbar';
 const FORM_FIELDS = [
   { name: 'contact', placeholder: 'Contacto / Email', required: true },
   { name: 'center', placeholder: 'Centro / Empresa', required: true },
-  { name: 'contactedAt', type: 'date', required: true },
 ];
 
 const STAT_ITEMS = [
@@ -71,7 +70,21 @@ function Contacts({ collection, showForm, onCloseForm }) {
   }));
 
   const handleCreate = async values => {
-    if (await create({ ...values, status: 'pending', notes: '' })) {
+    const today = new Date();
+    const contactedAt = [
+      today.getFullYear(),
+      String(today.getMonth() + 1).padStart(2, '0'),
+      String(today.getDate()).padStart(2, '0'),
+    ].join('-');
+
+    if (
+      await create({
+        ...values,
+        contactedAt,
+        status: 'pending',
+        notes: '',
+      })
+    ) {
       onCloseForm();
     }
   };
