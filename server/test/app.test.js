@@ -1,85 +1,148 @@
+
+const path = require('node:path');
+require('dotenv').config({
+  path: path.join(__dirname, '..', '.env.test'),
+  override: true,
+});
+
 const { after, before, beforeEach, describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs/promises');
-const os = require('node:os');
-const path = require('node:path');
+const { connectDB, getDB, closeDB } = require('../db');
 const { createApp, isOlderThanPendingLimit } = require('../app');
+
+const TEST_DATABASE_NAME = 'job_tracker_test';
 
 const OLD_DATE = '2020-01-01';
 const RECENT_DATE = new Date().toISOString().slice(0, 10);
 
-let dataDir;
+const initialApplications = [
+  {
+    id: 1,
+    appliedAt: OLD_DATE,
+    company: 'Old',
+    position: 'Developer',
+    location: 'Madrid',
+    type: 'Full-time',
+    field: 'IT',
+    duration: '',
+    document: '',
+    status: 'pending',
+  },
+  {
+    id: 2,
+    appliedAt: RECENT_DATE,
+    company: 'New',
+    position: 'Designer',
+    location: 'Málaga',
+    type: 'Full-time',
+    field: 'Design',
+    duration: '',
+    document: '',
+    status: 'pending',
+  },
+];
+
+const initialContacts = [
+  {
+    id: 1,
+    contact: 'Ana',
+    center: 'Acme',
+    contactedAt: OLD_DATE,
+    status: 'pending',
+    notes: '',
+  },
+  {
+    id: 2,
+    contact: 'Luis',
+    center: 'Beta',
+    contactedAt: RECENT_DATE,
+    status: 'replied',
+    notes: '',
+  },
+];
+
+let db;
 let server;
 let baseUrl;
 
-const writeData = async (applications, contacts) => {
-  await fs.writeFile(
-    path.join(dataDir, 'jobs.json'),
-    JSON.stringify({ applications }),
-  );
-  await fs.writeFile(
-    path.join(dataDir, 'contacts.json'),
-    JSON.stringify({ contacts }),
-  );
-};
-
-const readData = async file =>
-  JSON.parse(await fs.readFile(path.join(dataDir, file), 'utf8'));
-
 const request = async (method, url, { body, headers = {} } = {}) => {
-  const options = { method, headers: { ...headers } };
+  const options = {
+    method,
+    headers: { ...headers },
+  };
 
   if (body !== undefined) {
     options.headers['Content-Type'] = 'application/json';
-    options.body = typeof body === 'string' ? body : JSON.stringify(body);
+    options.body =
+      typeof body === 'string' ? body : JSON.stringify(body);
   }
 
   const response = await fetch(`${baseUrl}${url}`, options);
 
-  return { status: response.status, body: await response.json() };
+  return {
+    status: response.status,
+    body: await response.json(),
+  };
+};
+
+const clearCollections = async () => {
+  await Promise.all([
+    db.collection('applications').deleteMany({}),
+    db.collection('contacts').deleteMany({}),
+    db.collection('_counters').deleteMany({}),
+  ]);
 };
 
 before(async () => {
-  dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'job-tracker-'));
-  server = createApp({ dataDir }).listen(0);
-  await new Promise(resolve => server.once('listening', resolve));
-  baseUrl = `http://localhost:${server.address().port}`;
-});
+  // Protección para evitar borrar datos de una base de datos real.
+  if (process.env.MONGODB_DB !== TEST_DATABASE_NAME) {
+    throw new Error(
+      `Pruebas canceladas: MONGODB_DB debe ser "${TEST_DATABASE_NAME}".`,
+    );
+  }
 
-after(async () => {
-  server.close();
-  await fs.rm(dataDir, { recursive: true, force: true });
+  await connectDB();
+  db = getDB();
+
+  server = createApp({ db }).listen(0);
+
+  await new Promise((resolve, reject) => {
+    server.once('listening', resolve);
+    server.once('error', reject);
+  });
+
+  baseUrl = `http://127.0.0.1:${server.address().port}`;
 });
 
 beforeEach(async () => {
-  await writeData(
-    [
-      { id: 1, appliedAt: OLD_DATE, company: 'Old', status: 'pending' },
-      { id: 2, appliedAt: RECENT_DATE, company: 'New', status: 'pending' },
-    ],
-    [
-      {
-        id: 1,
-        contact: 'Ana',
-        center: 'Acme',
-        contactedAt: OLD_DATE,
-        status: 'pending',
-        notes: '',
-      },
-      {
-        id: 2,
-        contact: 'Luis',
-        center: 'Beta',
-        contactedAt: RECENT_DATE,
-        status: 'replied',
-        notes: '',
-      },
-    ],
-  );
+  await clearCollections();
+
+  await Promise.all([
+    db.collection('applications').insertMany(initialApplications),
+    db.collection('contacts').insertMany(initialContacts),
+  ]);
+});
+
+after(async () => {
+  try {
+    if (server) {
+      await new Promise(resolve => {
+        server.close(resolve);
+        server.closeAllConnections?.();
+      });
+    }
+
+    if (db) {
+      // Elimina también los registros creados por la última prueba.
+      await db.dropDatabase();
+    }
+  } finally {
+    await closeDB();
+  }
 });
 
 describe('isOlderThanPendingLimit', () => {
-  it('detects dates older than 30 days', () => {
+  it('detecta fechas de más de 30 días', () => {
     const now = new Date('2026-02-01');
 
     assert.equal(isOlderThanPendingLimit('2025-12-01', now), true);
@@ -89,28 +152,35 @@ describe('isOlderThanPendingLimit', () => {
 });
 
 describe('applications', () => {
-  it('lists applications', async () => {
+  it('lista candidaturas', async () => {
     const { status, body } = await request('GET', '/api/applications');
 
     assert.equal(status, 200);
     assert.equal(body.applications.length, 2);
+    assert.equal(body.applications[0]._id, undefined);
   });
 
-  it('creates an application with a server-generated id', async () => {
+  it('crea una candidatura con ID numérico generado por el servidor', async () => {
     const { status, body } = await request('POST', '/api/applications', {
-      body: { id: 'x', company: 'Acme', appliedAt: RECENT_DATE, foo: 1 },
+      body: {
+        id: 'x',
+        company: 'Acme',
+        appliedAt: RECENT_DATE,
+        foo: 1,
+      },
     });
 
     assert.equal(status, 201);
     assert.equal(typeof body.id, 'number');
     assert.equal(body.status, 'pending');
     assert.equal(body.foo, undefined);
+    assert.equal(body._id, undefined);
 
-    const { applications } = await readData('jobs.json');
-    assert.equal(applications.length, 3);
+    const count = await db.collection('applications').countDocuments({});
+    assert.equal(count, 3);
   });
 
-  it('rejects invalid applications', async () => {
+  it('rechaza candidaturas no válidas', async () => {
     for (const body of [
       { company: 'Acme' },
       { appliedAt: RECENT_DATE, status: 'bogus' },
@@ -122,22 +192,23 @@ describe('applications', () => {
     }
   });
 
-  it('updates the status', async () => {
-    const { status, body } = await request('PATCH', '/api/applications/1', {
-      body: { status: 'interview' },
-    });
+  it('actualiza el estado de una candidatura', async () => {
+    const { status, body } = await request(
+      'PATCH',
+      '/api/applications/1',
+      { body: { status: 'interview' } },
+    );
 
     assert.equal(status, 200);
     assert.equal(body.status, 'interview');
   });
 
-  it('returns 400 for a PATCH without body', async () => {
+  it('devuelve 400 para un PATCH sin cuerpo', async () => {
     const { status } = await request('PATCH', '/api/applications/1');
-
     assert.equal(status, 400);
   });
 
-  it('returns 400 for malformed JSON bodies', async () => {
+  it('devuelve 400 para JSON mal formado', async () => {
     const { status } = await request('PATCH', '/api/applications/1', {
       body: '{bad json',
     });
@@ -145,7 +216,7 @@ describe('applications', () => {
     assert.equal(status, 400);
   });
 
-  it('returns 404 for unknown applications', async () => {
+  it('devuelve 404 para una candidatura inexistente', async () => {
     const { status } = await request('PATCH', '/api/applications/99', {
       body: { status: 'offer' },
     });
@@ -153,55 +224,67 @@ describe('applications', () => {
     assert.equal(status, 404);
   });
 
-  it('lists and suspends stale pending applications', async () => {
+  it('lista y suspende candidaturas pendientes antiguas', async () => {
     const old = await request('GET', '/api/applications/old');
+
     assert.deepEqual(
       old.body.applications.map(item => item.id),
       [1],
     );
 
-    const suspended = await request('PATCH', '/api/applications/1/suspend');
+    const suspended = await request(
+      'PATCH',
+      '/api/applications/1/suspend',
+    );
+
     assert.equal(suspended.status, 200);
     assert.equal(suspended.body.status, 'suspended');
 
-    const recent = await request('PATCH', '/api/applications/2/suspend');
+    const recent = await request(
+      'PATCH',
+      '/api/applications/2/suspend',
+    );
+
     assert.equal(recent.status, 400);
   });
 
-  it('keeps every update under concurrent requests', async () => {
-    await Promise.all(
+  it('genera IDs únicos con peticiones concurrentes', async () => {
+    const responses = await Promise.all(
       Array.from({ length: 10 }, (_, index) =>
         request('POST', '/api/applications', {
-          body: { company: `C${index}`, appliedAt: RECENT_DATE },
+          body: {
+            company: `Company ${index}`,
+            appliedAt: RECENT_DATE,
+          },
         }),
       ),
     );
 
-    const { applications } = await readData('jobs.json');
+    assert.ok(responses.every(response => response.status === 201));
+
+    const applications = await db
+      .collection('applications')
+      .find({})
+      .toArray();
+
     assert.equal(applications.length, 12);
-    assert.equal(new Set(applications.map(item => item.id)).size, 12);
-  });
-
-  it('returns 500 without crashing when the data file is corrupted', async () => {
-    await fs.writeFile(path.join(dataDir, 'jobs.json'), '{oops');
-
-    const first = await request('GET', '/api/applications');
-    assert.equal(first.status, 500);
-
-    const contacts = await request('GET', '/api/contacts');
-    assert.equal(contacts.status, 200);
+    assert.equal(
+      new Set(applications.map(item => item.id)).size,
+      12,
+    );
   });
 });
 
 describe('contacts', () => {
-  it('lists contacts', async () => {
+  it('lista contactos', async () => {
     const { status, body } = await request('GET', '/api/contacts');
 
     assert.equal(status, 200);
     assert.equal(body.contacts.length, 2);
+    assert.equal(body.contacts[0]._id, undefined);
   });
 
-  it('creates a contact', async () => {
+  it('crea un contacto', async () => {
     const { status, body } = await request('POST', '/api/contacts', {
       body: {
         contact: 'Eva',
@@ -212,12 +295,22 @@ describe('contacts', () => {
     });
 
     assert.equal(status, 201);
+    assert.equal(typeof body.id, 'number');
     assert.equal(body.notes, '');
+    assert.equal(body._id, undefined);
+
+    const count = await db.collection('contacts').countDocuments({});
+    assert.equal(count, 3);
   });
 
-  it('rejects invalid contacts', async () => {
+  it('rechaza contactos no válidos', async () => {
     for (const body of [
-      { contact: 'Eva', center: '', contactedAt: RECENT_DATE },
+      {
+        contact: 'Eva',
+        center: '',
+        contactedAt: RECENT_DATE,
+        status: 'pending',
+      },
       {
         contact: 'Eva',
         center: 'Acme',
@@ -230,16 +323,17 @@ describe('contacts', () => {
     }
   });
 
-  it('updates status and notes', async () => {
-    const { body } = await request('PATCH', '/api/contacts/2', {
+  it('actualiza el estado y las notas', async () => {
+    const { status, body } = await request('PATCH', '/api/contacts/2', {
       body: { status: 'rejected', notes: 'Follow up' },
     });
 
+    assert.equal(status, 200);
     assert.equal(body.status, 'rejected');
     assert.equal(body.notes, 'Follow up');
   });
 
-  it('rejects non-string notes', async () => {
+  it('rechaza notas que no sean texto', async () => {
     const { status } = await request('PATCH', '/api/contacts/2', {
       body: { notes: { a: 1 } },
     });
@@ -247,24 +341,38 @@ describe('contacts', () => {
     assert.equal(status, 400);
   });
 
-  it('suspends stale pending contacts', async () => {
+  it('devuelve 404 para un contacto inexistente', async () => {
+    const { status } = await request('PATCH', '/api/contacts/99', {
+      body: { notes: 'No existe' },
+    });
+
+    assert.equal(status, 404);
+  });
+
+  it('suspende contactos pendientes antiguos', async () => {
     const old = await request('GET', '/api/contacts/old');
+
     assert.deepEqual(
       old.body.contacts.map(item => item.id),
       [1],
     );
 
     const suspended = await request('PATCH', '/api/contacts/1/suspend');
+
     assert.equal(suspended.status, 200);
     assert.equal(suspended.body.status, 'suspended');
 
-    const notPending = await request('PATCH', '/api/contacts/2/suspend');
+    const notPending = await request(
+      'PATCH',
+      '/api/contacts/2/suspend',
+    );
+
     assert.equal(notPending.status, 400);
   });
 });
 
 describe('CORS', () => {
-  it('allows the frontend origin', async () => {
+  it('permite el origen del frontend', async () => {
     const response = await fetch(`${baseUrl}/api/contacts`, {
       headers: { Origin: 'http://localhost:5173' },
     });
@@ -276,7 +384,7 @@ describe('CORS', () => {
     );
   });
 
-  it('returns 403 for other origins', async () => {
+  it('devuelve 403 para otros orígenes', async () => {
     const { status } = await request('GET', '/api/contacts', {
       headers: { Origin: 'http://evil.example' },
     });
