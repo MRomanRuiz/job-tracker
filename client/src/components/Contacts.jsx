@@ -115,18 +115,8 @@ function Contacts({ collection, showForm, onCloseForm }) {
         onSuspend={suspend}
       />
 
-      <main>
-        <section className="section-header">
-          <h2>Contactos</h2>
-        </section>
-
-        <StatCards
-          items={statItems}
-          activeStatus={statusFilter}
-          onSelect={handleStatClick}
-        />
-
-        {showForm && (
+      {showForm && (
+        <div className="record-form-wrapper">
           <RecordForm
             title="Nuevo contacto"
             fields={FORM_FIELDS}
@@ -134,7 +124,15 @@ function Contacts({ collection, showForm, onCloseForm }) {
             onSubmit={handleCreate}
             onCancel={onCloseForm}
           />
-        )}
+        </div>
+      )}
+
+      <main>
+        <StatCards
+          items={statItems}
+          activeStatus={statusFilter}
+          onSelect={handleStatClick}
+        />
 
         <Toolbar
           search={search}

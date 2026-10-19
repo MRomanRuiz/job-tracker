@@ -113,13 +113,15 @@ function Applications({ collection, showForm, onCloseForm }) {
       />
 
       {showForm && (
-        <RecordForm
-          title="Nueva candidatura"
-          fields={FORM_FIELDS}
-          submitLabel="Guardar candidatura"
-          onSubmit={handleCreate}
-          onCancel={onCloseForm}
-        />
+        <div className="record-form-wrapper">
+          <RecordForm
+            title="Nueva candidatura"
+            fields={FORM_FIELDS}
+            submitLabel="Guardar candidatura"
+            onSubmit={handleCreate}
+            onCancel={onCloseForm}
+          />
+        </div>
       )}
 
       <main>

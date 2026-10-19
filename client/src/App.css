@@ -570,3 +570,7 @@ th {
   border-top: 1px solid #e5e7eb;
   background: #f9fafb;
 }
+
+.record-form-wrapper {
+  margin-top: 16px;
+}
