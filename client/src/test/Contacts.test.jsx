@@ -43,6 +43,16 @@ const renderContacts = ({ items = contacts, ...props } = {}) => {
   return { collection, onCloseForm };
 };
 
+const getToday = () => {
+  const today = new Date();
+
+  return [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, '0'),
+    String(today.getDate()).padStart(2, '0'),
+  ].join('-');
+};
+
 const names = () =>
   screen
     .queryAllByRole('row')
@@ -75,28 +85,33 @@ describe('Contacts', () => {
   });
 
   it('creates pending contacts with an empty note', async () => {
-    const { collection, onCloseForm } = renderContacts({ showForm: true });
+    const { collection, onCloseForm } = renderContacts({
+      showForm: true,
+    });
 
     fireEvent.change(screen.getByPlaceholderText('Contacto / Email'), {
       target: { value: 'Eva' },
     });
+
     fireEvent.change(screen.getByPlaceholderText('Centro / Empresa'), {
       target: { value: 'Initech' },
     });
-    fireEvent.change(document.querySelector('input[name="contactedAt"]'), {
-      target: { value: '2026-02-01' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar contacto' }));
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Guardar contacto' }),
+    );
 
     await waitFor(() => expect(onCloseForm).toHaveBeenCalled());
+
     expect(collection.create).toHaveBeenCalledWith({
       contact: 'Eva',
       center: 'Initech',
-      contactedAt: '2026-02-01',
+      contactedAt: getToday(),
       status: 'pending',
       notes: '',
     });
   });
+
 
   it('edits a note and closes the dialog after saving', async () => {
     const { collection } = renderContacts();

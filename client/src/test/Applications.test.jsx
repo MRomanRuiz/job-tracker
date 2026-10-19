@@ -35,6 +35,16 @@ const renderApplications = ({ items = [], staleItems = [], ...props } = {}) => {
   return { collection, onCloseForm };
 };
 
+const getToday = () => {
+  const today = new Date();
+
+  return [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, '0'),
+    String(today.getDate()).padStart(2, '0'),
+  ].join('-');
+};
+
 const companies = () =>
   screen
     .getAllByRole('row')
@@ -115,8 +125,11 @@ describe('Applications', () => {
     expect(screen.getByText('Mostrando 1 de 1 candidatura')).toBeTruthy();
   });
 
+
   it('creates an application and closes the form only on success', async () => {
-    const { collection, onCloseForm } = renderApplications({ showForm: true });
+    const { collection, onCloseForm } = renderApplications({
+      showForm: true,
+    });
 
     fireEvent.change(screen.getByPlaceholderText('Empresa'), {
       target: { value: 'Acme' },
@@ -130,25 +143,36 @@ describe('Applications', () => {
     fireEvent.change(screen.getByPlaceholderText('Tipo'), {
       target: { value: 'Empresa' },
     });
-    fireEvent.change(document.querySelector('input[name="appliedAt"]'), {
-      target: { value: '2026-01-01' },
-    });
 
     collection.create.mockResolvedValueOnce(false);
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar candidatura' }));
-    await waitFor(() => expect(collection.create).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Guardar candidatura' }),
+    );
+
+    await waitFor(() =>
+      expect(collection.create).toHaveBeenCalledTimes(1),
+    );
+
     expect(onCloseForm).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar candidatura' }));
-    await waitFor(() => expect(onCloseForm).toHaveBeenCalledTimes(1));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Guardar candidatura' }),
+    );
+
+    await waitFor(() =>
+      expect(onCloseForm).toHaveBeenCalledTimes(1),
+    );
+
     expect(collection.create).toHaveBeenLastCalledWith({
       company: 'Acme',
       position: 'Dev',
       location: 'Madrid',
       type: 'Empresa',
-      appliedAt: '2026-01-01',
+      appliedAt: getToday(),
     });
   });
+
 
   it('updates the status from the table', () => {
     const { collection } = renderApplications({ items: [makeApplication(7)] });
