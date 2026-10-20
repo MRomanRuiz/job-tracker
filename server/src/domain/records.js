@@ -24,6 +24,12 @@ const APPLICATION_TEXT_FIELDS = [
   'type',
 ];
 
+const CONTACT_TEXT_FIELDS = [
+  'contact',
+  'center',
+  'notes',
+];
+
 const isOlderThanPendingLimit = (date, now = new Date()) => {
   const parsedDate = new Date(date);
 
@@ -96,24 +102,29 @@ const parseApplication = body => {
   };
 };
 
-const parseContact = body => {
-  const { contact, center, contactedAt, status, notes = '' } = body;
 
-  if (
-    typeof contact !== 'string' ||
-    typeof center !== 'string' ||
-    typeof notes !== 'string'
-  ) {
-    throw new HttpError(
-      HTTP_STATUS.BAD_REQUEST,
-      'Datos del contacto no válidos',
-    );
+const parseContact = body => {
+  const contactData = {};
+
+  for (const field of CONTACT_TEXT_FIELDS) {
+    const value = body[field] ?? '';
+
+    if (typeof value !== 'string') {
+      throw new HttpError(
+        HTTP_STATUS.BAD_REQUEST,
+        'Datos del contacto no válidos',
+      );
+    }
+
+    contactData[field] = value.trim();
   }
 
+  const status = body.status ?? 'pending';
+
   if (
-    !contact.trim() ||
-    !center.trim() ||
-    !isValidDate(contactedAt) ||
+    !contactData.contact ||
+    !contactData.center ||
+    !isValidDate(body.contactedAt) ||
     !ALLOWED_CONTACT_STATUSES.has(status)
   ) {
     throw new HttpError(
@@ -122,7 +133,11 @@ const parseContact = body => {
     );
   }
 
-  return { contact, center, contactedAt, status, notes };
+  return {
+    ...contactData,
+    contactedAt: body.contactedAt,
+    status,
+  };
 };
 
 module.exports = {
