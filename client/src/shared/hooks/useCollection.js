@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiRequest } from '../api';
-import { replaceById } from '../utils';
+import { apiRequest } from '../api/apiRequest';
+import { replaceById } from '../lib/utils';
 
 export default function useCollection(name) {
   const [items, setItems] = useState([]);

@@ -1,3 +1,4 @@
+
 name: Job Tracker CI
 
 on:
@@ -18,6 +19,22 @@ jobs:
     name: Lint, tests, coverage and build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval
+          'db.adminCommand({ ping: 1 }).ok' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      MONGODB_URI: mongodb://127.0.0.1:27017
+      MONGODB_DB: job_tracker_test
 
     steps:
       - name: Checkout repository
@@ -45,8 +62,17 @@ jobs:
       - name: Lint backend and frontend
         run: npm run lint
 
-      - name: Run tests with coverage
-        run: npm test
+      - name: Run backend tests with JSON storage
+        env:
+          TEST_STORAGE_TYPE: json
+        run: npm test --prefix server
+
+      - name: Run backend tests with MongoDB
+        env:
+          TEST_STORAGE_TYPE: mongodb
+          MONGODB_URI: mongodb://127.0.0.1:27017
+          MONGODB_DB: job_tracker_test
+        run: npm test --prefix server
 
       - name: Upload coverage reports
         if: ${{ always() }}

@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import useCollection from './hooks/useCollection';
-import Header from './components/Header';
-import Applications from './components/Applications';
-import Contacts from './components/Contacts';
+import Applications from '../features/applications/Applications';
+import Contacts from '../features/contacts/Contacts';
+import Header from '../shared/components/Header';
+import useCollection from '../shared/hooks/useCollection';
 
 function App() {
   const [view, setView] = useState('applications');

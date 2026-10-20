@@ -1,7 +1,7 @@
-import { CONTACT_STATUS_LABELS } from '../constants';
-import EmptyState from './EmptyState';
+import { CONTACT_STATUS_LABELS } from '../../shared/lib/constants';
+import EmptyState from '../../shared/components/EmptyState';
 import NoteButton from './NoteButton';
-import StatusSelect from './StatusSelect';
+import StatusSelect from '../../shared/components/StatusSelect';
 
 const MANUAL_STATUSES = ['pending', 'replied', 'rejected'];
 

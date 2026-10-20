@@ -24,12 +24,9 @@ dist-ssr
 *.sw?
 
 # Personal information
-client/src/data/*
+client/data/*
 .env
 .env.test
-
-# Auxiliary files
-GenerateCodes.ps1
 
 # Coverage directory used by tools like istanbul
 coverage/

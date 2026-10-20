@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { mockApi } from './mockApi';
-import useCollection from '../hooks/useCollection';
+import { mockApi } from '../../test/helpers/mockApi';
+import useCollection from './useCollection';
 
 const pending = { id: 1, contact: 'Ana', status: 'pending' };
 
@@ -79,6 +79,22 @@ describe('useCollection', () => {
     await waitFor(() => expect(result.current.staleItems).toEqual([]));
   });
 
+  it('does not reload stale items when suspending fails', async () => {
+    const { result, fetchMock } = renderCollection({
+      'PATCH /api/contacts/1/suspend': {
+        httpStatus: 500,
+        body: { error: 'Unavailable' },
+      },
+    });
+
+    await waitFor(() => expect(result.current.staleItems).toEqual([pending]));
+
+    await act(() => result.current.suspend(1));
+
+    expect(result.current.items).toEqual([pending]);
+    expect(staleRequests(fetchMock)).toBe(1);
+  });
+
   it('logs failed requests and keeps the current items', async () => {
     const consoleError = vi
       .spyOn(console, 'info')
@@ -100,6 +116,43 @@ describe('useCollection', () => {
       'Error en PATCH /api/contacts/1:',
       expect.objectContaining({ message: 'Inválido' }),
     );
+  });
+
+  it('returns false when creating an item fails', async () => {
+    const { result } = renderCollection({
+      'POST /api/contacts': {
+        httpStatus: 500,
+        body: { error: 'Unavailable' },
+      },
+    });
+
+    await waitFor(() => expect(result.current.items).toEqual([pending]));
+
+    let created;
+    await act(async () => {
+      created = await result.current.create({ contact: 'Eva' });
+    });
+
+    expect(created).toBe(false);
+    expect(result.current.items).toEqual([pending]);
+  });
+
+  it('uses GET when logging failed default requests', async () => {
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const { result } = renderCollection({
+      'GET /api/contacts': {
+        httpStatus: 500,
+        body: { error: 'Unavailable' },
+      },
+    });
+
+    await waitFor(() =>
+      expect(consoleInfo).toHaveBeenCalledWith(
+        'Error en GET /api/contacts:',
+        expect.objectContaining({ message: 'Unavailable' }),
+      ),
+    );
+    expect(result.current.items).toEqual([]);
   });
 
   it('ignores stale responses that arrive after a newer one', async () => {

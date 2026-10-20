@@ -1,6 +1,6 @@
 # Job Tracker
 
-A small full-stack application for tracking job applications and professional contacts. The React interface lets you review and update application and contact statuses, while an Express API stores the records in local JSON files.
+A small full-stack application for tracking job applications and professional contacts. The React interface lets you review and update application and contact statuses, while an Express API stores records using either local JSON files or MongoDB.
 
 ## Features
 
@@ -14,7 +14,8 @@ A small full-stack application for tracking job applications and professional co
 - Search, filter, and paginate contacts, including notes-based searches.
 - Add and edit notes for each contact through a dedicated modal window.
 - Review pending contacts older than 30 days and suspend them.
-- Persist all data in local JSON files without requiring a database.
+- Persist data using either local JSON files or MongoDB.
+- Run backend tests against both storage implementations.
 
 ## Tech stack
 
@@ -23,12 +24,13 @@ A small full-stack application for tracking job applications and professional co
 - **Testing:** Node.js test runner, Vitest, React Testing Library
 - **Code quality:** ESLint
 - **Coverage:** c8 for the backend and Vitest's V8 coverage provider for the frontend
-- **Storage:** Local JSON files
+- **Storage:** Pluggable JSON-file and MongoDB backends
 
 ## Prerequisites
 
 - Node.js version specified in `.nvmrc`.
 - npm (included with Node.js).
+- MongoDB, running locally, to run the backend tests with MongoDB storage.
 
 ## Getting started
 
@@ -75,7 +77,10 @@ npm run dev
 | `npm run install:all` | Install dependencies for the root, backend, and frontend. |
 | `npm run dev` | Start the API and Vite development server concurrently. |
 | `npm run lint` | Run ESLint on the backend and frontend. |
-| `npm test` | Run backend and frontend tests with coverage enabled. |
+| `npm test` | Run backend tests with JSON and MongoDB storage, followed by frontend tests. All suites run even if one fails, and the command exits with an error if any suite fails. |
+| `npm run test:json` | Run backend tests using JSON storage. |
+| `npm run test:mongodb` | Run backend tests using MongoDB storage. |
+| `npm run test:client` | Run frontend tests with Vitest and coverage. |
 | `npm run build` | Build the frontend for production in `client/dist`. |
 
 ### From `client`
@@ -107,10 +112,13 @@ The workflow:
 - Sets up the Node.js version specified in `.nvmrc`.
 - Installs root, backend, and frontend dependencies using `npm ci`.
 - Runs ESLint on the backend and frontend.
-- Runs backend tests using Node.js's built-in test runner and c8 coverage.
+- Runs backend tests using JSON storage with temporary data files.
+- Runs backend tests using MongoDB storage against a dedicated test database (`job_tracker_test`).
 - Runs frontend tests using Vitest and its V8 coverage provider.
 - Uploads coverage reports as a downloadable GitHub Actions artifact.
 - Builds the frontend for production.
+
+The MongoDB test service uses an isolated test database. Test configuration must never point to a production database or a database containing personal data.
 
 Coverage artifacts are retained for 14 days. They can be downloaded from the **Artifacts** section of a completed workflow run.
 
@@ -120,18 +128,22 @@ The CI currently reports coverage but does not enforce minimum coverage threshol
 
 ## Data storage
 
-The application uses two JSON collections:
+The backend supports two storage implementations.
 
-- `client/src/data/jobs.json` for job applications.
-- `client/src/data/contacts.json` for professional contacts and notes.
+- **JSON:** Stores applications and contacts in `jobs.json` and `contacts.json`. Set `JSON_DATA_DIR` to choose the directory used for these files. If unset, the JSON storage implementation uses its configured default directory.
+- **MongoDB:** Stores applications and contacts in separate collections and uses a counter collection to generate numeric record IDs. Configure the connection with `MONGODB_URI` and `MONGODB_DB`.
 
-Create these files locally before starting the API if they do not already exist. The server reads and writes the files directly.
+Select the storage implementation with `STORAGE_TYPE=json` or `STORAGE_TYPE=mongodb`. JSON storage is the default when no storage type is configured.
 
-The data files are intentionally excluded from Git to avoid committing personal job-search information. Back them up before manually changing or replacing their contents.
+For backend tests, `TEST_STORAGE_TYPE` selects the implementation to test and takes precedence over `STORAGE_TYPE`. JSON tests use temporary data files so they do not modify your regular application data.
+
+MongoDB tests must use a dedicated test database, such as `job_tracker_test`. Configure `MONGODB_URI` to point to a local or otherwise isolated test instance. Never run the test suite against a database containing production or personal data.
+
+Back up JSON files or your MongoDB database before manually changing or replacing stored data.
 
 ### Applications
 
-Application records are stored in `jobs.json` as an object containing an `applications` array.
+Application records are stored in the `applications` collection when using MongoDB, or in `jobs.json` when using JSON storage. The JSON file contains an object with an `applications` array.
 
 A record can contain the following fields:
 
@@ -169,13 +181,13 @@ Example `jobs.json`:
 }
 ```
 
-Use a top-level `applications` array. Each entry should have a unique numeric `id`, an `appliedAt` date in `YYYY-MM-DD` format, and a valid status. Other fields can be empty strings when they do not apply.
+When using JSON storage, use a top-level `applications` array. Each entry should have a unique numeric `id`, an `appliedAt` date in `YYYY-MM-DD` format, and a valid status. Other fields can be empty strings when they do not apply.
 
 When creating an application through the frontend, the current local date is assigned automatically. The API itself still requires `appliedAt` in the creation request. Omit `id` when creating records through the API; the server generates it.
 
 ### Contacts
 
-Contact records are stored in `contacts.json` as an object containing a `contacts` array.
+Contact records are stored in the `contacts` collection when using MongoDB, or in `contacts.json` when using JSON storage. The JSON file contains an object with a `contacts` array.
 
 A record can contain the following fields:
 
@@ -246,73 +258,40 @@ Example contact update request:
 
 The API allows browser requests from `http://localhost:3000` and `http://localhost:5173`. Requests from other origins receive `403`.
 
-Writes are serialized and atomic to prevent concurrent requests from overwriting each other's changes.
+Writes are serialized and atomic in JSON storage. MongoDB storage uses database operations to persist records.
 
 ## Project structure
 
 ```text
 .
-├── .github/workflows/ci.yml        CI: installs dependencies, then runs lint, tests and build on every pull request and push to master
-├── .gitignore                      Ignores dependencies, build output, logs, editor files and the local data files
-├── .nvmrc                          Node.js version used locally and in CI
-├── package.json                    Root scripts (dev, lint, test, build, install:all) that run the client and the server together
-├── package-lock.json               Locked versions of the root dependencies (concurrently)
-├── README.md                       This document
-│
-├── client/                         React frontend (Vite)
-│   ├── index.html                  HTML entry page with the root element
-│   ├── vite.config.js              Vite config: React plugin, /api proxy to port 3001 and Vitest (jsdom) settings
-│   ├── eslint.config.js            ESLint rules for the frontend
-│   ├── package.json                Frontend scripts and dependencies
-│   ├── package-lock.json           Locked versions of the frontend dependencies
-│   ├── public/
-│   │   └── favicon.svg             Browser tab icon
+├── package.json                    Root scripts for development, lint, tests and build
+├── client/                          React frontend (Vite)
+│   ├── data/                        Local JSON data and MongoDB import script
 │   └── src/
-│       ├── main.jsx                Mounts <App /> and loads the global styles
-│       ├── App.jsx                 Switches between the applications and contacts views and opens/closes the form
-│       ├── api.js                  apiRequest(): fetch wrapper for /api that sends JSON and throws on error responses
-│       ├── constants.js            Page size, the "all statuses" filter value and the status labels
-│       ├── utils.js                Pure helpers to filter by status or text, sort by date, count and replace by id
-│       ├── index.css               Base page styles (font, background)
-│       ├── App.css                 Styles for the layout and all components
-│       ├── data/                   Local data, not tracked by Git (see "Data format")
-│       │   ├── jobs.json           Applications
-│       │   └── contacts.json       Contacts and their notes
-│       ├── hooks/
-│       │   ├── useCollection.js    Loads a collection and its stale list from the API; create, update and suspend
-│       │   └── usePagination.js    Splits a list into pages and keeps the current page in range
-│       ├── components/
-│       │   ├── Header.jsx          Title, button to switch view and "new" button for the current view
-│       │   ├── Applications.jsx    Applications view: stale alert, form, stats, search, type filter, table and pagination
-│       │   ├── ApplicationsTable.jsx  Applications table with a status selector per row
-│       │   ├── Contacts.jsx        Contacts view: stale alert, stats, form, search, table, pagination and note dialog
-│       │   ├── ContactsTable.jsx   Contacts table with a status selector and note button per row
-│       │   ├── RecordForm.jsx      Generic create form built from a list of fields
-│       │   ├── NoteButton.jsx      Opens the note of a contact; the icon shows whether it has one
-│       │   ├── NoteForm.jsx        Dialog to view and edit a contact's note
-│       │   ├── StaleItemsAlert.jsx Warning for pending records older than 30 days, with a list to suspend them
-│       │   ├── StatCards.jsx       Clickable counters per status that filter the table
-│       │   ├── StatusSelect.jsx    Status dropdown; "suspended" only appears for suspended records
-│       │   ├── Toolbar.jsx         Search box plus optional extra filters
-│       │   ├── Pagination.jsx      Previous/next buttons and "page X of Y"
-│       │   └── EmptyState.jsx      Message shown when no records match
-│       └── test/
-│           ├── setup.js            Vitest setup: cleans up the DOM and mocks after each test
-│           ├── mockApi.js          mockApi(): replaces fetch with fake responses per "METHOD /api/path"
-│           ├── utils.test.js       Tests for utils.js
-│           ├── App.test.jsx        Tests view switching and the form of each view
-│           ├── useCollection.test.js  Tests loading, updates, stale reloads and error handling
-│           ├── Applications.test.jsx  Tests for the applications view
-│           └── Contacts.test.jsx   Tests for the contacts view
-│
-└── server/                         Express API
-    ├── server.js                   Starts the API on port 3001
-    ├── app.js                      createApp(): CORS, validation, routes, error handling and serialized, atomic JSON storage
-    ├── eslint.config.js            ESLint rules for the API
-    ├── package.json                API scripts and dependencies
-    ├── package-lock.json           Locked versions of the API dependencies
+│       ├── app/                     Application composition and app-level tests
+│       ├── features/
+│       │   ├── applications/        Application view, table and feature tests
+│       │   └── contacts/            Contact view, notes, table and feature tests
+│       ├── shared/
+│       │   ├── api/                 API request helper and tests
+│       │   ├── components/          UI components shared across features
+│       │   ├── hooks/               Collection and pagination hooks with tests
+│       │   └── lib/                 Shared constants, utilities and tests
+│       ├── test/                    Vitest setup and reusable test helpers
+│       ├── main.jsx                 Browser entry point
+│       └── *.css                    Global styles
+└── server/                          Express API
+    ├── server.js                    Process startup and shutdown
+    ├── src/
+    │   ├── app.js                   Express app composition
+    │   ├── domain/                  Validation, record rules and HTTP errors
+    │   ├── middleware/              Security and error handling
+    │   ├── routes/                  Application and contact endpoints
+    │   ├── storage/                 Storage factory and JSON/MongoDB adapters
+    │   └── db.js                    MongoDB connection lifecycle
     └── test/
-        └── app.test.js             API tests against temporary data files
+        ├── integration/             HTTP/API behavior tests
+        └── unit/                    Database and storage factory tests
 ```
 
-The frontend coverage reports are generated in `client/coverage/`. Both coverage directories are generated locally and should not be committed to Git.
+The frontend coverage reports are generated in `client/coverage/`. Backend coverage reports are generated by c8. Coverage directories are generated locally and should not be committed to Git.

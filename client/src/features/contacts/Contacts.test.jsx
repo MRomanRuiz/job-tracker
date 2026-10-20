@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import Contacts from '../components/Contacts';
+import Contacts from './Contacts';
 
 const contacts = [
   {
@@ -21,10 +21,14 @@ const contacts = [
   },
 ];
 
-const renderContacts = ({ items = contacts, ...props } = {}) => {
+const renderContacts = ({
+  items = contacts,
+  staleItems = [],
+  ...props
+} = {}) => {
   const collection = {
     items,
-    staleItems: [],
+    staleItems,
     create: vi.fn().mockResolvedValue(true),
     update: vi.fn().mockResolvedValue(true),
     suspend: vi.fn(),
@@ -112,6 +116,71 @@ describe('Contacts', () => {
     });
   });
 
+  it('keeps the form open when creating a contact fails', async () => {
+    const { collection, onCloseForm } = renderContacts({
+      showForm: true,
+    });
+    collection.create.mockResolvedValue(false);
+
+    fireEvent.change(screen.getByPlaceholderText('Contacto / Email'), {
+      target: { value: 'Eva' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Centro / Empresa'), {
+      target: { value: 'Initech' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Guardar contacto' }),
+    );
+
+    await waitFor(() => expect(collection.create).toHaveBeenCalled());
+    expect(onCloseForm).not.toHaveBeenCalled();
+    expect(screen.getByText('Nuevo contacto')).toBeTruthy();
+  });
+
+  it('renders stale contacts with no notes and suspends them', () => {
+    const { collection } = renderContacts({
+      staleItems: [
+        {
+          ...contacts[0],
+          id: 3,
+          contact: 'Marta',
+          notes: '',
+        },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revisar' }));
+
+    expect(screen.getByText('Marta')).toBeTruthy();
+    expect(screen.getByText('—')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Suspender' }));
+    expect(collection.suspend).toHaveBeenCalledWith(3);
+  });
+
+  it('uses the plural label for multiple stale contacts', () => {
+    renderContacts({
+      staleItems: [
+        { ...contacts[0], id: 3 },
+        { ...contacts[1], id: 4 },
+      ],
+    });
+
+    expect(
+      screen.getByText('Hay 2 contactos pendientes de más de 30 días.'),
+    ).toBeTruthy();
+  });
+
+  it('updates a contact status from the table', () => {
+    const { collection } = renderContacts();
+
+    fireEvent.change(screen.getByDisplayValue('En espera'), {
+      target: { value: 'replied' },
+    });
+
+    expect(collection.update).toHaveBeenCalledWith(1, {
+      status: 'replied',
+    });
+  });
 
   it('edits a note and closes the dialog after saving', async () => {
     const { collection } = renderContacts();
@@ -141,5 +210,31 @@ describe('Contacts', () => {
 
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(collection.update).not.toHaveBeenCalled();
+  });
+
+  it('keeps the note dialog open when saving fails', async () => {
+    const { collection } = renderContacts();
+    collection.update.mockResolvedValue(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir nota' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+
+    await waitFor(() => expect(collection.update).toHaveBeenCalled());
+    expect(screen.getByRole('dialog')).toBeTruthy();
+  });
+
+  it('supports moving between pages of contacts', () => {
+    const manyContacts = Array.from({ length: 12 }, (_, index) => ({
+      ...contacts[0],
+      id: index + 1,
+      contact: `Contact ${index + 1}`,
+      contactedAt: `2026-01-${String(index + 1).padStart(2, '0')}`,
+    }));
+    renderContacts({ items: manyContacts });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente →' }));
+    expect(screen.getByText('Página 2 de 2')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '← Anterior' }));
+    expect(screen.getByText('Página 1 de 2')).toBeTruthy();
   });
 });

@@ -1,19 +1,19 @@
 import { useMemo, useState } from 'react';
-import { ALL_STATUSES, ITEMS_PER_PAGE } from '../constants';
-import usePagination from '../hooks/usePagination';
+import { ALL_STATUSES, ITEMS_PER_PAGE } from '../../shared/lib/constants';
+import usePagination from '../../shared/hooks/usePagination';
 import {
   countByStatus,
   matchesStatus,
   matchesText,
   sortByDateDesc,
-} from '../utils';
+} from '../../shared/lib/utils';
 import ContactsTable from './ContactsTable';
 import NoteForm from './NoteForm';
-import Pagination from './Pagination';
-import RecordForm from './RecordForm';
-import StaleItemsAlert from './StaleItemsAlert';
-import StatCards from './StatCards';
-import Toolbar from './Toolbar';
+import Pagination from '../../shared/components/Pagination';
+import RecordForm from '../../shared/components/RecordForm';
+import StaleItemsAlert from '../../shared/components/StaleItemsAlert';
+import StatCards from '../../shared/components/StatCards';
+import Toolbar from '../../shared/components/Toolbar';
 
 const FORM_FIELDS = [
   { name: 'contact', placeholder: 'Contacto / Email', required: true },
