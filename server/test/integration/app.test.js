@@ -31,9 +31,6 @@ const initialApplications = [
     position: 'Developer',
     location: 'Madrid',
     type: 'Full-time',
-    field: 'IT',
-    duration: '',
-    document: '',
     status: 'pending',
   },
   {
@@ -43,9 +40,6 @@ const initialApplications = [
     position: 'Designer',
     location: 'Málaga',
     type: 'Full-time',
-    field: 'Design',
-    duration: '',
-    document: '',
     status: 'pending',
   },
 ];
@@ -286,6 +280,30 @@ describe('applications', () => {
 
     assert.equal(list.applications.length, 3);
   });
+
+
+  it('elimina los espacios al principio y al final de los campos de texto', async () => {
+    const { status, body } = await request(
+      'POST',
+      '/api/applications',
+      {
+        body: {
+          company: '  Acme España  ',
+          position: '  Software Engineer  ',
+          location: '  Málaga, España  ',
+          type: '  Tiempo completo  ',
+          appliedAt: RECENT_DATE,
+        },
+      },
+    );
+
+    assert.equal(status, 201);
+    assert.equal(body.company, 'Acme España');
+    assert.equal(body.position, 'Software Engineer');
+    assert.equal(body.location, 'Málaga, España');
+    assert.equal(body.type, 'Tiempo completo');
+  });
+
 
   it('rechaza candidaturas no válidas', async () => {
     for (const body of [

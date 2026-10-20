@@ -74,7 +74,7 @@ const parseApplication = body => {
       );
     }
 
-    application[field] = value;
+    application[field] = value.trim();
   }
 
   const status = body.status ?? 'pending';
