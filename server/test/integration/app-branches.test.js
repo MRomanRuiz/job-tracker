@@ -3,7 +3,7 @@ const path = require('node:path');
 const { after, before, describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { createApp } = require('../app');
+const { createApp } = require('../../src/app');
 
 const records = {
   applications: {
@@ -132,7 +132,7 @@ describe('additional app branches', () => {
   it('serves the client fallback or reports a missing build', async () => {
     const indexPath = path.resolve(
       __dirname,
-      '../../client/dist/index.html',
+      '../../../client/dist/index.html',
     );
     const hasClientBuild = require('node:fs').existsSync(indexPath);
     const response = await fetch(`${baseUrl}/dashboard`);

@@ -1,7 +1,7 @@
 
 require('dotenv').config();
 
-const { createApp } = require('./app');
+const { createApp } = require('./src/app');
 
 const DEFAULT_PORT = 3001;
 const PORT = process.env.PORT || DEFAULT_PORT;
@@ -54,7 +54,7 @@ async function startServer() {
   }
 
   if (type === 'mongodb') {
-    const database = require('./db');
+    const database = require('./src/db');
 
     await database.connectDB();
     closeDB = database.closeDB;

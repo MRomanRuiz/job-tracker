@@ -28,9 +28,6 @@ client/data/*
 .env
 .env.test
 
-# Auxiliary files
-GenerateCodes.ps1
-
 # Coverage directory used by tools like istanbul
 coverage/
 server/coverage/

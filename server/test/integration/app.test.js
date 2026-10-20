@@ -6,7 +6,7 @@ const { after, before, beforeEach, describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
 require('dotenv').config({
-  path: path.join(__dirname, '..', '.env.test'),
+  path: path.join(__dirname, '..', '..', '.env.test'),
   override: false,
 });
 
@@ -159,7 +159,7 @@ before(async () => {
       );
     }
 
-    const database = require('../db');
+    const database = require('../../src/db');
 
     closeDB = database.closeDB;
 
@@ -178,8 +178,8 @@ before(async () => {
   }
 
   // Se carga después de configurar JSON_DATA_DIR.
-  const { createStorage } = require('../storage');
-  const { createApp } = require('../app');
+  const { createStorage } = require('../../src/storage');
+  const { createApp } = require('../../src/app');
 
   storage = createStorage(STORAGE_TYPE);
 
@@ -238,7 +238,7 @@ after(async () => {
 
 describe('isOlderThanPendingLimit', () => {
   it('detecta fechas de más de 30 días', () => {
-    const { isOlderThanPendingLimit } = require('../app');
+    const { isOlderThanPendingLimit } = require('../../src/app');
     const now = new Date('2026-02-01');
 
     assert.equal(isOlderThanPendingLimit('2025-12-01', now), true);

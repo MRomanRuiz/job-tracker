@@ -4,7 +4,7 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
 require('dotenv').config({
-  path: path.join(__dirname, '..', '.env.test'),
+  path: path.join(__dirname, '..', '..', '.env.test'),
   override: false,
 });
 
@@ -15,7 +15,7 @@ const STORAGE_TYPE = (
 ).toLowerCase();
 
 if (STORAGE_TYPE === 'mongodb') {
-  const { getDB } = require('../db');
+  const { getDB } = require('../../src/db');
 
   describe('database connection state', () => {
     it('rejects access before connecting', () => {

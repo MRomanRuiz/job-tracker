@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { mockApi } from './mockApi';
-import useCollection from '../hooks/useCollection';
+import { mockApi } from '../../test/helpers/mockApi';
+import useCollection from './useCollection';
 
 const pending = { id: 1, contact: 'Ana', status: 'pending' };
 

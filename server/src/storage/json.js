@@ -4,7 +4,7 @@ const path = require('node:path');
 
 const DATA_DIR = path.resolve(
   process.env.JSON_DATA_DIR ||
-    path.join(__dirname, '../../client/data'),
+    path.join(__dirname, '../../../client/data'),
 );
 
 const FILES = {

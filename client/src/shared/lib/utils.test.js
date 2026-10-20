@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_STATUSES } from '../constants.js';
+import { ALL_STATUSES } from './constants.js';
 import {
   countByStatus,
   matchesStatus,
   matchesText,
   replaceById,
   sortByDateDesc,
-} from '../utils.js';
+} from './utils.js';
 
 describe('matchesStatus', () => {
   it('treats suspended as rejected', () => {

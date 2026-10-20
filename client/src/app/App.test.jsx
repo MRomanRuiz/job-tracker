@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import App from '../App';
-import { mockApi } from './mockApi';
+import App from './App';
+import { mockApi } from '../test/helpers/mockApi';
 
 const renderApp = () => {
   mockApi({

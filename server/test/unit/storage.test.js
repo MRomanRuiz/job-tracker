@@ -4,11 +4,11 @@ const { after, describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
 require('dotenv').config({
-  path: path.join(__dirname, '..', '.env.test'),
+  path: path.join(__dirname, '..', '..', '.env.test'),
   override: false,
 });
 
-const { createStorage } = require('../storage');
+const { createStorage } = require('../../src/storage');
 
 const STORAGE_TYPE = (
   process.env.TEST_STORAGE_TYPE ||

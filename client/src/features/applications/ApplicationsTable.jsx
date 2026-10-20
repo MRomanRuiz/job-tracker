@@ -1,6 +1,6 @@
-import { APPLICATION_STATUS_LABELS } from '../constants';
-import EmptyState from './EmptyState';
-import StatusSelect from './StatusSelect';
+import { APPLICATION_STATUS_LABELS } from '../../shared/lib/constants';
+import EmptyState from '../../shared/components/EmptyState';
+import StatusSelect from '../../shared/components/StatusSelect';
 
 const MANUAL_STATUSES = ['pending', 'interview', 'offer', 'rejected'];
 

@@ -264,69 +264,34 @@ Writes are serialized and atomic in JSON storage. MongoDB storage uses database 
 
 ```text
 .
-├── .github/workflows/ci.yml       CI: installs dependencies, runs lint, tests and build
-├── .gitignore                     Ignores dependencies, build output, logs, editor files and local data files
-├── .nvmrc                         Node.js version used locally and in CI
-├── package.json                   Root scripts (dev, lint, test, build, install:all)
-├── package-lock.json              Locked versions of root dependencies
-├── README.md                      This document
-│
-├── client/                        React frontend (Vite)
-│   ├── index.html                 HTML entry page with the root element
-│   ├── vite.config.js              Vite config: React plugin, /api proxy and Vitest settings
-│   ├── eslint.config.js            ESLint rules for the frontend
-│   ├── package.json                Frontend scripts and dependencies
-│   ├── package-lock.json           Locked versions of frontend dependencies
-│   ├── public/
-│   │   └── favicon.svg             Browser tab icon
+├── package.json                    Root scripts for development, lint, tests and build
+├── client/                          React frontend (Vite)
+│   ├── data/                        Local JSON data and MongoDB import script
 │   └── src/
-│       ├── main.jsx                Mounts <App /> and loads global styles
-│       ├── App.jsx                 Switches between applications and contacts views
-│       ├── api.js                  fetch wrapper for /api that sends JSON and handles errors
-│       ├── constants.js            Page size, filter values and status labels
-│       ├── utils.js                Helpers to filter, sort, count and replace records
-│       ├── index.css               Base page styles
-│       ├── App.css                 Layout and component styles
-│       ├── hooks/
-│       │   ├── useCollection.js    Loads a collection and its stale list from the API; create, update and suspend
-│       │   └── usePagination.js    Splits a list into pages and keeps the current page in range
-│       ├── components/
-│       │   ├── Header.jsx          Title, button to switch view and "new" button for the current view
-│       │   ├── Applications.jsx    Applications view: stale alert, form, stats, search, type filter, table and pagination
-│       │   ├── ApplicationsTable.jsx  Applications table with a status selector per row
-│       │   ├── Contacts.jsx        Contacts view: stale alert, stats, form, search, table, pagination and note dialog
-│       │   ├── ContactsTable.jsx   Contacts table with a status selector and note button per row
-│       │   ├── RecordForm.jsx      Generic create form built from a list of fields
-│       │   ├── NoteButton.jsx      Opens the note of a contact; the icon shows whether it has one
-│       │   ├── NoteForm.jsx        Dialog to view and edit a contact's note
-│       │   ├── StaleItemsAlert.jsx Warning for pending records older than 30 days, with a list to suspend them
-│       │   ├── StatCards.jsx       Clickable counters per status that filter the table
-│       │   ├── StatusSelect.jsx    Status dropdown; "suspended" only appears for suspended records
-│       │   ├── Toolbar.jsx         Search box plus optional extra filters
-│       │   ├── Pagination.jsx      Previous/next buttons and "page X of Y"
-│       │   └── EmptyState.jsx      Message shown when no records match
-│       └── test/
-│           ├── setup.js            Vitest setup
-│           ├── mockApi.js          Mock API responses for frontend tests
-│           ├── utils.test.js       Tests for utils.js
-│           ├── App.test.jsx        Tests view switching and forms
-│           ├── useCollection.test.js Tests loading, updates and error handling
-│           ├── Applications.test.jsx Tests for the applications view
-│           └── Contacts.test.jsx   Tests for the contacts view
-│
-└── server/                         Express API
-    ├── server.js                   Starts the API (port 3001 by default)
-    ├── app.js                      createApp(): CORS, validation, routes and error handling; accepts injected storage
-    ├── db.js                       Connects to MongoDB and exposes database access and connection cleanup
-    ├── storage/
-    │   ├── index.js                Selects the JSON or MongoDB storage implementation
-    │   ├── json.js                 JSON-file storage with atomic, serialized writes
-    │   └── mongodb.js              MongoDB storage implementation with generated numeric IDs
-    ├── eslint.config.js            ESLint rules for the API
-    ├── package.json                API scripts and dependencies
-    ├── package-lock.json           Locked versions of API dependencies
+│       ├── app/                     Application composition and app-level tests
+│       ├── features/
+│       │   ├── applications/        Application view, table and feature tests
+│       │   └── contacts/            Contact view, notes, table and feature tests
+│       ├── shared/
+│       │   ├── api/                 API request helper and tests
+│       │   ├── components/          UI components shared across features
+│       │   ├── hooks/               Collection and pagination hooks with tests
+│       │   └── lib/                 Shared constants, utilities and tests
+│       ├── test/                    Vitest setup and reusable test helpers
+│       ├── main.jsx                 Browser entry point
+│       └── *.css                    Global styles
+└── server/                          Express API
+    ├── server.js                    Process startup and shutdown
+    ├── src/
+    │   ├── app.js                   Express app composition
+    │   ├── domain/                  Validation, record rules and HTTP errors
+    │   ├── middleware/              Security and error handling
+    │   ├── routes/                  Application and contact endpoints
+    │   ├── storage/                 Storage factory and JSON/MongoDB adapters
+    │   └── db.js                    MongoDB connection lifecycle
     └── test/
-        └── app.test.js             API tests for the selected storage implementation
+        ├── integration/             HTTP/API behavior tests
+        └── unit/                    Database and storage factory tests
 ```
 
 The frontend coverage reports are generated in `client/coverage/`. Backend coverage reports are generated by c8. Coverage directories are generated locally and should not be committed to Git.
