@@ -1,44 +1,44 @@
-const { createApp } = require('./app');
-const { connectDB, closeDB } = require('./db');
+
 require('dotenv').config();
+
+const { createApp } = require('./app');
 
 const DEFAULT_PORT = 3001;
 const PORT = process.env.PORT || DEFAULT_PORT;
-let server;
 
-async function closeServer(serverInstance) {
-  if (!serverInstance) {
+let server;
+let closeDB = async () => {};
+let shuttingDown = false;
+
+async function closeServer() {
+  if (!server) {
     return;
   }
 
   await new Promise((resolve, reject) => {
-    serverInstance.close(error => {
+    server.close(error => {
       if (error) {
         reject(error);
-        return;
+      } else {
+        resolve();
       }
-
-      resolve();
     });
   });
 }
 
-async function closeDatabaseSafely() {
-  try {
-    await closeDB();
-  } catch (error) {
-    console.info('Error al cerrar MongoDB:', error.message);
-  }
-}
-
 async function shutdown() {
+  if (shuttingDown) {
+    return;
+  }
+  shuttingDown = true;
+
   console.info('\nCerrando servidor...');
 
   try {
-    await closeServer(server);
+    await closeServer();
     await closeDB();
 
-    console.info('Servidor y MongoDB cerrados correctamente.');
+    console.info('Servidor y almacenamiento cerrados correctamente.');
     process.exitCode = 0;
   } catch (error) {
     console.info('Error durante el cierre:', error);
@@ -47,24 +47,45 @@ async function shutdown() {
 }
 
 async function startServer() {
-  try {
-    await connectDB();
+  const type = (process.env.STORAGE_TYPE || 'json').toLowerCase();
 
-    const app = createApp();
-
-    server = app.listen(PORT, () => {
-      console.info(`Servidor funcionando en http://localhost:${PORT}`);
-    });
-
-    process.once('SIGINT', shutdown);
-    process.once('SIGTERM', shutdown);
-  } catch (error) {
-    console.info('Error al iniciar el servidor:', error.message);
-    await closeDatabaseSafely();
-    process.exitCode = 1;
+  if (!['json', 'mongodb'].includes(type)) {
+    throw new Error(`STORAGE_TYPE no válido: ${type}`);
   }
+
+  if (type === 'mongodb') {
+    const database = require('./db');
+
+    await database.connectDB();
+    closeDB = database.closeDB;
+  }
+
+  const app = createApp();
+
+  server = app.listen(PORT, () => {
+    console.info(
+      `Servidor funcionando en http://localhost:${PORT} (${type})`,
+    );
+  });
+
+  process.once('SIGINT', shutdown);
+  process.once('SIGTERM', shutdown);
+
+  return server;
 }
 
 if (require.main === module) {
-  void startServer();
+  startServer().catch(async error => {
+    console.info('Error al iniciar el servidor:', error);
+
+    try {
+      await closeDB();
+    } catch (closeError) {
+      console.info('Error al cerrar MongoDB:', closeError);
+    }
+
+    process.exitCode = 1;
+  });
 }
+
+module.exports = { startServer };

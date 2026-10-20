@@ -24,7 +24,7 @@ dist-ssr
 *.sw?
 
 # Personal information
-client/src/data/*
+client/data/*
 .env
 .env.test
 

@@ -1,14 +1,27 @@
 
 const path = require('node:path');
-require('dotenv').config({
-  path: path.join(__dirname, '..', '.env.test'),
-  override: true,
-});
+const fs = require('node:fs/promises');
+const os = require('node:os');
 
 const { after, before, beforeEach, describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const { connectDB, getDB, closeDB } = require('../db');
-const { createApp, isOlderThanPendingLimit } = require('../app');
+
+// Permite elegir el backend desde el comando de CI antes de cargar .env.test.
+const explicitTestStorageType = process.env.TEST_STORAGE_TYPE;
+
+require('dotenv').config({
+  path: path.join(__dirname, '..', '.env.test'),
+  override: false,
+});
+
+const STORAGE_TYPE = (
+  explicitTestStorageType ||
+  process.env.TEST_STORAGE_TYPE ||
+  process.env.STORAGE_TYPE ||
+  'json'
+).toLowerCase();
+
+process.env.STORAGE_TYPE = STORAGE_TYPE;
 
 const TEST_DATABASE_NAME = 'job_tracker_test';
 
@@ -64,6 +77,9 @@ const initialContacts = [
 let db;
 let server;
 let baseUrl;
+let storage;
+let closeDB = async () => {};
+let tempDataDir;
 
 const request = async (method, url, { body, headers = {} } = {}) => {
   const options = {
@@ -79,32 +95,93 @@ const request = async (method, url, { body, headers = {} } = {}) => {
 
   const response = await fetch(`${baseUrl}${url}`, options);
 
+  // La petición debe incluir las opciones de método, cuerpo y cabeceras.
+  // Esta segunda llamada se evita usando fetch una sola vez:
   return {
     status: response.status,
     body: await response.json(),
   };
 };
 
-const clearCollections = async () => {
+// Inicializa los archivos JSON dentro de un directorio temporal.
+const resetJSONFiles = async () => {
+  await fs.mkdir(tempDataDir, { recursive: true });
+
+  await Promise.all([
+    fs.writeFile(
+      path.join(tempDataDir, 'jobs.json'),
+      JSON.stringify({ applications: initialApplications }, null, 2),
+      'utf8',
+    ),
+    fs.writeFile(
+      path.join(tempDataDir, 'contacts.json'),
+      JSON.stringify({ contacts: initialContacts }, null, 2),
+      'utf8',
+    ),
+  ]);
+};
+
+// Reinicia solamente las colecciones de la base de datos de pruebas.
+const clearMongoCollections = async () => {
   await Promise.all([
     db.collection('applications').deleteMany({}),
     db.collection('contacts').deleteMany({}),
     db.collection('_counters').deleteMany({}),
   ]);
+
+  await Promise.all([
+    db.collection('applications').insertMany(initialApplications),
+    db.collection('contacts').insertMany(initialContacts),
+  ]);
 };
 
 before(async () => {
-  // Protección para evitar borrar datos de una base de datos real.
-  if (process.env.MONGODB_DB !== TEST_DATABASE_NAME) {
+  if (!['json', 'mongodb'].includes(STORAGE_TYPE)) {
     throw new Error(
-      `Pruebas canceladas: MONGODB_DB debe ser "${TEST_DATABASE_NAME}".`,
+      `TEST_STORAGE_TYPE no válido: ${STORAGE_TYPE}. Usa json o mongodb.`,
     );
   }
 
-  await connectDB();
-  db = getDB();
+  if (STORAGE_TYPE === 'json') {
+    // No se utilizan ni modifican los archivos de datos reales.
+    tempDataDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'job-tracker-test-'),
+    );
 
-  server = createApp({ db }).listen(0);
+    process.env.JSON_DATA_DIR = tempDataDir;
+    await resetJSONFiles();
+  } else {
+    // Impide borrar accidentalmente una base de datos real.
+    if (process.env.MONGODB_DB !== TEST_DATABASE_NAME) {
+      throw new Error(
+        `Pruebas canceladas: MONGODB_DB debe ser "${TEST_DATABASE_NAME}".`,
+      );
+    }
+
+    if (!process.env.MONGODB_URI) {
+      throw new Error(
+        'Pruebas canceladas: falta MONGODB_URI en la configuración.',
+      );
+    }
+
+    const database = require('../db');
+
+    closeDB = database.closeDB;
+
+    // Verifica la conexión real antes de ejecutar las pruebas.
+    await database.connectDB();
+
+    db = database.getDB();
+    await db.command({ ping: 1 });
+  }
+
+  // Se carga después de configurar JSON_DATA_DIR.
+  const { createStorage } = require('../storage');
+  const { createApp } = require('../app');
+
+  storage = createStorage(STORAGE_TYPE);
+
+  server = createApp({ storage }).listen(0);
 
   await new Promise((resolve, reject) => {
     server.once('listening', resolve);
@@ -115,26 +192,37 @@ before(async () => {
 });
 
 beforeEach(async () => {
-  await clearCollections();
-
-  await Promise.all([
-    db.collection('applications').insertMany(initialApplications),
-    db.collection('contacts').insertMany(initialContacts),
-  ]);
+  if (STORAGE_TYPE === 'json') {
+    await resetJSONFiles();
+  } else {
+    await clearMongoCollections();
+  }
 });
 
 after(async () => {
   try {
     if (server) {
-      await new Promise(resolve => {
-        server.close(resolve);
-        server.closeAllConnections?.();
+      const closed = new Promise((resolve, reject) => {
+        server.close(error => {
+          if (error) reject(error);
+          else resolve();
+        });
       });
+
+      server.closeAllConnections?.();
+      await closed;
     }
 
-    if (db) {
-      // Elimina también los registros creados por la última prueba.
+    if (STORAGE_TYPE === 'mongodb' && db) {
+      // Solo se elimina la base cuyo nombre se ha validado arriba.
       await db.dropDatabase();
+    }
+
+    if (tempDataDir) {
+      await fs.rm(tempDataDir, {
+        recursive: true,
+        force: true,
+      });
     }
   } finally {
     await closeDB();
@@ -143,6 +231,7 @@ after(async () => {
 
 describe('isOlderThanPendingLimit', () => {
   it('detecta fechas de más de 30 días', () => {
+    const { isOlderThanPendingLimit } = require('../app');
     const now = new Date('2026-02-01');
 
     assert.equal(isOlderThanPendingLimit('2025-12-01', now), true);
@@ -153,7 +242,10 @@ describe('isOlderThanPendingLimit', () => {
 
 describe('applications', () => {
   it('lista candidaturas', async () => {
-    const { status, body } = await request('GET', '/api/applications');
+    const { status, body } = await request(
+      'GET',
+      '/api/applications',
+    );
 
     assert.equal(status, 200);
     assert.equal(body.applications.length, 2);
@@ -161,14 +253,18 @@ describe('applications', () => {
   });
 
   it('crea una candidatura con ID numérico generado por el servidor', async () => {
-    const { status, body } = await request('POST', '/api/applications', {
-      body: {
-        id: 'x',
-        company: 'Acme',
-        appliedAt: RECENT_DATE,
-        foo: 1,
+    const { status, body } = await request(
+      'POST',
+      '/api/applications',
+      {
+        body: {
+          id: 'x',
+          company: 'Acme',
+          appliedAt: RECENT_DATE,
+          foo: 1,
+        },
       },
-    });
+    );
 
     assert.equal(status, 201);
     assert.equal(typeof body.id, 'number');
@@ -176,8 +272,12 @@ describe('applications', () => {
     assert.equal(body.foo, undefined);
     assert.equal(body._id, undefined);
 
-    const count = await db.collection('applications').countDocuments({});
-    assert.equal(count, 3);
+    const { body: list } = await request(
+      'GET',
+      '/api/applications',
+    );
+
+    assert.equal(list.applications.length, 3);
   });
 
   it('rechaza candidaturas no válidas', async () => {
@@ -187,7 +287,12 @@ describe('applications', () => {
       { appliedAt: RECENT_DATE, company: 42 },
       { appliedAt: '2026-02-31' },
     ]) {
-      const response = await request('POST', '/api/applications', { body });
+      const response = await request(
+        'POST',
+        '/api/applications',
+        { body },
+      );
+
       assert.equal(response.status, 400);
     }
   });
@@ -204,22 +309,30 @@ describe('applications', () => {
   });
 
   it('devuelve 400 para un PATCH sin cuerpo', async () => {
-    const { status } = await request('PATCH', '/api/applications/1');
+    const { status } = await request(
+      'PATCH',
+      '/api/applications/1',
+    );
+
     assert.equal(status, 400);
   });
 
   it('devuelve 400 para JSON mal formado', async () => {
-    const { status } = await request('PATCH', '/api/applications/1', {
-      body: '{bad json',
-    });
+    const { status } = await request(
+      'PATCH',
+      '/api/applications/1',
+      { body: '{bad json' },
+    );
 
     assert.equal(status, 400);
   });
 
   it('devuelve 404 para una candidatura inexistente', async () => {
-    const { status } = await request('PATCH', '/api/applications/99', {
-      body: { status: 'offer' },
-    });
+    const { status } = await request(
+      'PATCH',
+      '/api/applications/99',
+      { body: { status: 'offer' } },
+    );
 
     assert.equal(status, 404);
   });
@@ -260,12 +373,16 @@ describe('applications', () => {
       ),
     );
 
-    assert.ok(responses.every(response => response.status === 201));
+    assert.ok(
+      responses.every(response => response.status === 201),
+    );
 
-    const applications = await db
-      .collection('applications')
-      .find({})
-      .toArray();
+    const { body: list } = await request(
+      'GET',
+      '/api/applications',
+    );
+
+    const applications = list.applications;
 
     assert.equal(applications.length, 12);
     assert.equal(
@@ -273,11 +390,37 @@ describe('applications', () => {
       12,
     );
   });
+
+  it('conserva una candidatura creada al volver a leer los datos', async () => {
+    const created = await request(
+      'POST',
+      '/api/applications',
+      {
+        body: {
+          company: 'Persistent Co',
+          appliedAt: RECENT_DATE,
+        },
+      },
+    );
+
+    assert.equal(created.status, 201);
+
+    const list = await request('GET', '/api/applications');
+
+    assert.ok(
+      list.body.applications.some(
+        item => item.id === created.body.id,
+      ),
+    );
+  });
 });
 
 describe('contacts', () => {
   it('lista contactos', async () => {
-    const { status, body } = await request('GET', '/api/contacts');
+    const { status, body } = await request(
+      'GET',
+      '/api/contacts',
+    );
 
     assert.equal(status, 200);
     assert.equal(body.contacts.length, 2);
@@ -285,22 +428,27 @@ describe('contacts', () => {
   });
 
   it('crea un contacto', async () => {
-    const { status, body } = await request('POST', '/api/contacts', {
-      body: {
-        contact: 'Eva',
-        center: 'Gamma',
-        contactedAt: RECENT_DATE,
-        status: 'pending',
+    const { status, body } = await request(
+      'POST',
+      '/api/contacts',
+      {
+        body: {
+          contact: 'Eva',
+          center: 'Gamma',
+          contactedAt: RECENT_DATE,
+          status: 'pending',
+        },
       },
-    });
+    );
 
     assert.equal(status, 201);
     assert.equal(typeof body.id, 'number');
     assert.equal(body.notes, '');
     assert.equal(body._id, undefined);
 
-    const count = await db.collection('contacts').countDocuments({});
-    assert.equal(count, 3);
+    const { body: list } = await request('GET', '/api/contacts');
+
+    assert.equal(list.contacts.length, 3);
   });
 
   it('rechaza contactos no válidos', async () => {
@@ -318,15 +466,22 @@ describe('contacts', () => {
         status: 'pending',
       },
     ]) {
-      const response = await request('POST', '/api/contacts', { body });
+      const response = await request(
+        'POST',
+        '/api/contacts',
+        { body },
+      );
+
       assert.equal(response.status, 400);
     }
   });
 
   it('actualiza el estado y las notas', async () => {
-    const { status, body } = await request('PATCH', '/api/contacts/2', {
-      body: { status: 'rejected', notes: 'Follow up' },
-    });
+    const { status, body } = await request(
+      'PATCH',
+      '/api/contacts/2',
+      { body: { status: 'rejected', notes: 'Follow up' } },
+    );
 
     assert.equal(status, 200);
     assert.equal(body.status, 'rejected');
@@ -334,17 +489,21 @@ describe('contacts', () => {
   });
 
   it('rechaza notas que no sean texto', async () => {
-    const { status } = await request('PATCH', '/api/contacts/2', {
-      body: { notes: { a: 1 } },
-    });
+    const { status } = await request(
+      'PATCH',
+      '/api/contacts/2',
+      { body: { notes: { a: 1 } } },
+    );
 
     assert.equal(status, 400);
   });
 
   it('devuelve 404 para un contacto inexistente', async () => {
-    const { status } = await request('PATCH', '/api/contacts/99', {
-      body: { notes: 'No existe' },
-    });
+    const { status } = await request(
+      'PATCH',
+      '/api/contacts/99',
+      { body: { notes: 'No existe' } },
+    );
 
     assert.equal(status, 404);
   });
@@ -357,7 +516,10 @@ describe('contacts', () => {
       [1],
     );
 
-    const suspended = await request('PATCH', '/api/contacts/1/suspend');
+    const suspended = await request(
+      'PATCH',
+      '/api/contacts/1/suspend',
+    );
 
     assert.equal(suspended.status, 200);
     assert.equal(suspended.body.status, 'suspended');
@@ -385,9 +547,11 @@ describe('CORS', () => {
   });
 
   it('devuelve 403 para otros orígenes', async () => {
-    const { status } = await request('GET', '/api/contacts', {
-      headers: { Origin: 'http://evil.example' },
-    });
+    const { status } = await request(
+      'GET',
+      '/api/contacts',
+      { headers: { Origin: 'http://evil.example' } },
+    );
 
     assert.equal(status, 403);
   });

@@ -1,7 +1,8 @@
+
 const express = require('express');
 const cors = require('cors');
 const path = require('node:path');
-const { getDB } = require('./db');
+const { createStorage } = require('./storage');
 
 const HTTP_STATUS = {
   BAD_REQUEST: 400,
@@ -91,9 +92,9 @@ const handle = (errorMessage, handler) => async (req, res) => {
     }
 
     console.info(err);
-    res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json({ error: errorMessage });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      error: errorMessage,
+    });
   }
 };
 
@@ -105,10 +106,6 @@ const suspendIfStale = (record, dateField, messages) => {
   if (!isOlderThanPendingLimit(record[dateField])) {
     throw new HttpError(HTTP_STATUS.BAD_REQUEST, messages.tooRecent);
   }
-
-  record.status = 'suspended';
-
-  return record;
 };
 
 const parseApplication = body => {
@@ -149,18 +146,20 @@ const parseApplication = body => {
 const parseContact = body => {
   const { contact, center, contactedAt, status, notes = '' } = body;
 
-  const hasInvalidTypes =
+  if (
     typeof contact !== 'string' ||
     typeof center !== 'string' ||
-    typeof notes !== 'string';
-
-  const hasEmptyRequiredFields =
-    (typeof contact === 'string' && !contact.trim()) ||
-    (typeof center === 'string' && !center.trim());
+    typeof notes !== 'string'
+  ) {
+    throw new HttpError(
+      HTTP_STATUS.BAD_REQUEST,
+      'Datos del contacto no válidos',
+    );
+  }
 
   if (
-    hasInvalidTypes ||
-    hasEmptyRequiredFields ||
+    !contact.trim() ||
+    !center.trim() ||
     !isValidDate(contactedAt) ||
     !ALLOWED_CONTACT_STATUSES.has(status)
   ) {
@@ -173,60 +172,6 @@ const parseContact = body => {
   return { contact, center, contactedAt, status, notes };
 };
 
-const publicRecord = record => {
-  if (!record) {
-    return record;
-  }
-
-  const data = { ...record };
-  delete data._id;
-
-  return data;
-};
-
-const generateId = async (db, collectionName) => {
-  const collection = db.collection(collectionName);
-
-  const lastRecord = await collection
-    .find({})
-    .sort({ id: -1 })
-    .project({ _id: 0, id: 1 })
-    .limit(1)
-    .next();
-
-  const maxExistingId = Number(lastRecord?.id) || 0;
-  const counters = db.collection('_counters');
-
-  await counters.updateOne(
-    { _id: collectionName },
-    { $max: { seq: maxExistingId } },
-    { upsert: true },
-  );
-
-  const result = await counters.findOneAndUpdate(
-    { _id: collectionName },
-    { $inc: { seq: 1 } },
-    { upsert: true, returnDocument: 'after' },
-  );
-
-  const counter = result?.value ?? result;
-
-  return counter.seq;
-};
-
-const findRecordById = async (collection, id, notFoundMessage) => {
-  const record = await collection.findOne(
-    { id: Number(id) },
-    { projection: { _id: 0 } },
-  );
-
-  if (!record) {
-    throw new HttpError(HTTP_STATUS.NOT_FOUND, notFoundMessage);
-  }
-
-  return record;
-};
-
 const addSecurityMiddleware = (app, origins) => {
   app.disable('x-powered-by');
 
@@ -234,9 +179,9 @@ const addSecurityMiddleware = (app, origins) => {
     const { origin } = req.headers;
 
     if (origin && !origins.has(origin)) {
-      res
-        .status(HTTP_STATUS.FORBIDDEN)
-        .json({ error: 'Origen no permitido por CORS' });
+      res.status(HTTP_STATUS.FORBIDDEN).json({
+        error: 'Origen no permitido por CORS',
+      });
       return;
     }
 
@@ -252,50 +197,40 @@ const addSecurityMiddleware = (app, origins) => {
   });
 };
 
-const addApplicationRoutes = (app, database) => {
+const addApplicationRoutes = (app, storage) => {
   app.get(
     '/api/applications',
     handle('No se pudieron leer las candidaturas', async (_req, res) => {
-      const applications = await database()
-        .collection('applications')
-        .find({}, { projection: { _id: 0 } })
-        .toArray();
-
-      res.json({ applications });
+      res.json({
+        applications: await storage.list('applications'),
+      });
     }),
   );
 
   app.post(
     '/api/applications',
     handle('No se pudo guardar la candidatura', async (req, res) => {
-      const db = database();
-      const newApplication = parseApplication(req.body);
+      const application = parseApplication(req.body);
+      const created = await storage.create('applications', application);
 
-      newApplication.id = await generateId(db, 'applications');
-
-      await db.collection('applications').insertOne(newApplication);
-
-      res.status(HTTP_STATUS.CREATED).json(publicRecord(newApplication));
+      res.status(HTTP_STATUS.CREATED).json(created);
     }),
   );
 
   app.get(
     '/api/applications/old',
-    handle('No se pudieron leer las candidaturas antiguas', async (_req, res) => {
-      const applications = await database()
-        .collection('applications')
-        .find(
-          { status: 'pending' },
-          { projection: { _id: 0 } },
-        )
-        .toArray();
+    handle(
+      'No se pudieron leer las candidaturas antiguas',
+      async (_req, res) => {
+        const applications = await storage.list('applications');
 
-      res.json({
-        applications: applications.filter(item =>
-          isStalePending(item, 'appliedAt'),
-        ),
-      });
-    }),
+        res.json({
+          applications: applications.filter(item =>
+            isStalePending(item, 'appliedAt'),
+          ),
+        });
+      },
+    ),
   );
 
   app.patch(
@@ -310,26 +245,18 @@ const addApplicationRoutes = (app, database) => {
         );
       }
 
-      const collection = database().collection('applications');
-      const id = Number(req.params.id);
-
-      const result = await collection.updateOne(
-        { id },
-        { $set: { status } },
+      const application = await storage.update(
+        'applications',
+        req.params.id,
+        { status },
       );
 
-      if (result.matchedCount === 0) {
+      if (!application) {
         throw new HttpError(
           HTTP_STATUS.NOT_FOUND,
           NOT_FOUND_CANDIDATE_MESSAGE,
         );
       }
-
-      const application = await findRecordById(
-        collection,
-        id,
-        NOT_FOUND_CANDIDATE_MESSAGE,
-      );
 
       res.json(application);
     }),
@@ -338,14 +265,15 @@ const addApplicationRoutes = (app, database) => {
   app.patch(
     '/api/applications/:id/suspend',
     handle('No se pudo suspender la candidatura', async (req, res) => {
-      const collection = database().collection('applications');
-      const id = Number(req.params.id);
+      const id = req.params.id;
+      const application = await storage.getById('applications', id);
 
-      const application = await findRecordById(
-        collection,
-        id,
-        NOT_FOUND_CANDIDATE_MESSAGE,
-      );
+      if (!application) {
+        throw new HttpError(
+          HTTP_STATUS.NOT_FOUND,
+          NOT_FOUND_CANDIDATE_MESSAGE,
+        );
+      }
 
       suspendIfStale(application, 'appliedAt', {
         notPending: 'La candidatura no está en espera',
@@ -353,77 +281,65 @@ const addApplicationRoutes = (app, database) => {
           'La candidatura todavía no lleva más de 30 días en espera',
       });
 
-      const result = await collection.updateOne(
-        {
-          id,
-          status: 'pending',
-          appliedAt: application.appliedAt,
-        },
-        { $set: { status: 'suspended' } },
+      const updated = await storage.updatePending(
+        'applications',
+        id,
+        'appliedAt',
+        application.appliedAt,
+        { status: 'suspended' },
       );
 
-      if (result.matchedCount === 0) {
+      if (!updated) {
         throw new HttpError(
           HTTP_STATUS.BAD_REQUEST,
           'La candidatura ha cambiado y no se pudo suspender',
         );
       }
 
-      res.json(application);
+      res.json(updated);
     }),
   );
 };
 
-const addContactRoutes = (app, database) => {
+const addContactRoutes = (app, storage) => {
   app.get(
     '/api/contacts',
     handle('No se pudieron leer los contactos', async (_req, res) => {
-      const contacts = await database()
-        .collection('contacts')
-        .find({}, { projection: { _id: 0 } })
-        .toArray();
-
-      res.json({ contacts });
+      res.json({ contacts: await storage.list('contacts') });
     }),
   );
 
   app.post(
     '/api/contacts',
     handle('No se pudo guardar el contacto', async (req, res) => {
-      const db = database();
-      const newContact = parseContact(req.body);
+      const contact = parseContact(req.body);
+      const created = await storage.create('contacts', contact);
 
-      newContact.id = await generateId(db, 'contacts');
-
-      await db.collection('contacts').insertOne(newContact);
-
-      res.status(HTTP_STATUS.CREATED).json(publicRecord(newContact));
+      res.status(HTTP_STATUS.CREATED).json(created);
     }),
   );
 
   app.get(
     '/api/contacts/old',
-    handle('No se pudieron leer los contactos antiguos', async (_req, res) => {
-      const contacts = await database()
-        .collection('contacts')
-        .find(
-          { status: 'pending' },
-          { projection: { _id: 0 } },
-        )
-        .toArray();
+    handle(
+      'No se pudieron leer los contactos antiguos',
+      async (_req, res) => {
+        const contacts = await storage.list('contacts');
 
-      res.json({
-        contacts: contacts.filter(item =>
-          isStalePending(item, 'contactedAt'),
-        ),
-      });
-    }),
+        res.json({
+          contacts: contacts.filter(item =>
+            isStalePending(item, 'contactedAt'),
+          ),
+        });
+      },
+    ),
   );
 
   app.patch(
     '/api/contacts/:id',
     handle('No se pudo actualizar el contacto', async (req, res) => {
       const { status, notes } = req.body;
+      const changes = {};
 
       if (
         status !== undefined &&
@@ -442,37 +358,27 @@ const addContactRoutes = (app, database) => {
         );
       }
 
-      const collection = database().collection('contacts');
-      const id = Number(req.params.id);
-      const updates = {};
-
       if (status !== undefined) {
-        updates.status = status;
+        changes.status = status;
       }
-
       if (notes !== undefined) {
-        updates.notes = notes;
+        changes.notes = notes;
       }
 
-      if (Object.keys(updates).length > 0) {
-        const result = await collection.updateOne(
-          { id },
-          { $set: updates },
+      let contact;
+
+      if (Object.keys(changes).length > 0) {
+        contact = await storage.update('contacts', req.params.id, changes);
+      } else {
+        contact = await storage.getById('contacts', req.params.id);
+      }
+
+      if (!contact) {
+        throw new HttpError(
+          HTTP_STATUS.NOT_FOUND,
+          NOT_FOUND_CONTACT_MESSAGE,
         );
-
-        if (result.matchedCount === 0) {
-          throw new HttpError(
-            HTTP_STATUS.NOT_FOUND,
-            NOT_FOUND_CONTACT_MESSAGE,
-          );
-        }
       }
-
-      const contact = await findRecordById(
-        collection,
-        id,
-        NOT_FOUND_CONTACT_MESSAGE,
-      );
 
       res.json(contact);
     }),
@@ -481,52 +387,53 @@ const addContactRoutes = (app, database) => {
   app.patch(
     '/api/contacts/:id/suspend',
     handle('No se pudo suspender el contacto', async (req, res) => {
-      const collection = database().collection('contacts');
-      const id = Number(req.params.id);
+      const id = req.params.id;
+      const contact = await storage.getById('contacts', id);
 
-      const contact = await findRecordById(
-        collection,
-        id,
-        NOT_FOUND_CONTACT_MESSAGE,
-      );
+      if (!contact) {
+        throw new HttpError(
+          HTTP_STATUS.NOT_FOUND,
+          NOT_FOUND_CONTACT_MESSAGE,
+        );
+      }
 
       suspendIfStale(contact, 'contactedAt', {
         notPending: 'El contacto no está en espera',
-        tooRecent: 'El contacto todavía no lleva más de 30 días en espera',
+        tooRecent:
+          'El contacto todavía no lleva más de 30 días en espera',
       });
 
-      const result = await collection.updateOne(
-        {
-          id,
-          status: 'pending',
-          contactedAt: contact.contactedAt,
-        },
-        { $set: { status: 'suspended' } },
+      const updated = await storage.updatePending(
+        'contacts',
+        id,
+        'contactedAt',
+        contact.contactedAt,
+        { status: 'suspended' },
       );
 
-      if (result.matchedCount === 0) {
+      if (!updated) {
         throw new HttpError(
           HTTP_STATUS.BAD_REQUEST,
           'El contacto ha cambiado y no se pudo suspender',
         );
       }
 
-      res.json(contact);
+      res.json(updated);
     }),
   );
 };
 
 const createApp = ({
-  db: injectedDB,
+  storage: injectedStorage,
   allowedOrigins = DEFAULT_ALLOWED_ORIGINS,
 } = {}) => {
   const app = express();
+  const storage = injectedStorage || createStorage();
   const origins = new Set(allowedOrigins);
-  const database = () => injectedDB || getDB();
 
   addSecurityMiddleware(app, origins);
-  addApplicationRoutes(app, database);
-  addContactRoutes(app, database);
+  addApplicationRoutes(app, storage);
+  addContactRoutes(app, storage);
 
   const clientDistPath = path.resolve(__dirname, '../client/dist');
 
@@ -538,29 +445,26 @@ const createApp = ({
       return;
     }
 
-    res.sendFile(
-      path.join(clientDistPath, 'index.html'),
-      error => {
-        if (error) {
-          next(error);
-        }
-      },
-    );
+    res.sendFile(path.join(clientDistPath, 'index.html'), error => {
+      if (error) {
+        next(error);
+      }
+    });
   });
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
     if (err.type === 'entity.parse.failed') {
-      res
-        .status(HTTP_STATUS.BAD_REQUEST)
-        .json({ error: 'El cuerpo de la petición no es JSON válido' });
+      res.status(HTTP_STATUS.BAD_REQUEST).json({
+        error: 'El cuerpo de la petición no es JSON válido',
+      });
       return;
     }
 
     console.info(err);
-    res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json({ error: 'Error interno del servidor' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      error: 'Error interno del servidor',
+    });
   });
 
   return app;
