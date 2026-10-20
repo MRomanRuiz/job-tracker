@@ -22,9 +22,6 @@ const APPLICATION_TEXT_FIELDS = [
   'position',
   'location',
   'type',
-  'field',
-  'duration',
-  'document',
 ];
 
 const isOlderThanPendingLimit = (date, now = new Date()) => {

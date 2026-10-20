@@ -156,9 +156,6 @@ A record can contain the following fields:
 | `type` | Application type, such as `Empresa` or `Investigación`. |
 | `appliedAt` | Application date in `YYYY-MM-DD` format. |
 | `status` | `pending`, `interview`, `offer`, `rejected`, or `suspended`. |
-| `field` | Professional field or area. |
-| `duration` | Employment duration or contract type. |
-| `document` | Optional document-related information. |
 
 Example `jobs.json`:
 
@@ -171,11 +168,8 @@ Example `jobs.json`:
       "company": "Example Company",
       "location": "Remote",
       "position": "Software Engineer",
-      "duration": "Permanent",
       "type": "Empresa",
-      "field": "Software Engineering",
       "status": "pending",
-      "document": ""
     }
   ]
 }
