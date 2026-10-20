@@ -46,17 +46,17 @@ function createMongoStorage() {
     },
 
     async create(name, record) {
-        const db = getDB();
-        const newRecord = {
-            ...record,
-            id: await generateId(db, name),
-        };
+      const db = getDB();
+      const newRecord = {
+        ...record,
+        id: await generateId(db, name),
+      };
 
-        await db.collection(name).insertOne(newRecord);
+      await db.collection(name).insertOne(newRecord);
 
-        const { _id, ...publicRecord } = newRecord;
-        return publicRecord;
-        },
+      delete newRecord._id;
+      return newRecord;
+    },
 
     async update(name, id, changes) {
       const collection = getDB().collection(name);
