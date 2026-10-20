@@ -1,4 +1,3 @@
-
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const os = require('node:os');
@@ -6,16 +5,12 @@ const os = require('node:os');
 const { after, before, beforeEach, describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
-// Permite elegir el backend desde el comando de CI antes de cargar .env.test.
-const explicitTestStorageType = process.env.TEST_STORAGE_TYPE;
-
 require('dotenv').config({
   path: path.join(__dirname, '..', '.env.test'),
   override: false,
 });
 
 const STORAGE_TYPE = (
-  explicitTestStorageType ||
   process.env.TEST_STORAGE_TYPE ||
   process.env.STORAGE_TYPE ||
   'json'
@@ -172,6 +167,13 @@ before(async () => {
     await database.connectDB();
 
     db = database.getDB();
+
+    if (db.databaseName !== TEST_DATABASE_NAME) {
+      throw new Error(
+        `Pruebas canceladas: conexión a una base inesperada (${db.databaseName}).`,
+      );
+    }
+
     await db.command({ ping: 1 });
   }
 
@@ -214,7 +216,12 @@ after(async () => {
     }
 
     if (STORAGE_TYPE === 'mongodb' && db) {
-      // Solo se elimina la base cuyo nombre se ha validado arriba.
+      if (db.databaseName !== TEST_DATABASE_NAME) {
+        throw new Error(
+          'Se cancela el borrado: la base conectada no es la base de test.',
+        );
+      }
+
       await db.dropDatabase();
     }
 
