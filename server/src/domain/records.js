@@ -20,13 +20,29 @@ const ALLOWED_CONTACT_STATUSES = new Set([
 const APPLICATION_TEXT_FIELDS = [
   'company',
   'position',
-  'location',
+  'city',
+  'country',
   'type',
+  'notes',
 ];
+
+const ALLOWED_APPLICATION_TYPES = new Set([
+  'industry',
+  'research',
+]);
+
+const APPLICATION_DURATION_TYPES = new Set([
+  'fixed',
+  'indefinite',
+]);
 
 const CONTACT_TEXT_FIELDS = [
   'contact',
-  'center',
+  'email',
+  'institution',
+  'department',
+  'city',
+  'country',
   'notes',
 ];
 
@@ -67,69 +83,118 @@ const suspendIfStale = (record, dateField, messages) => {
   }
 };
 
-const parseApplication = body => {
-  const application = {};
-
-  for (const field of APPLICATION_TEXT_FIELDS) {
-    const value = body[field] ?? '';
-
-    if (typeof value !== 'string') {
-      throw new HttpError(
-        HTTP_STATUS.BAD_REQUEST,
-        'Datos de la candidatura no válidos',
-      );
-    }
-
-    application[field] = value.trim();
-  }
-
-  const status = body.status ?? 'pending';
-
+const assertValidBody = body => {
   if (
-    !isValidDate(body.appliedAt) ||
-    !ALLOWED_APPLICATION_STATUSES.has(status)
+    !body ||
+    typeof body !== 'object' ||
+    Array.isArray(body)
   ) {
     throw new HttpError(
       HTTP_STATUS.BAD_REQUEST,
-      'Datos de la candidatura no válidos',
+      'Cuerpo de la petición no válido',
+    );
+  }
+};
+
+const parseTextFields = (body, fields, errorMessage) =>
+  Object.fromEntries(
+    fields.map(field => {
+      const value = body[field] ?? '';
+
+      if (typeof value !== 'string') {
+        throw new HttpError(
+          HTTP_STATUS.BAD_REQUEST,
+          errorMessage,
+        );
+      }
+
+      return [field, value.trim()];
+    }),
+  );
+
+const hasEmptyFields = (data, fields) =>
+  fields.some(field => !data[field]);
+
+const parseApplication = body => {
+  const errorMessage = 'Datos de la candidatura no válidos';
+
+  assertValidBody(body);
+
+  const application = parseTextFields(
+    body,
+    APPLICATION_TEXT_FIELDS,
+    errorMessage,
+  );
+
+  const status = body.status ?? 'pending';
+  const durationType = body.durationType ?? 'unknown';
+  const durationMonths = body.durationMonths ?? null;
+
+  const hasInvalidDurationType =
+    !APPLICATION_DURATION_TYPES.has(durationType);
+
+  const hasInvalidDurationMonths =
+    durationType === 'fixed'
+      ? !Number.isInteger(durationMonths) || durationMonths <= 0
+      : durationMonths !== null;
+
+  const hasInvalidApplicationData = [
+    hasEmptyFields(application, [
+      'company',
+      'position',
+      'type',
+    ]),
+    !isValidDate(body.appliedAt),
+    !ALLOWED_APPLICATION_STATUSES.has(status),
+    !ALLOWED_APPLICATION_TYPES.has(application.type),
+    hasInvalidDurationType,
+    hasInvalidDurationMonths,
+  ].some(Boolean);
+
+  if (hasInvalidApplicationData) {
+    throw new HttpError(
+      HTTP_STATUS.BAD_REQUEST,
+      errorMessage,
     );
   }
 
   return {
     ...application,
     appliedAt: body.appliedAt,
+    durationType,
+    durationMonths,
     status,
   };
 };
 
-
 const parseContact = body => {
-  const contactData = {};
+  const errorMessage = 'Datos del contacto no válidos';
 
-  for (const field of CONTACT_TEXT_FIELDS) {
-    const value = body[field] ?? '';
+  assertValidBody(body);
 
-    if (typeof value !== 'string') {
-      throw new HttpError(
-        HTTP_STATUS.BAD_REQUEST,
-        'Datos del contacto no válidos',
-      );
-    }
-
-    contactData[field] = value.trim();
-  }
+  const contactData = parseTextFields(
+    body,
+    CONTACT_TEXT_FIELDS,
+    errorMessage,
+  );
 
   const status = body.status ?? 'pending';
 
-  if (
-    !contactData.contact ||
-    !contactData.center ||
-    !isValidDate(body.contactedAt) ||
-    !ALLOWED_CONTACT_STATUSES.has(status)
-  ) {
+  const hasInvalidContactData = [
+    hasEmptyFields(contactData, [
+      'contact',
+      'email',
+      'institution',
+      'country',
+    ]),
+    !isValidDate(body.contactedAt),
+    !ALLOWED_CONTACT_STATUSES.has(status),
+  ].some(Boolean);
+
+  if (hasInvalidContactData) {
     throw new HttpError(
       HTTP_STATUS.BAD_REQUEST,
-      'Datos del contacto no válidos',
+      errorMessage,
     );
   }
 
@@ -143,9 +208,12 @@ const parseContact = body => {
 module.exports = {
   ALLOWED_APPLICATION_STATUSES,
   ALLOWED_CONTACT_STATUSES,
+  ALLOWED_APPLICATION_TYPES,
+  APPLICATION_DURATION_TYPES,
   isOlderThanPendingLimit,
   isStalePending,
+  isValidDate,
+  suspendIfStale,
   parseApplication,
   parseContact,
-  suspendIfStale,
 };

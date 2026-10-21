@@ -14,11 +14,60 @@ import StaleItemsAlert from '../../shared/components/StaleItemsAlert';
 import StatCards from '../../shared/components/StatCards';
 import Toolbar from '../../shared/components/Toolbar';
 
-const FORM_FIELDS = [
-  { name: 'company', placeholder: 'Empresa', required: true },
-  { name: 'position', placeholder: 'Puesto', required: true },
-  { name: 'location', placeholder: 'Ubicación', required: true },
-  { name: 'type', placeholder: 'Tipo', required: true },
+const REQUIRED_FORM_FIELDS = [
+  {
+    name: 'position',
+    placeholder: 'Puesto',
+    required: true,
+  },
+  {
+    name: 'company',
+    placeholder: 'Empresa',
+    required: true,
+  },
+  {
+    name: 'type',
+    placeholder: 'Tipo',
+    required: true,
+  },
+  {
+    name: 'country',
+    placeholder: 'País',
+    required: true,
+  },
+];
+
+const OPTIONAL_FORM_FIELDS = [
+  {
+    name: 'city',
+    placeholder: 'Ciudad',
+    required: false,
+  },
+  {
+    name: 'durationType',
+    placeholder: 'Tipo de contrato',
+    type: 'select',
+    initialValue: '',
+    options: [
+      { value: 'fixed', label: 'Temporal' },
+      { value: 'indefinite', label: 'Indefinido' },
+    ],
+    required: false,
+  },
+  {
+    name: 'durationMonths',
+    placeholder: 'Duración (meses)',
+    type: 'number',
+    min: 1,
+    step: 1,
+    required: false,
+  },
+  {
+    name: 'notes',
+    placeholder: 'Notas',
+    type: 'textarea',
+    required: false,
+  },
 ];
 
 const STAT_ITEMS = [
@@ -116,7 +165,8 @@ function Applications({ collection, showForm, onCloseForm }) {
         <div className="record-form-wrapper">
           <RecordForm
             title="Nueva candidatura"
-            fields={FORM_FIELDS}
+            requiredFields={REQUIRED_FORM_FIELDS}
+            optionalFields={OPTIONAL_FORM_FIELDS}
             submitLabel="Guardar candidatura"
             onSubmit={handleCreate}
             onCancel={onCloseForm}

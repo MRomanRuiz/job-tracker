@@ -149,6 +149,82 @@ main {
   outline: none;
 }
 
+.record-form-field input,
+.record-form-field textarea,
+.record-form-field select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  color: #1f2937;
+  font: inherit;
+}
+
+.record-form-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  cursor: pointer;
+  font-weight: 400;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.record-form-field select:invalid {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.status-select option {
+  background: white;
+  color: #1f2937;
+  font-weight: 400;
+  text-align: left;
+}
+
+.record-form-field select option {
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.record-form-field input {
+  height: 42px;
+}
+
+.record-form-field textarea {
+  resize: vertical;
+}
+
+.note-popup-body textarea {
+  width: 100%;
+  min-height: 130px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #1f2937;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+}
+
+.record-form-field input:focus,
+.record-form-field textarea:focus,
+.record-form-field select:focus {
+  outline: none;
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.05);
+}
+
 .toolbar input:focus,
 .toolbar select:focus {
   border-color: #9ca3af;
@@ -224,13 +300,6 @@ th {
 .status-select.suspended {
   background: #fee2e2;
   color: #b91c1c;
-}
-
-.status-select option {
-  background: white;
-  color: #1f2937;
-  font-weight: 400;
-  text-align: left;
 }
 
 .date-cell {
@@ -408,21 +477,6 @@ th {
   grid-template-columns: 1fr;
 }
 
-.note-popup-body textarea {
-  width: 100%;
-  min-height: 130px;
-  box-sizing: border-box;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #1f2937;
-  font: inherit;
-  font-size: 14px;
-  line-height: 1.5;
-  resize: vertical;
-  outline: none;
-}
 
 .note-button span:first-child {
   font-size: 15px;
@@ -573,4 +627,66 @@ th {
 
 .record-form-wrapper {
   margin-top: 16px;
+  padding-left: 20px;
+  padding-right: 20px;
+  box-sizing: border-box;
+}
+
+.record-form-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.record-form-field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.optional-fields-toggle {
+  display: inline-flex;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  color: #374151;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.optional-fields-toggle:hover {
+  background: #f9fafb;
+}
+
+.optional-fields-row {
+  margin-top: 12px;
+}
+
+/* Adaptación para pantallas pequeñas */
+@media (max-width: 600px) {
+  .record-form-row {
+    flex-wrap: wrap;
+  }
+
+  .record-form-field {
+    flex: 1 1 100%;
+  }
+
+  .optional-fields-toggle {
+    flex: 0 0 36px;
+  }
+}
+
+.record-form-field select:has(option[value=""]:checked) {
+  color: #6b7280;
+  font-weight: 400;
+  font-size: inherit;
 }
