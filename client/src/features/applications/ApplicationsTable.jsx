@@ -1,4 +1,4 @@
-import { APPLICATION_STATUS_LABELS } from '../../shared/lib/constants';
+import { APPLICATION_STATUS_LABELS , APPLICATION_TYPE_LABELS } from '../../shared/lib/constants';
 import EmptyState from '../../shared/components/EmptyState';
 import StatusSelect from '../../shared/components/StatusSelect';
 import NoteButton from '../../shared/components/NoteButton';
@@ -30,7 +30,7 @@ function ApplicationsTable({ applications, onStatusChange, onOpenNote }) {
             <td>{job.company}</td>
             <td>{job.position}</td>
             <td>{job.location}</td>
-            <td>{job.type}</td>
+            <td>{APPLICATION_TYPE_LABELS[job.type] || job.type}</td>
             <td className="date-cell">{job.appliedAt}</td>
             <td>
               <StatusSelect

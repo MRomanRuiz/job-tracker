@@ -29,7 +29,12 @@ const REQUIRED_FORM_FIELDS = [
   {
     name: 'type',
     placeholder: 'Tipo',
+    type: 'select',
     required: true,
+    options: [
+      { value: 'industry', label: 'Empresa' },
+      { value: 'research', label: 'Investigación' },
+    ],
   },
   {
     name: 'country',
@@ -193,8 +198,8 @@ function Applications({ collection, showForm, onCloseForm }) {
             onChange={event => handleTypeChange(event.target.value)}
           >
             <option value="">Todos los tipos</option>
-            <option value="Empresa">Empresa</option>
-            <option value="Investigación">Investigación</option>
+            <option value="industry">Empresa</option>
+            <option value="research">Investigación</option>
           </select>
         </Toolbar>
 

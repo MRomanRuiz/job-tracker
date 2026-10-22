@@ -19,13 +19,12 @@ import Toolbar from '../../shared/components/Toolbar';
 const REQUIRED_FORM_FIELDS = [
   {
     name: 'contact',
-    placeholder: 'Nombre del contacto',
+    placeholder: 'Nombre',
     required: true,
   },
     {
     name: 'email',
-    placeholder: 'Email',
-    type: 'email',
+    placeholder: 'Email o contacto',
     required: true,
   },
   {

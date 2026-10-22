@@ -14,8 +14,10 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote }) {
     <table>
       <thead>
         <tr>
-          <th>Contacto</th>
+          <th>Nombre</th>
+          <th>Email / Contacto</th>
           <th>Centro / Empresa</th>
+          <th>País</th>
           <th>Fecha</th>
           <th>Estado</th>
           <th>Nota</th>
@@ -26,7 +28,9 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote }) {
         {contacts.map(contact => (
           <tr key={contact.id}>
             <td>{contact.contact}</td>
-            <td>{contact.center}</td>
+            <td>{contact.email}</td>
+            <td>{contact.institution}</td>
+            <td>{contact.country}</td>
             <td className="date-cell">{contact.contactedAt}</td>
             <td>
               <StatusSelect
