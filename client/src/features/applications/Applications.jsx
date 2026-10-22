@@ -62,10 +62,7 @@ const OPTIONAL_FORM_FIELDS = [
   },
   {
     name: 'durationMonths',
-    placeholder: 'Duración (meses)',
-    type: 'number',
-    min: 1,
-    step: 1,
+    placeholder: 'Duración en meses (si es temporal)',
     required: false,
   },
 ];

@@ -91,6 +91,10 @@ function RecordForm({
           type={type}
           min={min}
           step={step}
+          disabled={
+            field.name === 'durationMonths' &&
+            values.durationType === 'indefinite'
+          }
         />
       );
     }
