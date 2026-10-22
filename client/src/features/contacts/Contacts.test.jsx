@@ -6,7 +6,9 @@ const contacts = [
   {
     id: 1,
     contact: 'Ana',
-    center: 'Acme',
+    email: 'ana@acme.com',
+    institution: 'Acme',
+    country: 'España',
     contactedAt: '2026-01-02',
     status: 'pending',
     notes: '',
@@ -14,7 +16,9 @@ const contacts = [
   {
     id: 2,
     contact: 'Luis',
-    center: 'Globex',
+    email: 'luis@globex.com',
+    institution: 'Globex',
+    country: 'España',
     contactedAt: '2026-01-01',
     status: 'replied',
     notes: 'Llamar el lunes',
@@ -80,7 +84,9 @@ describe('Contacts', () => {
     renderContacts();
 
     fireEvent.change(
-      screen.getByPlaceholderText('Buscar contacto, centro o notas...'),
+      screen.getByPlaceholderText(
+        'Buscar contacto, institución, email o notas...',
+      ),
       { target: { value: 'lunes' } },
     );
 
@@ -88,17 +94,36 @@ describe('Contacts', () => {
     expect(screen.getByText('Mostrando 1 de 2 contactos')).toBeTruthy();
   });
 
-  it('creates pending contacts with an empty note', async () => {
+  it('creates a contact with the current required and optional fields', async () => {
     const { collection, onCloseForm } = renderContacts({
       showForm: true,
     });
 
-    fireEvent.change(screen.getByPlaceholderText('Contacto / Email'), {
+    fireEvent.change(screen.getByPlaceholderText('Nombre *'), {
       target: { value: 'Eva' },
     });
-
-    fireEvent.change(screen.getByPlaceholderText('Centro / Empresa'), {
+    fireEvent.change(screen.getByPlaceholderText('Email o contacto *'), {
+      target: { value: 'eva@initech.com' },
+    });
+    fireEvent.change(
+      screen.getByPlaceholderText('Empresa o universidad *'),
+      {
       target: { value: 'Initech' },
+      },
+    );
+    fireEvent.change(screen.getByPlaceholderText('País *'), {
+      target: { value: 'España' },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mostrar campos opcionales' }),
+    );
+    fireEvent.change(
+      screen.getByPlaceholderText('Departamento o laboratorio'),
+      { target: { value: 'Investigación' } },
+    );
+    fireEvent.change(screen.getByPlaceholderText('Ciudad'), {
+      target: { value: 'Madrid' },
     });
 
     fireEvent.click(
@@ -109,7 +134,11 @@ describe('Contacts', () => {
 
     expect(collection.create).toHaveBeenCalledWith({
       contact: 'Eva',
-      center: 'Initech',
+      email: 'eva@initech.com',
+      institution: 'Initech',
+      country: 'España',
+      department: 'Investigación',
+      city: 'Madrid',
       contactedAt: getToday(),
       status: 'pending',
       notes: '',
@@ -122,11 +151,20 @@ describe('Contacts', () => {
     });
     collection.create.mockResolvedValue(false);
 
-    fireEvent.change(screen.getByPlaceholderText('Contacto / Email'), {
+    fireEvent.change(screen.getByPlaceholderText('Nombre *'), {
       target: { value: 'Eva' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Centro / Empresa'), {
+    fireEvent.change(screen.getByPlaceholderText('Email o contacto *'), {
+      target: { value: 'eva@email.com' },
+    });
+    fireEvent.change(
+      screen.getByPlaceholderText('Empresa o universidad *'),
+      {
       target: { value: 'Initech' },
+      },
+    );
+    fireEvent.change(screen.getByPlaceholderText('País *'), {
+      target: { value: 'España' },
     });
     fireEvent.click(
       screen.getByRole('button', { name: 'Guardar contacto' }),
@@ -180,6 +218,25 @@ describe('Contacts', () => {
     expect(collection.update).toHaveBeenCalledWith(1, {
       status: 'replied',
     });
+  });
+
+  it('shows the new contact fields in the table and searches by email', () => {
+    renderContacts();
+
+    expect(screen.getByText('Email / Contacto')).toBeTruthy();
+    expect(screen.getByText('Centro / Empresa')).toBeTruthy();
+    expect(screen.getByText('País')).toBeTruthy();
+    expect(screen.getByText('ana@acme.com')).toBeTruthy();
+    expect(screen.getAllByText('España')).toHaveLength(2);
+
+    fireEvent.change(
+      screen.getByPlaceholderText(
+        'Buscar contacto, institución, email o notas...',
+      ),
+      { target: { value: 'luis@globex.com' } },
+    );
+
+    expect(names()).toEqual(['Luis']);
   });
 
   it('edits a note and closes the dialog after saving', async () => {

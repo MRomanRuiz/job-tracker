@@ -63,7 +63,7 @@ function RecordForm({
       required,
       id: name,
       placeholder: required ? `${placeholder} *` : placeholder,
-      value: values[name] ?? '',
+      value: values[name],
       onChange: handleChange,
     };
 
