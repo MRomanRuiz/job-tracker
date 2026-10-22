@@ -48,20 +48,48 @@ const addApplicationRoutes = (app, storage) => {
   app.patch(
     '/api/applications/:id',
     handle('No se pudo actualizar la candidatura', async (req, res) => {
-      const { status } = req.body;
+      const { status, notes } = req.body;
+      const changes = {};
 
-      if (!ALLOWED_APPLICATION_STATUSES.has(status)) {
+      if (
+        status !== undefined &&
+        !ALLOWED_APPLICATION_STATUSES.has(status)
+      ) {
         throw new HttpError(
           HTTP_STATUS.BAD_REQUEST,
           'Estado no permitido',
         );
       }
 
-      const application = await storage.update(
-        'applications',
-        req.params.id,
-        { status },
-      );
+      if (notes !== undefined && typeof notes !== 'string') {
+        throw new HttpError(
+          HTTP_STATUS.BAD_REQUEST,
+          'Nota no válida',
+        );
+      }
+
+      if (status !== undefined) {
+        changes.status = status;
+      }
+
+      if (notes !== undefined) {
+        changes.notes = notes;
+      }
+
+      let application;
+
+      if (Object.keys(changes).length > 0) {
+        application = await storage.update(
+          'applications',
+          req.params.id,
+          changes,
+        );
+      } else {
+        application = await storage.getById(
+          'applications',
+          req.params.id,
+        );
+      }
 
       if (!application) {
         throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
@@ -70,6 +98,7 @@ const addApplicationRoutes = (app, storage) => {
       res.json(application);
     }),
   );
+
 
   app.patch(
     '/api/applications/:id/suspend',

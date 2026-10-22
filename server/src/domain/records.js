@@ -127,10 +127,11 @@ const parseApplication = body => {
   );
 
   const status = body.status ?? 'pending';
-  const durationType = body.durationType ?? 'unknown';
+  const durationType = body.durationType ?? '';
   const durationMonths = body.durationMonths ?? null;
 
   const hasInvalidDurationType =
+    durationType !== '' &&
     !APPLICATION_DURATION_TYPES.has(durationType);
 
   const hasInvalidDurationMonths =
