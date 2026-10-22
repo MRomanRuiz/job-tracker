@@ -1,5 +1,5 @@
-function NoteButton({ contact, onOpen }) {
-  const hasNote = Boolean(contact.notes?.trim());
+function NoteButton({ item, onOpen }) {
+  const hasNote = Boolean(item.notes?.trim());
   const label = hasNote ? 'Ver y editar nota' : 'Añadir nota';
 
   return (
@@ -8,7 +8,7 @@ function NoteButton({ contact, onOpen }) {
       className={hasNote ? 'note-button has-note' : 'note-button'}
       title={label}
       aria-label={label}
-      onClick={() => onOpen(contact)}
+      onClick={() => onOpen(item)}
     >
       <span aria-hidden="true">{hasNote ? '📝' : '○'}</span>
     </button>

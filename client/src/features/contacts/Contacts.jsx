@@ -8,7 +8,7 @@ import {
   sortByDateDesc,
 } from '../../shared/lib/utils';
 import ContactsTable from './ContactsTable';
-import NoteForm from './NoteForm';
+import NoteForm from '../../shared/components/NoteForm';
 import Pagination from '../../shared/components/Pagination';
 import RecordForm from '../../shared/components/RecordForm';
 import StaleItemsAlert from '../../shared/components/StaleItemsAlert';
@@ -49,12 +49,6 @@ const OPTIONAL_FORM_FIELDS = [
   {
     name: 'city',
     placeholder: 'Ciudad',
-    required: false,
-  },
-  {
-    name: 'notes',
-    placeholder: 'Notas',
-    type: 'textarea',
     required: false,
   },
 ];
@@ -126,6 +120,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
         ...values,
         contactedAt,
         status: 'pending',
+        notes: '',
       })
     ) {
       onCloseForm();
@@ -206,7 +201,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
 
       {noteContact && (
         <NoteForm
-          contact={noteContact}
+          item={noteContact}
           onSave={handleSaveNote}
           onCancel={() => setNoteContact(null)}
         />

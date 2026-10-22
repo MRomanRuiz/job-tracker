@@ -1,12 +1,14 @@
 import { useState } from 'react';
 
-function NoteForm({ contact, onSave, onCancel }) {
-  const [note, setNote] = useState(contact.notes || '');
+function NoteForm({ item, onSave, onCancel }) {
+  const [note, setNote] = useState(item.notes || '');
 
   const handleSubmit = event => {
     event.preventDefault();
     onSave(note);
   };
+
+  const title = item.contact || item.company || item.position;
 
   return (
     <div className="note-popup-overlay">
@@ -22,7 +24,7 @@ function NoteForm({ contact, onSave, onCancel }) {
 
             <div>
               <h3 id="note-popup-title">Nota</h3>
-              <p>{contact.contact}</p>
+              <p>{title}</p>
             </div>
           </div>
 

@@ -13,6 +13,7 @@ import RecordForm from '../../shared/components/RecordForm';
 import StaleItemsAlert from '../../shared/components/StaleItemsAlert';
 import StatCards from '../../shared/components/StatCards';
 import Toolbar from '../../shared/components/Toolbar';
+import NoteForm from '../../shared/components/NoteForm';
 
 const REQUIRED_FORM_FIELDS = [
   {
@@ -62,12 +63,6 @@ const OPTIONAL_FORM_FIELDS = [
     step: 1,
     required: false,
   },
-  {
-    name: 'notes',
-    placeholder: 'Notas',
-    type: 'textarea',
-    required: false,
-  },
 ];
 
 const STAT_ITEMS = [
@@ -93,6 +88,7 @@ function Applications({ collection, showForm, onCloseForm }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
   const [typeFilter, setTypeFilter] = useState('');
+  const [noteApplication, setNoteApplication] = useState(null);
 
   const filteredApplications = useMemo(() => {
     const searchText = search.trim().toLowerCase();
@@ -131,8 +127,14 @@ function Applications({ collection, showForm, onCloseForm }) {
       String(today.getDate()).padStart(2, '0'),
     ].join('-');
 
-    if (await create({ ...values, appliedAt })) {
+    if (await create({ ...values, notes: '', appliedAt })) {
       onCloseForm();
+    }
+  };
+
+  const handleSaveNote = async notes => {
+    if (await update(noteApplication.id, { notes })) {
+      setNoteApplication(null);
     }
   };
 
@@ -205,6 +207,7 @@ function Applications({ collection, showForm, onCloseForm }) {
           <ApplicationsTable
             applications={paginatedApplications}
             onStatusChange={(id, status) => update(id, { status })}
+            onOpenNote={setNoteApplication}
           />
         </section>
 
@@ -214,6 +217,13 @@ function Applications({ collection, showForm, onCloseForm }) {
           onPageChange={setPage}
         />
       </main>
+      {noteApplication && (
+        <NoteForm
+          item={noteApplication}
+          onSave={handleSaveNote}
+          onCancel={() => setNoteApplication(null)}
+        />
+      )}
     </>
   );
 }

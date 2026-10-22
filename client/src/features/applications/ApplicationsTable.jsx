@@ -1,10 +1,11 @@
 import { APPLICATION_STATUS_LABELS } from '../../shared/lib/constants';
 import EmptyState from '../../shared/components/EmptyState';
 import StatusSelect from '../../shared/components/StatusSelect';
+import NoteButton from '../../shared/components/NoteButton';
 
 const MANUAL_STATUSES = ['pending', 'interview', 'offer', 'rejected'];
 
-function ApplicationsTable({ applications, onStatusChange }) {
+function ApplicationsTable({ applications, onStatusChange, onOpenNote }) {
   if (applications.length === 0) {
     return <EmptyState label="candidaturas" />;
   }
@@ -19,6 +20,7 @@ function ApplicationsTable({ applications, onStatusChange }) {
           <th>Tipo</th>
           <th>Fecha</th>
           <th>Estado</th>
+          <th>Nota</th>
         </tr>
       </thead>
 
@@ -37,6 +39,9 @@ function ApplicationsTable({ applications, onStatusChange }) {
                 labels={APPLICATION_STATUS_LABELS}
                 onChange={status => onStatusChange(job.id, status)}
               />
+            </td>
+            <td className="notes-cell">
+              <NoteButton item={job} onOpen={onOpenNote} />
             </td>
           </tr>
         ))}

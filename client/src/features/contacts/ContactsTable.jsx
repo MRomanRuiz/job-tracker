@@ -1,6 +1,6 @@
 import { CONTACT_STATUS_LABELS } from '../../shared/lib/constants';
 import EmptyState from '../../shared/components/EmptyState';
-import NoteButton from './NoteButton';
+import NoteButton from '../../shared/components/NoteButton';
 import StatusSelect from '../../shared/components/StatusSelect';
 
 const MANUAL_STATUSES = ['pending', 'replied', 'rejected'];
@@ -37,7 +37,7 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote }) {
               />
             </td>
             <td className="notes-cell">
-              <NoteButton contact={contact} onOpen={onOpenNote} />
+              <NoteButton item={contact} onOpen={onOpenNote} />
             </td>
           </tr>
         ))}
