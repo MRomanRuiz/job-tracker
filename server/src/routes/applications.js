@@ -73,21 +73,11 @@ const addApplicationRoutes = (app, storage) => {
     '/api/applications/:id',
     handle('No se pudo actualizar la candidatura', async (req, res) => {
       const changes = getApplicationChanges(req.body);
-
-      let application;
-
-      if (Object.keys(changes).length > 0) {
-        application = await storage.update(
-          'applications',
-          req.params.id,
-          changes,
-        );
-      } else {
-        application = await storage.getById(
-          'applications',
-          req.params.id,
-        );
-      }
+      const application = await storage.update(
+        'applications',
+        req.params.id,
+        changes,
+      );
 
       if (!application) {
         throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);

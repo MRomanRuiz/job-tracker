@@ -23,24 +23,50 @@ const TEST_DATABASE_NAME = 'job_tracker_test';
 const OLD_DATE = '2020-01-01';
 const RECENT_DATE = new Date().toISOString().slice(0, 10);
 
+const validApplication = (overrides = {}) => ({
+  company: 'Acme',
+  position: 'Engineer',
+  country: 'España',
+  type: 'research',
+  appliedAt: RECENT_DATE,
+  ...overrides,
+});
+
+const validContact = (overrides = {}) => ({
+  contact: 'Eva',
+  email: 'eva@example.com',
+  institution: 'Gamma',
+  country: 'España',
+  contactedAt: RECENT_DATE,
+  ...overrides,
+});
+
 const initialApplications = [
   {
     id: 1,
     appliedAt: OLD_DATE,
     company: 'Old',
     position: 'Developer',
-    location: 'Madrid',
-    type: 'Full-time',
+    country: 'España',
+    city: 'Madrid',
+    type: 'industry',
     status: 'pending',
+    durationType: '',
+    durationMonths: null,
+    notes: '',
   },
   {
     id: 2,
     appliedAt: RECENT_DATE,
     company: 'New',
     position: 'Designer',
-    location: 'Málaga',
-    type: 'Full-time',
+    country: 'España',
+    city: 'Málaga',
+    type: 'research',
     status: 'pending',
+    durationType: '',
+    durationMonths: null,
+    notes: '',
   },
 ];
 
@@ -48,7 +74,11 @@ const initialContacts = [
   {
     id: 1,
     contact: 'Ana',
-    center: 'Acme',
+    email: 'ana@example.com',
+    institution: 'Acme',
+    department: '',
+    city: 'Madrid',
+    country: 'España',
     contactedAt: OLD_DATE,
     status: 'pending',
     notes: '',
@@ -56,7 +86,11 @@ const initialContacts = [
   {
     id: 2,
     contact: 'Luis',
-    center: 'Beta',
+    email: 'luis@example.com',
+    institution: 'Beta',
+    department: '',
+    city: 'Málaga',
+    country: 'España',
     contactedAt: RECENT_DATE,
     status: 'replied',
     notes: '',
@@ -84,8 +118,6 @@ const request = async (method, url, { body, headers = {} } = {}) => {
 
   const response = await fetch(`${baseUrl}${url}`, options);
 
-  // La petición debe incluir las opciones de método, cuerpo y cabeceras.
-  // Esta segunda llamada se evita usando fetch una sola vez:
   return {
     status: response.status,
     body: await response.json(),
@@ -251,6 +283,8 @@ describe('applications', () => {
     assert.equal(status, 200);
     assert.equal(body.applications.length, 2);
     assert.equal(body.applications[0]._id, undefined);
+    assert.equal(body.applications[0].country, 'España');
+    assert.equal(body.applications[0].city, 'Madrid');
   });
 
   it('crea una candidatura con ID numérico generado por el servidor', async () => {
@@ -259,12 +293,8 @@ describe('applications', () => {
       '/api/applications',
       {
         body: {
+          ...validApplication(),
           id: 'x',
-          company: 'Acme',
-          country: 'España',
-          position: 'Engineer',
-          type: 'research',
-          appliedAt: RECENT_DATE,
           foo: 1,
         },
       },
@@ -282,6 +312,9 @@ describe('applications', () => {
     );
 
     assert.equal(list.applications.length, 3);
+    assert.ok(
+      list.applications.some(application => application.id === body.id),
+    );
   });
 
 
@@ -291,12 +324,13 @@ describe('applications', () => {
       '/api/applications',
       {
         body: {
+          ...validApplication(),
           company: '  Acme España  ',
           position: '  Software Engineer  ',
           country: ' España  ',
           city: ' Málaga    ',
-          type: 'research',
-          appliedAt: RECENT_DATE,
+          durationType: 'fixed',
+          durationMonths: 6,
         },
       },
     );
@@ -307,15 +341,26 @@ describe('applications', () => {
     assert.equal(body.country, 'España');
     assert.equal(body.city, 'Málaga');
     assert.equal(body.type, 'research');
+    assert.equal(body.durationType, 'fixed');
+    assert.equal(body.durationMonths, 6);
   });
 
 
   it('rechaza candidaturas no válidas', async () => {
     for (const body of [
-      { company: 'Acme' },
-      { appliedAt: RECENT_DATE, status: 'bogus' },
-      { appliedAt: RECENT_DATE, company: 42 },
-      { appliedAt: '2026-02-31' },
+      validApplication({ company: '   ' }),
+      validApplication({ status: 'bogus' }),
+      validApplication({ company: 42 }),
+      validApplication({ appliedAt: '2026-02-31' }),
+      validApplication({ type: 'full-time' }),
+      validApplication({ durationMonths: 6 }),
+      validApplication({ durationType: 'temporary' }),
+      validApplication({ durationType: 'fixed' }),
+      validApplication({ durationType: 'fixed', durationMonths: 1.5 }),
+      validApplication({
+        durationType: 'indefinite',
+        durationMonths: 12,
+      }),
     ]) {
       const response = await request(
         'POST',
@@ -336,6 +381,28 @@ describe('applications', () => {
 
     assert.equal(status, 200);
     assert.equal(body.status, 'interview');
+  });
+
+  it('actualiza solo las notas de una candidatura', async () => {
+    const { status, body } = await request(
+      'PATCH',
+      '/api/applications/1',
+      { body: { notes: '  Revisar oferta  ' } },
+    );
+
+    assert.equal(status, 200);
+    assert.equal(body.notes, '  Revisar oferta  ');
+    assert.equal(body.status, 'pending');
+  });
+
+  it('rechaza un estado no permitido al actualizar una candidatura', async () => {
+    const { status } = await request(
+      'PATCH',
+      '/api/applications/1',
+      { body: { status: 'bogus' } },
+    );
+
+    assert.equal(status, 400);
   });
 
   it('devuelve 400 para un PATCH sin cuerpo', async () => {
@@ -396,11 +463,8 @@ describe('applications', () => {
       Array.from({ length: 10 }, (_, index) =>
         request('POST', '/api/applications', {
           body: {
+            ...validApplication(),
             company: `Company ${index}`,
-            position: `Position ${index}`,
-            type: "research",
-            country: `Country ${index}`,
-            appliedAt: RECENT_DATE,
           },
         }),
       ),
@@ -424,31 +488,6 @@ describe('applications', () => {
     );
   });
 
-  it('conserva una candidatura creada al volver a leer los datos', async () => {
-    const created = await request(
-      'POST',
-      '/api/applications',
-      {
-        body: {
-          company: 'Persistent Co',
-          country: 'España',
-          position: 'Engineer',
-          type: 'research',
-          appliedAt: RECENT_DATE,
-        },
-      },
-    );
-
-    assert.equal(created.status, 201);
-
-    const list = await request('GET', '/api/applications');
-
-    assert.ok(
-      list.body.applications.some(
-        item => item.id === created.body.id,
-      ),
-    );
-  });
 });
 
 describe('contacts', () => {
@@ -461,6 +500,8 @@ describe('contacts', () => {
     assert.equal(status, 200);
     assert.equal(body.contacts.length, 2);
     assert.equal(body.contacts[0]._id, undefined);
+    assert.equal(body.contacts[0].institution, 'Acme');
+    assert.equal(body.contacts[0].email, 'ana@example.com');
   });
 
   it('crea un contacto', async () => {
@@ -469,12 +510,7 @@ describe('contacts', () => {
       '/api/contacts',
       {
         body: {
-          contact: 'Eva',
-          email: 'eva@email.com',
-          institution: 'Gamma',
-          country: 'Spain',
-          contactedAt: RECENT_DATE,
-          status: 'pending',
+          ...validContact({ institution: 'Gamma' }),
         },
       },
     );
@@ -482,27 +518,25 @@ describe('contacts', () => {
     assert.equal(status, 201);
     assert.equal(typeof body.id, 'number');
     assert.equal(body.notes, '');
+    assert.equal(body.status, 'pending');
     assert.equal(body._id, undefined);
+    assert.equal(body.institution, 'Gamma');
 
     const { body: list } = await request('GET', '/api/contacts');
 
     assert.equal(list.contacts.length, 3);
+    assert.ok(list.contacts.some(contact => contact.id === body.id));
   });
 
   it('rechaza contactos no válidos', async () => {
     for (const body of [
-      {
-        contact: 'Eva',
-        center: '',
-        contactedAt: RECENT_DATE,
-        status: 'pending',
-      },
-      {
-        contact: 'Eva',
-        center: 'Acme',
-        contactedAt: '2026-02-31',
-        status: 'pending',
-      },
+      validContact({ contact: '   ' }),
+      validContact({ email: '' }),
+      validContact({ institution: '' }),
+      validContact({ country: '' }),
+      validContact({ contactedAt: '2026-02-31' }),
+      validContact({ status: 'bogus' }),
+      validContact({ email: 42 }),
     ]) {
       const response = await request(
         'POST',
@@ -512,6 +546,33 @@ describe('contacts', () => {
 
       assert.equal(response.status, 400);
     }
+  });
+
+  it('recorta los campos de texto de un contacto', async () => {
+    const { status, body } = await request(
+      'POST',
+      '/api/contacts',
+      {
+        body: validContact({
+          contact: '  Eva Martínez  ',
+          email: ' eva@example.com ',
+          institution: ' Gamma ',
+          department: ' Investigación ',
+          city: ' Madrid ',
+          country: ' España ',
+          notes: '  Primer contacto  ',
+        }),
+      },
+    );
+
+    assert.equal(status, 201);
+    assert.equal(body.contact, 'Eva Martínez');
+    assert.equal(body.email, 'eva@example.com');
+    assert.equal(body.institution, 'Gamma');
+    assert.equal(body.department, 'Investigación');
+    assert.equal(body.city, 'Madrid');
+    assert.equal(body.country, 'España');
+    assert.equal(body.notes, 'Primer contacto');
   });
 
   it('actualiza el estado y las notas', async () => {
@@ -524,6 +585,28 @@ describe('contacts', () => {
     assert.equal(status, 200);
     assert.equal(body.status, 'rejected');
     assert.equal(body.notes, 'Follow up');
+  });
+
+  it('actualiza solo las notas de un contacto', async () => {
+    const { status, body } = await request(
+      'PATCH',
+      '/api/contacts/2',
+      { body: { notes: '  Contactar mañana  ' } },
+    );
+
+    assert.equal(status, 200);
+    assert.equal(body.notes, '  Contactar mañana  ');
+    assert.equal(body.status, 'replied');
+  });
+
+  it('rechaza un estado no permitido al actualizar un contacto', async () => {
+    const { status } = await request(
+      'PATCH',
+      '/api/contacts/2',
+      { body: { status: 'bogus' } },
+    );
+
+    assert.equal(status, 400);
   });
 
   it('rechaza notas que no sean texto', async () => {
