@@ -9,6 +9,30 @@ const handle = require('./handle');
 
 const NOT_FOUND_MESSAGE = 'Candidatura no encontrada';
 
+const getApplicationChanges = body => {
+  const { status, notes } = body;
+
+  if (status === undefined && notes === undefined) {
+    throw new HttpError(
+      HTTP_STATUS.BAD_REQUEST,
+      'No se han proporcionado campos para actualizar',
+    );
+  }
+
+  if (status !== undefined && !ALLOWED_APPLICATION_STATUSES.has(status)) {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Estado no permitido');
+  }
+
+  if (notes !== undefined && typeof notes !== 'string') {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Nota no válida');
+  }
+
+  return {
+    ...(status !== undefined && { status }),
+    ...(notes !== undefined && { notes }),
+  };
+};
+
 const addApplicationRoutes = (app, storage) => {
   app.get(
     '/api/applications',
@@ -48,33 +72,7 @@ const addApplicationRoutes = (app, storage) => {
   app.patch(
     '/api/applications/:id',
     handle('No se pudo actualizar la candidatura', async (req, res) => {
-      const { status, notes } = req.body;
-      const changes = {};
-
-      if (
-        status !== undefined &&
-        !ALLOWED_APPLICATION_STATUSES.has(status)
-      ) {
-        throw new HttpError(
-          HTTP_STATUS.BAD_REQUEST,
-          'Estado no permitido',
-        );
-      }
-
-      if (notes !== undefined && typeof notes !== 'string') {
-        throw new HttpError(
-          HTTP_STATUS.BAD_REQUEST,
-          'Nota no válida',
-        );
-      }
-
-      if (status !== undefined) {
-        changes.status = status;
-      }
-
-      if (notes !== undefined) {
-        changes.notes = notes;
-      }
+      const changes = getApplicationChanges(req.body);
 
       let application;
 

@@ -261,6 +261,9 @@ describe('applications', () => {
         body: {
           id: 'x',
           company: 'Acme',
+          country: 'España',
+          position: 'Engineer',
+          type: 'research',
           appliedAt: RECENT_DATE,
           foo: 1,
         },
@@ -290,8 +293,9 @@ describe('applications', () => {
         body: {
           company: '  Acme España  ',
           position: '  Software Engineer  ',
-          location: '  Málaga, España  ',
-          type: '  Tiempo completo  ',
+          country: ' España  ',
+          city: ' Málaga    ',
+          type: 'research',
           appliedAt: RECENT_DATE,
         },
       },
@@ -300,8 +304,9 @@ describe('applications', () => {
     assert.equal(status, 201);
     assert.equal(body.company, 'Acme España');
     assert.equal(body.position, 'Software Engineer');
-    assert.equal(body.location, 'Málaga, España');
-    assert.equal(body.type, 'Tiempo completo');
+    assert.equal(body.country, 'España');
+    assert.equal(body.city, 'Málaga');
+    assert.equal(body.type, 'research');
   });
 
 
@@ -392,6 +397,9 @@ describe('applications', () => {
         request('POST', '/api/applications', {
           body: {
             company: `Company ${index}`,
+            position: `Position ${index}`,
+            type: "research",
+            country: `Country ${index}`,
             appliedAt: RECENT_DATE,
           },
         }),
@@ -423,6 +431,9 @@ describe('applications', () => {
       {
         body: {
           company: 'Persistent Co',
+          country: 'España',
+          position: 'Engineer',
+          type: 'research',
           appliedAt: RECENT_DATE,
         },
       },
@@ -459,7 +470,9 @@ describe('contacts', () => {
       {
         body: {
           contact: 'Eva',
-          center: 'Gamma',
+          email: 'eva@email.com',
+          institution: 'Gamma',
+          country: 'Spain',
           contactedAt: RECENT_DATE,
           status: 'pending',
         },

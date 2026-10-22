@@ -9,6 +9,28 @@ const handle = require('./handle');
 
 const NOT_FOUND_MESSAGE = 'Contacto no encontrado';
 
+const validateContactChanges = ({ status, notes }) => {
+  if (status === undefined && notes === undefined) {
+    throw new HttpError(
+      HTTP_STATUS.BAD_REQUEST,
+      'No se han proporcionado campos para actualizar',
+    );
+  }
+
+  if (status !== undefined && !ALLOWED_CONTACT_STATUSES.has(status)) {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Estado no permitido');
+  }
+
+  if (notes !== undefined && typeof notes !== 'string') {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Nota no válida');
+  }
+
+  return {
+    ...(status !== undefined && { status }),
+    ...(notes !== undefined && { notes }),
+  };
+};
+
 const addContactRoutes = (app, storage) => {
   app.get(
     '/api/contacts',
@@ -46,40 +68,8 @@ const addContactRoutes = (app, storage) => {
   app.patch(
     '/api/contacts/:id',
     handle('No se pudo actualizar el contacto', async (req, res) => {
-      const { status, notes } = req.body;
-      const changes = {};
-
-      if (
-        status !== undefined &&
-        !ALLOWED_CONTACT_STATUSES.has(status)
-      ) {
-        throw new HttpError(
-          HTTP_STATUS.BAD_REQUEST,
-          'Estado no permitido',
-        );
-      }
-
-      if (notes !== undefined && typeof notes !== 'string') {
-        throw new HttpError(
-          HTTP_STATUS.BAD_REQUEST,
-          'Nota no válida',
-        );
-      }
-
-      if (status !== undefined) {
-        changes.status = status;
-      }
-      if (notes !== undefined) {
-        changes.notes = notes;
-      }
-
-      let contact;
-
-      if (Object.keys(changes).length > 0) {
-        contact = await storage.update('contacts', req.params.id, changes);
-      } else {
-        contact = await storage.getById('contacts', req.params.id);
-      }
+      const changes = validateContactChanges(req.body);
+      const contact = await storage.update('contacts', req.params.id, changes);
 
       if (!contact) {
         throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
