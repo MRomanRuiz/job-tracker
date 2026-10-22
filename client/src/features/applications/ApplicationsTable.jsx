@@ -16,7 +16,7 @@ function ApplicationsTable({ applications, onStatusChange, onOpenNote }) {
         <tr>
           <th>Empresa</th>
           <th>Puesto</th>
-          <th>Ubicación</th>
+          <th>País</th>
           <th>Tipo</th>
           <th>Fecha</th>
           <th>Estado</th>
@@ -29,7 +29,7 @@ function ApplicationsTable({ applications, onStatusChange, onOpenNote }) {
           <tr key={job.id}>
             <td>{job.company}</td>
             <td>{job.position}</td>
-            <td>{job.location}</td>
+            <td>{job.country}</td>
             <td>{APPLICATION_TYPE_LABELS[job.type] || job.type}</td>
             <td className="date-cell">{job.appliedAt}</td>
             <td>

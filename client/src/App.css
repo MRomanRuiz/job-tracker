@@ -237,30 +237,37 @@ main {
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
-table {
-  width: 100%;
+.table-container table {
+  width: max-content;
+  min-width: 100%;
+  table-layout: auto;
   border-collapse: collapse;
 }
 
-th,
-td {
+.table-container th,
+.table-container td {
   text-align: left;
   padding: 16px;
   border-bottom: 1px solid #e5e7eb;
+
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-tbody tr:last-child td {
-  border-bottom: none;
-}
-
-th {
+.table-container th {
   background: #f9fafb;
   font-size: 13px;
   font-weight: 600;
   color: #6b7280;
+}
+
+.table-container tbody tr:last-child td {
+  border-bottom: none;
 }
 
 /* Estados */
