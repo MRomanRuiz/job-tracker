@@ -107,6 +107,7 @@ GitHub Actions runs the CI workflow on every pull request and every push to `mas
 The workflow:
 
 - Checks out the repository.
+- Requires a higher semantic version in `server/package.json` or `client/package.json` whenever files in the corresponding package change.
 - Sets up the Node.js version specified in `.nvmrc`.
 - Installs root, backend, and frontend dependencies using `npm ci`.
 - Runs ESLint on the backend and frontend.
