@@ -32,3 +32,6 @@ client/data/*
 coverage/
 server/coverage/
 client/coverage/
+
+# Playground files por MongoDB
+playgrounds/
