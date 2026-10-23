@@ -4,6 +4,7 @@ function StaleItemsAlert({
   items,
   singularLabel,
   pluralLabel,
+  itemType,
   renderCells,
   onSuspend,
   onOpen,
@@ -37,12 +38,12 @@ function StaleItemsAlert({
       {isOpen && (
         <div className="stale-panel">
           {items.map(item => (
-            <div className="stale-row" key={item.id}>
+            <div className={`stale-row stale-row--${itemType}`} key={item.id}>
               {renderCells(item)}
 
               <button
                 type="button"
-                className="secondary-button"
+                className="secondary-button stale-detail-button"
                 onClick={() => onOpen?.(item)}
               >
                 Ver detalle

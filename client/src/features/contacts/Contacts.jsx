@@ -151,6 +151,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
         items={staleItems}
         singularLabel="contacto pendiente"
         pluralLabel="contactos pendientes"
+        itemType="contact"
         renderCells={renderStaleContact}
         onOpen={setSelectedContact}
         onSuspend={suspend}

@@ -172,6 +172,7 @@ function Applications({ collection, showForm, onCloseForm }) {
         items={staleItems}
         singularLabel="candidatura pendiente"
         pluralLabel="candidaturas pendientes"
+        itemType="application"
         renderCells={renderStaleApplication}
         onSuspend={suspend}
         onOpen={setSelectedApplication}
