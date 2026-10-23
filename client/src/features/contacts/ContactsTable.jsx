@@ -27,11 +27,13 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote }) {
       <tbody>
         {contacts.map(contact => (
           <tr key={contact.id}>
-            <td>{contact.contact}</td>
-            <td>{contact.email}</td>
-            <td>{contact.institution}</td>
-            <td>{contact.country}</td>
-            <td className="date-cell">{contact.contactedAt}</td>
+            <td title={contact.contact}>{contact.contact}</td>
+            <td title={contact.email}>{contact.email}</td>
+            <td title={contact.institution}>{contact.institution}</td>
+            <td title={contact.country}>{contact.country}</td>
+            <td className="date-cell" title={contact.contactedAt}>
+              {contact.contactedAt}
+            </td>
             <td>
               <StatusSelect
                 value={contact.status}

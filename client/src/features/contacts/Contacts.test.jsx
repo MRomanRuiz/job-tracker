@@ -228,6 +228,9 @@ describe('Contacts', () => {
     expect(screen.getByText('País')).toBeTruthy();
     expect(screen.getByText('ana@acme.com')).toBeTruthy();
     expect(screen.getAllByText('España')).toHaveLength(2);
+    expect(screen.getByText('ana@acme.com').closest('td').title).toBe(
+      'ana@acme.com',
+    );
 
     fireEvent.change(
       screen.getByPlaceholderText(

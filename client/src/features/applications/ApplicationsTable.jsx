@@ -27,11 +27,15 @@ function ApplicationsTable({ applications, onStatusChange, onOpenNote }) {
       <tbody>
         {applications.map(job => (
           <tr key={job.id}>
-            <td>{job.company}</td>
-            <td>{job.position}</td>
-            <td>{job.country}</td>
-            <td>{APPLICATION_TYPE_LABELS[job.type] || job.type}</td>
-            <td className="date-cell">{job.appliedAt}</td>
+            <td title={job.company}>{job.company}</td>
+            <td title={job.position}>{job.position}</td>
+            <td title={job.country}>{job.country}</td>
+            <td title={APPLICATION_TYPE_LABELS[job.type] || job.type}>
+              {APPLICATION_TYPE_LABELS[job.type] || job.type}
+            </td>
+            <td className="date-cell" title={job.appliedAt}>
+              {job.appliedAt}
+            </td>
             <td>
               <StatusSelect
                 value={job.status}

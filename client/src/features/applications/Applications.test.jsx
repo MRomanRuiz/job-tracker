@@ -201,6 +201,9 @@ describe('Applications', () => {
       'Investigación',
     );
     expect(within(rows[1]).getAllByRole('cell')[3].textContent).toBe('Empresa');
+    expect(within(rows[0]).getAllByRole('cell')[3].title).toBe(
+      'Investigación',
+    );
   });
 
   it('disables duration months when the contract is indefinite', () => {
