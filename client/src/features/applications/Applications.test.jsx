@@ -59,7 +59,7 @@ describe('Applications', () => {
       items: [
         makeApplication(1, { company: 'Globex' }),
         makeApplication(2),
-        makeApplication(3, { type: 'research', field: 'Biología' }),
+        makeApplication(3, { type: 'research', position: 'Biología' }),
       ],
     });
 
@@ -247,6 +247,48 @@ describe('Applications', () => {
     });
 
     expect(collection.update).toHaveBeenCalledWith(7, { status: 'interview' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('opens full application details from the table and closes with Escape', () => {
+    renderApplications({
+      items: [
+        makeApplication(1, {
+          durationType: 'fixed',
+          durationMonths: 12,
+        }),
+      ],
+    });
+
+    const statusSelect = screen.getByDisplayValue('En espera');
+    fireEvent.keyDown(statusSelect, { key: 'Enter' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.click(statusSelect);
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.keyDown(screen.getAllByRole('row')[1], { key: ' ' });
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Desarrollador — Acme 1')).toBeTruthy();
+    expect(within(dialog).getByText('Tipo de contrato').parentElement.textContent)
+      .toBe('Tipo de contratoTemporal');
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('closes application details from the backdrop but not from inside the dialog', () => {
+    renderApplications({ items: [makeApplication(1)] });
+    fireEvent.click(screen.getAllByRole('row')[1]);
+
+    const dialog = screen.getByRole('dialog');
+    fireEvent.keyDown(dialog, { key: 'Enter' });
+    fireEvent.mouseDown(dialog);
+    expect(screen.getByRole('dialog')).toBeTruthy();
+
+    fireEvent.mouseDown(dialog.parentElement);
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('saves an application note and closes the dialog', async () => {
@@ -328,6 +370,24 @@ describe('Applications', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Revisar' }));
     fireEvent.click(screen.getByRole('button', { name: 'Suspender' }));
 
+    expect(collection.suspend).toHaveBeenCalledWith(4);
+  });
+
+  it('suspends a stale application from its details and closes the dialog', async () => {
+    const { collection } = renderApplications({
+      staleItems: [makeApplication(4)],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revisar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(
+      within(dialog).getByText('Registro pendiente de más de 30 días'),
+    ).toBeTruthy();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Suspender' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(collection.suspend).toHaveBeenCalledWith(4);
   });
 });

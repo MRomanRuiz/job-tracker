@@ -80,6 +80,26 @@ describe('Contacts', () => {
     expect(names()).toEqual(['Ana', 'Luis']);
   });
 
+  it('keeps contact table rows accessible and opens details from the keyboard', () => {
+    renderContacts();
+
+    const rows = screen.getAllByRole('row');
+    expect(rows).toHaveLength(3);
+
+    fireEvent.keyDown(rows[1], { key: 'Enter' });
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Ana — Acme')).toBeTruthy();
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.click(rows[2]);
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar detalle' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it('searches in the notes too', () => {
     renderContacts();
 
@@ -175,7 +195,7 @@ describe('Contacts', () => {
     expect(screen.getByText('Nuevo contacto')).toBeTruthy();
   });
 
-  it('renders stale contacts with no notes and suspends them', () => {
+  it('shows details for stale contacts with no notes and suspends them', async () => {
     const { collection } = renderContacts({
       staleItems: [
         {
@@ -188,10 +208,17 @@ describe('Contacts', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Revisar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
 
-    expect(screen.getByText('Marta')).toBeTruthy();
-    expect(screen.getByText('—')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Suspender' }));
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Marta — Acme')).toBeTruthy();
+    expect(
+      within(dialog).getByText('Notas').parentElement.textContent,
+    ).toBe('Notas—');
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Suspender' }),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(collection.suspend).toHaveBeenCalledWith(3);
   });
 
@@ -211,7 +238,13 @@ describe('Contacts', () => {
   it('updates a contact status from the table', () => {
     const { collection } = renderContacts();
 
-    fireEvent.change(screen.getByDisplayValue('En espera'), {
+    const statusSelect = screen.getByDisplayValue('En espera');
+    fireEvent.click(statusSelect);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    fireEvent.keyDown(statusSelect, { key: 'Enter' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.change(statusSelect, {
       target: { value: 'replied' },
     });
 

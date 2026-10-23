@@ -39,6 +39,10 @@ function ApplicationsTable({
             className="clickable-record-row"
             onClick={() => onOpenDetail(job)}
             onKeyDown={event => {
+              if (event.target !== event.currentTarget) {
+                return;
+              }
+
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
                 onOpenDetail(job);

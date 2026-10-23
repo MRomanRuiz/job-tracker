@@ -48,8 +48,7 @@ function ContactsTable({
             onClick={() => onOpenDetail?.(contact)}
             onKeyDown={event => handleRowKeyDown(event, contact)}
             tabIndex={0}
-            role="button"
-            aria-label={`Ver detalles del contacto ${contact.contact}`}
+            title="Haz clic para ver todos los datos"
           >
             <td title={contact.contact}>{contact.contact}</td>
 
