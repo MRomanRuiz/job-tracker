@@ -13,12 +13,58 @@ import RecordForm from '../../shared/components/RecordForm';
 import StaleItemsAlert from '../../shared/components/StaleItemsAlert';
 import StatCards from '../../shared/components/StatCards';
 import Toolbar from '../../shared/components/Toolbar';
+import NoteForm from '../../shared/components/NoteForm';
 
-const FORM_FIELDS = [
-  { name: 'company', placeholder: 'Empresa', required: true },
-  { name: 'position', placeholder: 'Puesto', required: true },
-  { name: 'location', placeholder: 'Ubicación', required: true },
-  { name: 'type', placeholder: 'Tipo', required: true },
+const REQUIRED_FORM_FIELDS = [
+  {
+    name: 'position',
+    placeholder: 'Puesto',
+    required: true,
+  },
+  {
+    name: 'company',
+    placeholder: 'Empresa',
+    required: true,
+  },
+  {
+    name: 'type',
+    placeholder: 'Tipo',
+    type: 'select',
+    required: true,
+    options: [
+      { value: 'industry', label: 'Empresa' },
+      { value: 'research', label: 'Investigación' },
+    ],
+  },
+  {
+    name: 'country',
+    placeholder: 'País',
+    required: true,
+  },
+];
+
+const OPTIONAL_FORM_FIELDS = [
+  {
+    name: 'city',
+    placeholder: 'Ciudad',
+    required: false,
+  },
+  {
+    name: 'durationType',
+    placeholder: 'Tipo de contrato',
+    type: 'select',
+    initialValue: '',
+    options: [
+      { value: 'fixed', label: 'Temporal' },
+      { value: 'indefinite', label: 'Indefinido' },
+    ],
+    required: false,
+  },
+  {
+    name: 'durationMonths',
+    placeholder: 'Duración en meses (si es temporal)',
+    required: false,
+  },
 ];
 
 const STAT_ITEMS = [
@@ -44,6 +90,7 @@ function Applications({ collection, showForm, onCloseForm }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
   const [typeFilter, setTypeFilter] = useState('');
+  const [noteApplication, setNoteApplication] = useState(null);
 
   const filteredApplications = useMemo(() => {
     const searchText = search.trim().toLowerCase();
@@ -82,8 +129,14 @@ function Applications({ collection, showForm, onCloseForm }) {
       String(today.getDate()).padStart(2, '0'),
     ].join('-');
 
-    if (await create({ ...values, appliedAt })) {
+    if (await create({ ...values, notes: '', appliedAt })) {
       onCloseForm();
+    }
+  };
+
+  const handleSaveNote = async notes => {
+    if (await update(noteApplication.id, { notes })) {
+      setNoteApplication(null);
     }
   };
 
@@ -116,7 +169,8 @@ function Applications({ collection, showForm, onCloseForm }) {
         <div className="record-form-wrapper">
           <RecordForm
             title="Nueva candidatura"
-            fields={FORM_FIELDS}
+            requiredFields={REQUIRED_FORM_FIELDS}
+            optionalFields={OPTIONAL_FORM_FIELDS}
             submitLabel="Guardar candidatura"
             onSubmit={handleCreate}
             onCancel={onCloseForm}
@@ -141,8 +195,8 @@ function Applications({ collection, showForm, onCloseForm }) {
             onChange={event => handleTypeChange(event.target.value)}
           >
             <option value="">Todos los tipos</option>
-            <option value="Empresa">Empresa</option>
-            <option value="Investigación">Investigación</option>
+            <option value="industry">Empresa</option>
+            <option value="research">Investigación</option>
           </select>
         </Toolbar>
 
@@ -155,6 +209,7 @@ function Applications({ collection, showForm, onCloseForm }) {
           <ApplicationsTable
             applications={paginatedApplications}
             onStatusChange={(id, status) => update(id, { status })}
+            onOpenNote={setNoteApplication}
           />
         </section>
 
@@ -164,6 +219,13 @@ function Applications({ collection, showForm, onCloseForm }) {
           onPageChange={setPage}
         />
       </main>
+      {noteApplication && (
+        <NoteForm
+          item={noteApplication}
+          onSave={handleSaveNote}
+          onCancel={() => setNoteApplication(null)}
+        />
+      )}
     </>
   );
 }

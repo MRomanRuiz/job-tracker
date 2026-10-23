@@ -1,6 +1,6 @@
 import { CONTACT_STATUS_LABELS } from '../../shared/lib/constants';
 import EmptyState from '../../shared/components/EmptyState';
-import NoteButton from './NoteButton';
+import NoteButton from '../../shared/components/NoteButton';
 import StatusSelect from '../../shared/components/StatusSelect';
 
 const MANUAL_STATUSES = ['pending', 'replied', 'rejected'];
@@ -14,8 +14,10 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote }) {
     <table>
       <thead>
         <tr>
-          <th>Contacto</th>
+          <th>Nombre</th>
+          <th>Email / Contacto</th>
           <th>Centro / Empresa</th>
+          <th>País</th>
           <th>Fecha</th>
           <th>Estado</th>
           <th>Nota</th>
@@ -26,7 +28,9 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote }) {
         {contacts.map(contact => (
           <tr key={contact.id}>
             <td>{contact.contact}</td>
-            <td>{contact.center}</td>
+            <td>{contact.email}</td>
+            <td>{contact.institution}</td>
+            <td>{contact.country}</td>
             <td className="date-cell">{contact.contactedAt}</td>
             <td>
               <StatusSelect
@@ -37,7 +41,7 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote }) {
               />
             </td>
             <td className="notes-cell">
-              <NoteButton contact={contact} onOpen={onOpenNote} />
+              <NoteButton item={contact} onOpen={onOpenNote} />
             </td>
           </tr>
         ))}

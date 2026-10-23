@@ -8,16 +8,48 @@ import {
   sortByDateDesc,
 } from '../../shared/lib/utils';
 import ContactsTable from './ContactsTable';
-import NoteForm from './NoteForm';
+import NoteForm from '../../shared/components/NoteForm';
 import Pagination from '../../shared/components/Pagination';
 import RecordForm from '../../shared/components/RecordForm';
 import StaleItemsAlert from '../../shared/components/StaleItemsAlert';
 import StatCards from '../../shared/components/StatCards';
 import Toolbar from '../../shared/components/Toolbar';
 
-const FORM_FIELDS = [
-  { name: 'contact', placeholder: 'Contacto / Email', required: true },
-  { name: 'center', placeholder: 'Centro / Empresa', required: true },
+
+const REQUIRED_FORM_FIELDS = [
+  {
+    name: 'contact',
+    placeholder: 'Nombre',
+    required: true,
+  },
+    {
+    name: 'email',
+    placeholder: 'Email o contacto',
+    required: true,
+  },
+  {
+    name: 'institution',
+    placeholder: 'Empresa o universidad',
+    required: true,
+  },
+  {
+    name: 'country',
+    placeholder: 'País',
+    required: true,
+  },
+];
+
+const OPTIONAL_FORM_FIELDS = [
+  {
+    name: 'department',
+    placeholder: 'Departamento o laboratorio',
+    required: false,
+  },
+  {
+    name: 'city',
+    placeholder: 'Ciudad',
+    required: false,
+  },
 ];
 
 const STAT_ITEMS = [
@@ -30,7 +62,7 @@ const STAT_ITEMS = [
 const renderStaleContact = contact => (
   <>
     <span className="stale-primary">{contact.contact}</span>
-    <span>{contact.center}</span>
+    <span>{contact.institution}</span>
     <span className="stale-date">{contact.contactedAt}</span>
     <span>{contact.notes || '—'}</span>
   </>
@@ -49,7 +81,12 @@ function Contacts({ collection, showForm, onCloseForm }) {
       contacts.filter(
         contact =>
           matchesText(
-            [contact.contact, contact.center, contact.notes],
+            [
+              contact.contact,
+              contact.institution,
+              contact.email,
+              contact.notes,
+            ],
             searchText,
           ) && matchesStatus(contact, statusFilter),
       ),
@@ -119,7 +156,8 @@ function Contacts({ collection, showForm, onCloseForm }) {
         <div className="record-form-wrapper">
           <RecordForm
             title="Nuevo contacto"
-            fields={FORM_FIELDS}
+            requiredFields={REQUIRED_FORM_FIELDS}
+            optionalFields={OPTIONAL_FORM_FIELDS}
             submitLabel="Guardar contacto"
             onSubmit={handleCreate}
             onCancel={onCloseForm}
@@ -136,7 +174,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
 
         <Toolbar
           search={search}
-          placeholder="Buscar contacto, centro o notas..."
+          placeholder="Buscar contacto, institución, email o notas..."
           onSearchChange={handleSearchChange}
         />
 
@@ -162,7 +200,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
 
       {noteContact && (
         <NoteForm
-          contact={noteContact}
+          item={noteContact}
           onSave={handleSaveNote}
           onCancel={() => setNoteContact(null)}
         />

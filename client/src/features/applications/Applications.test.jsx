@@ -6,8 +6,10 @@ const makeApplication = (id, overrides = {}) => ({
   id,
   company: `Acme ${id}`,
   position: 'Desarrollador',
+  country: 'España',
+  city: 'Madrid',
   location: 'Madrid',
-  type: 'Empresa',
+  type: 'industry',
   appliedAt: `2026-01-${String(id).padStart(2, '0')}`,
   status: 'pending',
   ...overrides,
@@ -57,7 +59,7 @@ describe('Applications', () => {
       items: [
         makeApplication(1, { company: 'Globex' }),
         makeApplication(2),
-        makeApplication(3, { type: 'Investigación', field: 'Biología' }),
+        makeApplication(3, { type: 'research', field: 'Biología' }),
       ],
     });
 
@@ -73,7 +75,7 @@ describe('Applications', () => {
     expect(companies()).toEqual(['Acme 3']);
 
     fireEvent.change(screen.getByDisplayValue('Todos los tipos'), {
-      target: { value: 'Empresa' },
+      target: { value: 'industry' },
     });
     expect(screen.getByText('No hay candidaturas que mostrar')).toBeTruthy();
   });
@@ -126,22 +128,32 @@ describe('Applications', () => {
   });
 
 
-  it('creates an application and closes the form only on success', async () => {
+  it('creates an application with current fields and closes only on success', async () => {
     const { collection, onCloseForm } = renderApplications({
       showForm: true,
     });
 
-    fireEvent.change(screen.getByPlaceholderText('Empresa'), {
-      target: { value: 'Acme' },
-    });
-    fireEvent.change(screen.getByPlaceholderText('Puesto'), {
+    fireEvent.change(screen.getByPlaceholderText('Puesto *'), {
       target: { value: 'Dev' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Ubicación'), {
+    fireEvent.change(screen.getByPlaceholderText('Empresa *'), {
+      target: { value: 'Acme' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tipo *'), {
+      target: { value: 'research' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('País *'), {
+      target: { value: 'España' },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mostrar campos opcionales' }),
+    );
+    fireEvent.change(screen.getByPlaceholderText('Ciudad'), {
       target: { value: 'Madrid' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Tipo'), {
-      target: { value: 'Empresa' },
+    fireEvent.change(screen.getByPlaceholderText('Tipo de contrato'), {
+      target: { value: 'indefinite' },
     });
 
     collection.create.mockResolvedValueOnce(false);
@@ -167,10 +179,60 @@ describe('Applications', () => {
     expect(collection.create).toHaveBeenLastCalledWith({
       company: 'Acme',
       position: 'Dev',
-      location: 'Madrid',
-      type: 'Empresa',
+      type: 'research',
+      country: 'España',
+      city: 'Madrid',
+      durationType: 'indefinite',
+      durationMonths: '',
+      notes: '',
       appliedAt: getToday(),
     });
+  });
+
+  it('shows the current country and translated application types in the table', () => {
+    renderApplications({
+      items: [makeApplication(1), makeApplication(2, { type: 'research' })],
+    });
+
+    expect(screen.getByText('País')).toBeTruthy();
+    expect(screen.getAllByText('España')).toHaveLength(2);
+    const rows = screen.getAllByRole('row').slice(1);
+    expect(within(rows[0]).getAllByRole('cell')[3].textContent).toBe(
+      'Investigación',
+    );
+    expect(within(rows[1]).getAllByRole('cell')[3].textContent).toBe('Empresa');
+  });
+
+  it('disables duration months when the contract is indefinite', () => {
+    renderApplications({ showForm: true });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mostrar campos opcionales' }),
+    );
+    fireEvent.change(screen.getByPlaceholderText('Tipo de contrato'), {
+      target: { value: 'indefinite' },
+    });
+
+    expect(
+      screen.getByPlaceholderText('Duración en meses (si es temporal)')
+        .disabled,
+    ).toBe(true);
+  });
+
+  it('keeps duration months enabled for a fixed-term contract', () => {
+    renderApplications({ showForm: true });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mostrar campos opcionales' }),
+    );
+    fireEvent.change(screen.getByPlaceholderText('Tipo de contrato'), {
+      target: { value: 'fixed' },
+    });
+
+    expect(
+      screen.getByPlaceholderText('Duración en meses (si es temporal)')
+        .disabled,
+    ).toBe(false);
   });
 
 
@@ -182,6 +244,61 @@ describe('Applications', () => {
     });
 
     expect(collection.update).toHaveBeenCalledWith(7, { status: 'interview' });
+  });
+
+  it('saves an application note and closes the dialog', async () => {
+    const { collection } = renderApplications({
+      items: [makeApplication(7, { notes: '' })],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir nota' }));
+    const dialog = screen.getByRole('dialog');
+    const textarea = within(dialog).getByPlaceholderText('Escribe una nota...');
+
+    expect(textarea.value).toBe('');
+    fireEvent.change(textarea, { target: { value: 'Enviar seguimiento' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(collection.update).toHaveBeenCalledWith(7, {
+      notes: 'Enviar seguimiento',
+    });
+  });
+
+  it('keeps the note dialog open when saving fails and closes on cancel', async () => {
+    const { collection } = renderApplications({
+      items: [makeApplication(7, { notes: 'Seguimiento' })],
+    });
+    collection.update.mockResolvedValue(false);
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Ver y editar nota' }),
+    );
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Guardar',
+      }),
+    );
+
+    await waitFor(() => expect(collection.update).toHaveBeenCalled());
+    expect(screen.getByRole('dialog')).toBeTruthy();
+
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Cancelar',
+      }),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('uses the position as the note title when the company is missing', () => {
+    renderApplications({
+      items: [makeApplication(7, { company: '', position: 'Investigador' })],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir nota' }));
+
+    expect(screen.getByRole('dialog').textContent).toContain('Investigador');
   });
 
   it('only offers suspended for suspended applications', () => {

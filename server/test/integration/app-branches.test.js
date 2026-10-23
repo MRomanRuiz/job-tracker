@@ -15,7 +15,9 @@ const records = {
     id: 1,
     contactedAt: '2020-01-01',
     contact: 'Ana',
-    center: 'Acme',
+    email: 'ana@example.com',
+    institution: 'Acme',
+    country: 'España',
     status: 'pending',
     notes: '',
   },
@@ -107,11 +109,16 @@ describe('additional app branches', () => {
     assert.equal(contact.status, 400);
   });
 
-  it('reads a contact when a patch has no changes', async () => {
+  it('returns 400 when a patch has no changes (contacts)', async () => {
     const response = await request('PATCH', '/api/contacts/1', {});
 
-    assert.equal(response.status, 200);
-    assert.equal(response.body.contact, 'Ana');
+    assert.equal(response.status, 400);
+  });
+
+  it('returns 400 when a patch has no changes (application)', async () => {
+    const response = await request('PATCH', '/api/applications/1', {});
+
+    assert.equal(response.status, 400);
   });
 
   it('returns not found when suspending a missing contact', async () => {

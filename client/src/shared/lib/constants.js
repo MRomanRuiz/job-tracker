@@ -16,3 +16,8 @@ export const CONTACT_STATUS_LABELS = {
   rejected: 'Rechazado',
   suspended: 'Suspendido',
 };
+
+export const APPLICATION_TYPE_LABELS = {
+  industry: 'Empresa',
+  research: 'Investigación',
+};

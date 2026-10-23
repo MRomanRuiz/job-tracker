@@ -9,6 +9,30 @@ const handle = require('./handle');
 
 const NOT_FOUND_MESSAGE = 'Candidatura no encontrada';
 
+const getApplicationChanges = body => {
+  const { status, notes } = body;
+
+  if (status === undefined && notes === undefined) {
+    throw new HttpError(
+      HTTP_STATUS.BAD_REQUEST,
+      'No se han proporcionado campos para actualizar',
+    );
+  }
+
+  if (status !== undefined && !ALLOWED_APPLICATION_STATUSES.has(status)) {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Estado no permitido');
+  }
+
+  if (notes !== undefined && typeof notes !== 'string') {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Nota no válida');
+  }
+
+  return {
+    ...(status !== undefined && { status }),
+    ...(notes !== undefined && { notes }),
+  };
+};
+
 const addApplicationRoutes = (app, storage) => {
   app.get(
     '/api/applications',
@@ -48,19 +72,11 @@ const addApplicationRoutes = (app, storage) => {
   app.patch(
     '/api/applications/:id',
     handle('No se pudo actualizar la candidatura', async (req, res) => {
-      const { status } = req.body;
-
-      if (!ALLOWED_APPLICATION_STATUSES.has(status)) {
-        throw new HttpError(
-          HTTP_STATUS.BAD_REQUEST,
-          'Estado no permitido',
-        );
-      }
-
+      const changes = getApplicationChanges(req.body);
       const application = await storage.update(
         'applications',
         req.params.id,
-        { status },
+        changes,
       );
 
       if (!application) {
@@ -70,6 +86,7 @@ const addApplicationRoutes = (app, storage) => {
       res.json(application);
     }),
   );
+
 
   app.patch(
     '/api/applications/:id/suspend',
