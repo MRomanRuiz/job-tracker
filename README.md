@@ -5,15 +5,13 @@ A small full-stack application for tracking job applications and professional co
 ## Features
 
 - Track job applications and professional contacts in the same dashboard.
-- Create applications with a company, position, location, type, and additional details. The application date is assigned automatically when creating a record through the frontend.
-- Search applications by company, position, location, type, or field.
-- Filter applications by type or status and view summary counts.
-- Browse results in pages of 10, sorted by application date (newest first).
-- Review pending applications that have been open for more than 30 days and suspend them.
-- Manage contacts with a name, center/company, automatically assigned contact date, status, and personal notes. The contact date is assigned automatically in the same way as the application date.
-- Search, filter, and paginate contacts, including notes-based searches.
-- Add and edit notes for each contact through a dedicated modal window.
-- Review pending contacts older than 30 days and suspend them.
+- Create applications with a position, company, type, and country; city and contract details are optional. The frontend assigns the application date automatically.
+- Manage contacts with a name, contact details, institution, and country; department and city are optional. The frontend assigns the contact date automatically.
+- Search applications or contacts by different fields.
+- Filter applications by type or status and contacts by status, with summary counts for both.
+- Browse results in pages of 10, sorted by application or contact date (newest first).
+- Review pending applications/contacts that have been open for more than 30 days and suspend them.
+- Add and edit notes for applications and contacts through dedicated modal windows.
 - Persist data using either local JSON files or MongoDB.
 - Run backend tests against both storage implementations.
 
@@ -150,12 +148,16 @@ A record can contain the following fields:
 | Field | Description |
 | --- | --- |
 | `id` | Numeric record identifier. |
-| `company` | Company or organization. |
-| `position` | Job title. |
-| `location` | Job location. |
-| `type` | Application type, such as `Empresa` or `Investigación`. |
+| `company` | Company or organization. Required. |
+| `position` | Job title. Required. |
+| `type` | Application type: `industry` or `research`. Required. |
+| `country` | Country. Required. |
+| `city` | City. Optional. |
 | `appliedAt` | Application date in `YYYY-MM-DD` format. |
-| `status` | `pending`, `interview`, `offer`, `rejected`, or `suspended`. |
+| `durationType` | Contract type: `fixed` or `indefinite`. Optional. |
+| `durationMonths` | Positive integer for a `fixed` contract; otherwise `null`. |
+| `notes` | Free-text notes or follow-up comments. Optional. |
+| `status` | `pending`, `interview`, `offer`, `rejected`, or `suspended`. New records default to `pending`. |
 
 Example `jobs.json`:
 
@@ -166,16 +168,20 @@ Example `jobs.json`:
       "id": 1,
       "appliedAt": "2026-10-01",
       "company": "Example Company",
-      "location": "Remote",
       "position": "Software Engineer",
-      "type": "Empresa",
-      "status": "pending",
+      "type": "industry",
+      "country": "España",
+      "city": "Madrid",
+      "durationType": "fixed",
+      "durationMonths": 12,
+      "notes": "",
+      "status": "pending"
     }
   ]
 }
 ```
 
-When using JSON storage, use a top-level `applications` array. Each entry should have a unique numeric `id`, an `appliedAt` date in `YYYY-MM-DD` format, and a valid status. Other fields can be empty strings when they do not apply.
+When using JSON storage, use a top-level `applications` array. Each entry should have a unique numeric `id`, non-empty `company`, `position`, `type`, and `country`, an `appliedAt` date in `YYYY-MM-DD` format, and a valid status. Optional text fields can be empty strings. A fixed duration requires a positive integer `durationMonths`; use `null` when no duration applies.
 
 When creating an application through the frontend, the current local date is assigned automatically. The API itself still requires `appliedAt` in the creation request. Omit `id` when creating records through the API; the server generates it.
 
@@ -188,11 +194,15 @@ A record can contain the following fields:
 | Field | Description |
 | --- | --- |
 | `id` | Numeric record identifier. |
-| `contact` | Contact person's name. |
-| `center` | Company or center name. |
+| `contact` | Contact person's name. Required. |
+| `email` | Email address or other contact detail. Required. |
+| `institution` | Company, university, or institution. Required. |
+| `department` | Department or laboratory. Optional. |
+| `city` | City. Optional. |
+| `country` | Country. Required. |
 | `contactedAt` | Date of first contact in `YYYY-MM-DD` format. |
-| `status` | `pending`, `replied`, `rejected`, or `suspended`. |
-| `notes` | Free-text notes or follow-up comments. |
+| `status` | `pending`, `replied`, `rejected`, or `suspended`. New records default to `pending`. |
+| `notes` | Free-text notes or follow-up comments. Optional. |
 
 Example `contacts.json`:
 
@@ -202,7 +212,11 @@ Example `contacts.json`:
     {
       "id": 1,
       "contact": "Ana García",
-      "center": "Acme Labs",
+      "email": "ana@example.com",
+      "institution": "Acme Labs",
+      "department": "Research",
+      "city": "Madrid",
+      "country": "España",
       "contactedAt": "2026-10-02",
       "status": "pending",
       "notes": "Asked for a meeting next week."
@@ -210,6 +224,8 @@ Example `contacts.json`:
   ]
 }
 ```
+
+When using JSON storage, use a top-level `contacts` array. Each entry should have a unique numeric `id`, non-empty `contact`, `email`, `institution`, and `country`, a `contactedAt` date in `YYYY-MM-DD` format, and a valid status. Optional text fields can be empty strings.
 
 When creating a contact through the frontend, the current local date is assigned automatically. The API itself still requires `contactedAt` in the creation request.
 
@@ -226,8 +242,8 @@ Invalid input, including dates that do not exist (such as `2026-02-31`), returns
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | `GET` | `/api/applications` | Return `{ "applications": [...] }`. |
-| `POST` | `/api/applications` | Create an application. The server assigns its ID. Requires `appliedAt` in `YYYY-MM-DD` format; status defaults to `pending`. Unknown fields are ignored. |
-| `PATCH` | `/api/applications/:id` | Update an application's status. Accepted values: `pending`, `interview`, `offer`, and `rejected`. |
+| `POST` | `/api/applications` | Create an application. Requires `company`, `position`, `type` (`industry` or `research`), `country`, and `appliedAt` in `YYYY-MM-DD` format. `durationType` may be `fixed` or `indefinite`; a fixed duration requires positive integer `durationMonths`. Status defaults to `pending`. |
+| `PATCH` | `/api/applications/:id` | Update an application's status or notes. Accepted statuses: `pending`, `interview`, `offer`, and `rejected`; use the suspend endpoint for eligible pending applications. |
 | `GET` | `/api/applications/old` | Return pending applications older than 30 days. |
 | `PATCH` | `/api/applications/:id/suspend` | Suspend an eligible pending application older than 30 days. |
 
@@ -236,8 +252,8 @@ Invalid input, including dates that do not exist (such as `2026-02-31`), returns
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | `GET` | `/api/contacts` | Return `{ "contacts": [...] }`. |
-| `POST` | `/api/contacts` | Create a contact. The server assigns its ID. Requires `contact`, `center`, `contactedAt`, and a valid status: `pending`, `replied`, or `rejected`. |
-| `PATCH` | `/api/contacts/:id` | Update a contact's status and/or notes. |
+| `POST` | `/api/contacts` | Create a contact. Requires `contact`, `email`, `institution`, `country`, and `contactedAt` in `YYYY-MM-DD` format. Status defaults to `pending`; accepted statuses are `pending`, `replied`, and `rejected`. |
+| `PATCH` | `/api/contacts/:id` | Update a contact's status and/or notes. Accepted statuses: `pending`, `replied`, and `rejected`; use the suspend endpoint for eligible pending contacts. |
 | `GET` | `/api/contacts/old` | Return pending contacts older than 30 days. |
 | `PATCH` | `/api/contacts/:id/suspend` | Suspend an eligible pending contact older than 30 days. |
 
