@@ -5,10 +5,26 @@ import StatusSelect from '../../shared/components/StatusSelect';
 
 const MANUAL_STATUSES = ['pending', 'replied', 'rejected'];
 
-function ContactsTable({ contacts, onStatusChange, onOpenNote }) {
+function ContactsTable({
+  contacts,
+  onStatusChange,
+  onOpenNote,
+  onOpenDetail,
+}) {
   if (contacts.length === 0) {
     return <EmptyState label="contactos" />;
   }
+
+  const handleRowKeyDown = (event, contact) => {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onOpenDetail?.(contact);
+    }
+  };
 
   return (
     <table>
@@ -26,24 +42,48 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote }) {
 
       <tbody>
         {contacts.map(contact => (
-          <tr key={contact.id}>
+          <tr
+            key={contact.id}
+            className="clickable-record-row"
+            onClick={() => onOpenDetail?.(contact)}
+            onKeyDown={event => handleRowKeyDown(event, contact)}
+            tabIndex={0}
+            role="button"
+            aria-label={`Ver detalles del contacto ${contact.contact}`}
+          >
             <td title={contact.contact}>{contact.contact}</td>
+
             <td title={contact.email}>{contact.email}</td>
-            <td title={contact.institution}>{contact.institution}</td>
+
+            <td title={contact.institution}>
+              {contact.institution}
+            </td>
+
             <td title={contact.country}>{contact.country}</td>
+
             <td className="date-cell" title={contact.contactedAt}>
               {contact.contactedAt}
             </td>
-            <td>
+
+            <td onClick={event => event.stopPropagation()}>
               <StatusSelect
                 value={contact.status}
                 statuses={MANUAL_STATUSES}
                 labels={CONTACT_STATUS_LABELS}
-                onChange={status => onStatusChange(contact.id, status)}
+                onChange={status =>
+                  onStatusChange(contact.id, status)
+                }
               />
             </td>
-            <td className="notes-cell">
-              <NoteButton item={contact} onOpen={onOpenNote} />
+
+            <td
+              className="notes-cell"
+              onClick={event => event.stopPropagation()}
+            >
+              <NoteButton
+                item={contact}
+                onOpen={onOpenNote}
+              />
             </td>
           </tr>
         ))}

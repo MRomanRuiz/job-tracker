@@ -1,5 +1,9 @@
 import { useMemo, useState } from 'react';
-import { ALL_STATUSES, ITEMS_PER_PAGE } from '../../shared/lib/constants';
+import {
+  ALL_STATUSES,
+  APPLICATION_TYPE_LABELS,
+  ITEMS_PER_PAGE,
+} from '../../shared/lib/constants';
 import usePagination from '../../shared/hooks/usePagination';
 import {
   countByStatus,
@@ -14,6 +18,7 @@ import StaleItemsAlert from '../../shared/components/StaleItemsAlert';
 import StatCards from '../../shared/components/StatCards';
 import Toolbar from '../../shared/components/Toolbar';
 import NoteForm from '../../shared/components/NoteForm';
+import RecordDetails from '../../shared/components/RecordDetails';
 
 const REQUIRED_FORM_FIELDS = [
   {
@@ -76,11 +81,16 @@ const STAT_ITEMS = [
 
 const renderStaleApplication = application => (
   <>
-    <span className="stale-primary">{application.company}</span>
-    <span>{application.position}</span>
-    <span>{application.location}</span>
-    <span>{application.type}</span>
-    <span className="stale-date">{application.appliedAt}</span>
+    <span className="stale-primary" title={application.company}>
+      {application.company}
+    </span>
+    <span title={application.position}>{application.position}</span>
+    <span>
+      {APPLICATION_TYPE_LABELS[application.type] || application.type}
+    </span>
+    <span className="stale-date">
+      {application.appliedAt}
+    </span>
   </>
 );
 
@@ -91,6 +101,7 @@ function Applications({ collection, showForm, onCloseForm }) {
   const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
   const [typeFilter, setTypeFilter] = useState('');
   const [noteApplication, setNoteApplication] = useState(null);
+  const [selectedApplication, setSelectedApplication] = useState(null);
 
   const filteredApplications = useMemo(() => {
     const searchText = search.trim().toLowerCase();
@@ -99,7 +110,7 @@ function Applications({ collection, showForm, onCloseForm }) {
       applications.filter(
         job =>
           matchesText(
-            [job.company, job.position, job.location, job.type, job.field],
+            [job.company, job.position, job.country, job.type, job.city],
             searchText,
           ) &&
           matchesStatus(job, statusFilter) &&
@@ -163,6 +174,7 @@ function Applications({ collection, showForm, onCloseForm }) {
         pluralLabel="candidaturas pendientes"
         renderCells={renderStaleApplication}
         onSuspend={suspend}
+        onOpen={setSelectedApplication}
       />
 
       {showForm && (
@@ -210,6 +222,7 @@ function Applications({ collection, showForm, onCloseForm }) {
             applications={paginatedApplications}
             onStatusChange={(id, status) => update(id, { status })}
             onOpenNote={setNoteApplication}
+            onOpenDetail={setSelectedApplication}
           />
         </section>
 
@@ -224,6 +237,25 @@ function Applications({ collection, showForm, onCloseForm }) {
           item={noteApplication}
           onSave={handleSaveNote}
           onCancel={() => setNoteApplication(null)}
+        />
+      )}
+
+      {selectedApplication && (
+        <RecordDetails
+          item={selectedApplication}
+          kind="application"
+          isStale={staleItems.some(
+            item => item.id === selectedApplication.id,
+          )}
+          onClose={() => setSelectedApplication(null)}
+          onSuspend={async id => {
+            await suspend(id);
+            setSelectedApplication(null);
+          }}
+          onEditNotes={item => {
+            setSelectedApplication(null);
+            setNoteApplication(item);
+          }}
         />
       )}
     </>
