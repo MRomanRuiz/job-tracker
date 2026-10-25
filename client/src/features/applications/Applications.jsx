@@ -95,7 +95,10 @@ function Applications({ collection, showForm, onCloseForm }) {
     return sortByDateDesc(
       applications.filter(
         job =>
-          matchesText([job.company, job.position, job.country, job.type, job.city], searchText) &&
+          matchesText(
+            [job.company, job.position, job.country, job.type, job.city, job.notes],
+            searchText,
+          ) &&
           matchesStatus(job, statusFilter) &&
           (typeFilter === '' || job.type === typeFilter),
       ),
