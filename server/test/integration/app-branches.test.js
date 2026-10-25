@@ -96,14 +96,8 @@ describe('additional app branches', () => {
   });
 
   it('rejects stale records when storage detects a concurrent change', async () => {
-    const application = await request(
-      'PATCH',
-      '/api/applications/1/suspend',
-    );
-    const contact = await request(
-      'PATCH',
-      '/api/contacts/1/suspend',
-    );
+    const application = await request('PATCH', '/api/applications/1/suspend');
+    const contact = await request('PATCH', '/api/contacts/1/suspend');
 
     assert.equal(application.status, 400);
     assert.equal(contact.status, 400);
@@ -122,10 +116,7 @@ describe('additional app branches', () => {
   });
 
   it('returns not found when suspending a missing contact', async () => {
-    const response = await request(
-      'PATCH',
-      '/api/contacts/99/suspend',
-    );
+    const response = await request('PATCH', '/api/contacts/99/suspend');
 
     assert.equal(response.status, 404);
   });
@@ -137,10 +128,7 @@ describe('additional app branches', () => {
   });
 
   it('serves the client fallback or reports a missing build', async () => {
-    const indexPath = path.resolve(
-      __dirname,
-      '../../../client/dist/index.html',
-    );
+    const indexPath = path.resolve(__dirname, '../../../client/dist/index.html');
     const hasClientBuild = require('node:fs').existsSync(indexPath);
     const response = await fetch(`${baseUrl}/dashboard`);
 

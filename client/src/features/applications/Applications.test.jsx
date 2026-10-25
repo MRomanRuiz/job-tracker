@@ -8,7 +8,6 @@ const makeApplication = (id, overrides = {}) => ({
   position: 'Desarrollador',
   country: 'España',
   city: 'Madrid',
-  location: 'Madrid',
   type: 'industry',
   appliedAt: `2026-01-${String(id).padStart(2, '0')}`,
   status: 'pending',
@@ -26,12 +25,7 @@ const renderApplications = ({ items = [], staleItems = [], ...props } = {}) => {
   const onCloseForm = vi.fn();
 
   render(
-    <Applications
-      collection={collection}
-      showForm={false}
-      onCloseForm={onCloseForm}
-      {...props}
-    />,
+    <Applications collection={collection} showForm={false} onCloseForm={onCloseForm} {...props} />,
   );
 
   return { collection, onCloseForm };
@@ -59,7 +53,7 @@ describe('Applications', () => {
       items: [
         makeApplication(1, { company: 'Globex' }),
         makeApplication(2),
-        makeApplication(3, { type: 'research', field: 'Biología' }),
+        makeApplication(3, { type: 'research', position: 'Biología' }),
       ],
     });
 
@@ -127,7 +121,6 @@ describe('Applications', () => {
     expect(screen.getByText('Mostrando 1 de 1 candidatura')).toBeTruthy();
   });
 
-
   it('creates an application with current fields and closes only on success', async () => {
     const { collection, onCloseForm } = renderApplications({
       showForm: true,
@@ -146,9 +139,7 @@ describe('Applications', () => {
       target: { value: 'España' },
     });
 
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Mostrar campos opcionales' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
     fireEvent.change(screen.getByPlaceholderText('Ciudad'), {
       target: { value: 'Madrid' },
     });
@@ -158,23 +149,15 @@ describe('Applications', () => {
 
     collection.create.mockResolvedValueOnce(false);
 
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Guardar candidatura' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar candidatura' }));
 
-    await waitFor(() =>
-      expect(collection.create).toHaveBeenCalledTimes(1),
-    );
+    await waitFor(() => expect(collection.create).toHaveBeenCalledTimes(1));
 
     expect(onCloseForm).not.toHaveBeenCalled();
 
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Guardar candidatura' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar candidatura' }));
 
-    await waitFor(() =>
-      expect(onCloseForm).toHaveBeenCalledTimes(1),
-    );
+    await waitFor(() => expect(onCloseForm).toHaveBeenCalledTimes(1));
 
     expect(collection.create).toHaveBeenLastCalledWith({
       company: 'Acme',
@@ -197,47 +180,32 @@ describe('Applications', () => {
     expect(screen.getByText('País')).toBeTruthy();
     expect(screen.getAllByText('España')).toHaveLength(2);
     const rows = screen.getAllByRole('row').slice(1);
-    expect(within(rows[0]).getAllByRole('cell')[3].textContent).toBe(
-      'Investigación',
-    );
+    expect(within(rows[0]).getAllByRole('cell')[3].textContent).toBe('Investigación');
     expect(within(rows[1]).getAllByRole('cell')[3].textContent).toBe('Empresa');
-    expect(within(rows[0]).getAllByRole('cell')[3].title).toBe(
-      'Investigación',
-    );
+    expect(within(rows[0]).getAllByRole('cell')[3].title).toBe('Investigación');
   });
 
   it('disables duration months when the contract is indefinite', () => {
     renderApplications({ showForm: true });
 
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Mostrar campos opcionales' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
     fireEvent.change(screen.getByPlaceholderText('Tipo de contrato'), {
       target: { value: 'indefinite' },
     });
 
-    expect(
-      screen.getByPlaceholderText('Duración en meses (si es temporal)')
-        .disabled,
-    ).toBe(true);
+    expect(screen.getByPlaceholderText('Duración en meses (si es temporal)').disabled).toBe(true);
   });
 
   it('keeps duration months enabled for a fixed-term contract', () => {
     renderApplications({ showForm: true });
 
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Mostrar campos opcionales' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
     fireEvent.change(screen.getByPlaceholderText('Tipo de contrato'), {
       target: { value: 'fixed' },
     });
 
-    expect(
-      screen.getByPlaceholderText('Duración en meses (si es temporal)')
-        .disabled,
-    ).toBe(false);
+    expect(screen.getByPlaceholderText('Duración en meses (si es temporal)').disabled).toBe(false);
   });
-
 
   it('updates the status from the table', () => {
     const { collection } = renderApplications({ items: [makeApplication(7)] });
@@ -247,6 +215,49 @@ describe('Applications', () => {
     });
 
     expect(collection.update).toHaveBeenCalledWith(7, { status: 'interview' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('opens full application details from the table and closes with Escape', () => {
+    renderApplications({
+      items: [
+        makeApplication(1, {
+          durationType: 'fixed',
+          durationMonths: 12,
+        }),
+      ],
+    });
+
+    const statusSelect = screen.getByDisplayValue('En espera');
+    fireEvent.keyDown(statusSelect, { key: 'Enter' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.click(statusSelect);
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.keyDown(screen.getAllByRole('row')[1], { key: ' ' });
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Desarrollador — Acme 1')).toBeTruthy();
+    expect(within(dialog).getByText('Tipo de contrato').parentElement.textContent).toBe(
+      'Tipo de contratoTemporal',
+    );
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('closes application details from the backdrop but not from inside the dialog', () => {
+    renderApplications({ items: [makeApplication(1)] });
+    fireEvent.click(screen.getAllByRole('row')[1]);
+
+    const dialog = screen.getByRole('dialog');
+    fireEvent.keyDown(dialog, { key: 'Enter' });
+    fireEvent.mouseDown(dialog);
+    expect(screen.getByRole('dialog')).toBeTruthy();
+
+    fireEvent.mouseDown(dialog.parentElement);
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('saves an application note and closes the dialog', async () => {
@@ -274,9 +285,7 @@ describe('Applications', () => {
     });
     collection.update.mockResolvedValue(false);
 
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Ver y editar nota' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Ver y editar nota' }));
     fireEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', {
         name: 'Guardar',
@@ -321,13 +330,27 @@ describe('Applications', () => {
       staleItems: [makeApplication(4)],
     });
 
-    expect(
-      screen.getByText('Hay 1 candidatura pendiente de más de 30 días.'),
-    ).toBeTruthy();
+    expect(screen.getByText('Hay 1 candidatura pendiente de más de 30 días.')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Revisar' }));
     fireEvent.click(screen.getByRole('button', { name: 'Suspender' }));
 
+    expect(collection.suspend).toHaveBeenCalledWith(4);
+  });
+
+  it('suspends a stale application from its details and closes the dialog', async () => {
+    const { collection } = renderApplications({
+      staleItems: [makeApplication(4)],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revisar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Registro pendiente de más de 30 días')).toBeTruthy();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Suspender' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(collection.suspend).toHaveBeenCalledWith(4);
   });
 });

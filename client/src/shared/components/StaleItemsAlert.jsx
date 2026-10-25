@@ -4,8 +4,10 @@ function StaleItemsAlert({
   items,
   singularLabel,
   pluralLabel,
+  itemType,
   renderCells,
   onSuspend,
+  onOpen,
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -24,22 +26,26 @@ function StaleItemsAlert({
           Hay {items.length} {label} de más de 30 días.
         </strong>
 
-        <button type="button" onClick={() => setIsOpen(open => !open)}>
-          {isOpen ? 'Cancelar' : 'Revisar'}
+        <button type="button" onClick={() => setIsOpen(open => !open)} aria-expanded={isOpen}>
+          {isOpen ? 'Ocultar' : 'Revisar'}
         </button>
       </div>
 
       {isOpen && (
         <div className="stale-panel">
           {items.map(item => (
-            <div className="stale-row" key={item.id}>
+            <div className={`stale-row stale-row--${itemType}`} key={item.id}>
               {renderCells(item)}
 
               <button
                 type="button"
-                className="suspend-button"
-                onClick={() => onSuspend(item.id)}
+                className="secondary-button stale-detail-button"
+                onClick={() => onOpen?.(item)}
               >
+                Ver detalle
+              </button>
+
+              <button type="button" className="suspend-button" onClick={() => onSuspend(item.id)}>
                 Suspender
               </button>
             </div>

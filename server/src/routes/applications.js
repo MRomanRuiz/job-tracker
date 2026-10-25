@@ -13,10 +13,7 @@ const getApplicationChanges = body => {
   const { status, notes } = body;
 
   if (status === undefined && notes === undefined) {
-    throw new HttpError(
-      HTTP_STATUS.BAD_REQUEST,
-      'No se han proporcionado campos para actualizar',
-    );
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'No se han proporcionado campos para actualizar');
   }
 
   if (status !== undefined && !ALLOWED_APPLICATION_STATUSES.has(status)) {
@@ -55,29 +52,20 @@ const addApplicationRoutes = (app, storage) => {
 
   app.get(
     '/api/applications/old',
-    handle(
-      'No se pudieron leer las candidaturas antiguas',
-      async (_req, res) => {
-        const applications = await storage.list('applications');
+    handle('No se pudieron leer las candidaturas antiguas', async (_req, res) => {
+      const applications = await storage.list('applications');
 
-        res.json({
-          applications: applications.filter(item =>
-            isStalePending(item, 'appliedAt'),
-          ),
-        });
-      },
-    ),
+      res.json({
+        applications: applications.filter(item => isStalePending(item, 'appliedAt')),
+      });
+    }),
   );
 
   app.patch(
     '/api/applications/:id',
     handle('No se pudo actualizar la candidatura', async (req, res) => {
       const changes = getApplicationChanges(req.body);
-      const application = await storage.update(
-        'applications',
-        req.params.id,
-        changes,
-      );
+      const application = await storage.update('applications', req.params.id, changes);
 
       if (!application) {
         throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
@@ -86,7 +74,6 @@ const addApplicationRoutes = (app, storage) => {
       res.json(application);
     }),
   );
-
 
   app.patch(
     '/api/applications/:id/suspend',
@@ -100,8 +87,7 @@ const addApplicationRoutes = (app, storage) => {
 
       suspendIfStale(application, 'appliedAt', {
         notPending: 'La candidatura no está en espera',
-        tooRecent:
-          'La candidatura todavía no lleva más de 30 días en espera',
+        tooRecent: 'La candidatura todavía no lleva más de 30 días en espera',
       });
 
       const updated = await storage.updatePending(

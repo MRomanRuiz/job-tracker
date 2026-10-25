@@ -13,12 +13,7 @@ function RecordForm({
   const allFields = [...requiredFields, ...optionalFields];
 
   const [values, setValues] = useState(() =>
-    Object.fromEntries(
-      allFields.map(field => [
-        field.name,
-        field.initialValue ?? '',
-      ]),
-    ),
+    Object.fromEntries(allFields.map(field => [field.name, field.initialValue ?? ''])),
   );
 
   const handleChange = event => {
@@ -39,8 +34,7 @@ function RecordForm({
       if (field.type === 'number') {
         const value = submittedValues[field.name];
 
-        submittedValues[field.name] =
-          value === '' ? null : Number(value);
+        submittedValues[field.name] = value === '' ? null : Number(value);
       }
     }
 
@@ -48,15 +42,7 @@ function RecordForm({
   };
 
   const renderField = field => {
-    const {
-      name,
-      type = 'text',
-      placeholder,
-      required = false,
-      options = [],
-      min,
-      step,
-    } = field;
+    const { name, type = 'text', placeholder, required = false, options = [], min, step } = field;
 
     const props = {
       name,
@@ -91,10 +77,7 @@ function RecordForm({
           type={type}
           min={min}
           step={step}
-          disabled={
-            field.name === 'durationMonths' &&
-            values.durationType === 'indefinite'
-          }
+          disabled={field.name === 'durationMonths' && values.durationType === 'indefinite'}
         />
       );
     }
@@ -118,20 +101,12 @@ function RecordForm({
             <button
               type="button"
               className="optional-fields-toggle"
-              onClick={() =>
-                setShowOptionalFields(current => !current)
-              }
+              onClick={() => setShowOptionalFields(current => !current)}
               aria-label={
-                showOptionalFields
-                  ? 'Ocultar campos opcionales'
-                  : 'Mostrar campos opcionales'
+                showOptionalFields ? 'Ocultar campos opcionales' : 'Mostrar campos opcionales'
               }
               aria-expanded={showOptionalFields}
-              title={
-                showOptionalFields
-                  ? 'Ocultar campos opcionales'
-                  : 'Mostrar campos opcionales'
-              }
+              title={showOptionalFields ? 'Ocultar campos opcionales' : 'Mostrar campos opcionales'}
             >
               ⋮
             </button>
@@ -149,11 +124,7 @@ function RecordForm({
             {submitLabel}
           </button>
 
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={onCancel}
-          >
+          <button type="button" className="secondary-button" onClick={onCancel}>
             Cancelar
           </button>
         </div>

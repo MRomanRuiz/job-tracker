@@ -28,12 +28,7 @@ function NoteForm({ item, onSave, onCancel }) {
             </div>
           </div>
 
-          <button
-            type="button"
-            className="note-popup-close"
-            onClick={onCancel}
-            aria-label="Cerrar"
-          >
+          <button type="button" className="note-popup-close" onClick={onCancel} aria-label="Cerrar">
             ×
           </button>
         </div>
@@ -50,11 +45,7 @@ function NoteForm({ item, onSave, onCancel }) {
           </div>
 
           <div className="note-popup-actions">
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={onCancel}
-            >
+            <button type="button" className="secondary-button" onClick={onCancel}>
               Cancelar
             </button>
 

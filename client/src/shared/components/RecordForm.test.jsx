@@ -21,9 +21,7 @@ describe('RecordForm', () => {
             step: 1,
           },
         ]}
-        optionalFields={[
-          { name: 'details', placeholder: 'Detalles', type: 'textarea' },
-        ]}
+        optionalFields={[{ name: 'details', placeholder: 'Detalles', type: 'textarea' }]}
         submitLabel="Guardar"
         onSubmit={onSubmit}
         onCancel={onCancel}
@@ -31,9 +29,7 @@ describe('RecordForm', () => {
     );
 
     expect(screen.queryByPlaceholderText('Detalles')).toBeNull();
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Mostrar campos opcionales' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
     fireEvent.change(screen.getByPlaceholderText('Título *'), {
       target: { value: 'Oferta' },
     });
@@ -50,8 +46,7 @@ describe('RecordForm', () => {
       durationMonths: 12,
       details: 'Contrato temporal',
     });
-    expect(screen.getByRole('button', { name: 'Ocultar campos opcionales' }))
-      .toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ocultar campos opcionales' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(onCancel).toHaveBeenCalledOnce();
@@ -71,9 +66,7 @@ describe('RecordForm', () => {
             type: 'number',
           },
         ]}
-        optionalFields={[
-          { name: 'details', placeholder: 'Detalles', type: 'textarea' },
-        ]}
+        optionalFields={[{ name: 'details', placeholder: 'Detalles', type: 'textarea' }]}
         submitLabel="Guardar"
         onSubmit={onSubmit}
         onCancel={vi.fn()}
@@ -90,13 +83,9 @@ describe('RecordForm', () => {
       details: '',
     });
 
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Mostrar campos opcionales' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
     expect(screen.getByPlaceholderText('Detalles')).toBeTruthy();
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Ocultar campos opcionales' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar campos opcionales' }));
     expect(screen.queryByPlaceholderText('Detalles')).toBeNull();
   });
 });

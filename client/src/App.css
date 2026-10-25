@@ -69,6 +69,24 @@ button {
   transform: translateY(1px);
 }
 
+/* Botón secundario */
+
+.secondary-button {
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary-button:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
 /* Contenido */
 
 main {
@@ -128,7 +146,7 @@ main {
   box-shadow: 0 0 0 2px #111827;
 }
 
-/* Filtros */
+/* Filtros y búsqueda */
 
 .toolbar {
   display: grid;
@@ -149,86 +167,14 @@ main {
   outline: none;
 }
 
-.record-form-field input,
-.record-form-field textarea,
-.record-form-field select {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  height: 42px;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: white;
-  color: #1f2937;
-  font: inherit;
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
-.record-form-field select {
-  appearance: none;
-  -webkit-appearance: none;
-  padding-right: 36px;
-  cursor: pointer;
-  font-weight: 400;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 16px;
-}
-
-.record-form-field select:invalid {
-  color: #9ca3af;
-  font-weight: 400;
-}
-
-.status-select option {
-  background: white;
-  color: #1f2937;
-  font-weight: 400;
-  text-align: left;
-}
-
-.record-form-field select option {
-  color: #6b7280;
-  font-weight: 400;
-}
-
-.record-form-field input {
-  height: 42px;
-}
-
-.record-form-field textarea {
-  resize: vertical;
-}
-
-.note-popup-body textarea {
-  width: 100%;
-  min-height: 130px;
-  box-sizing: border-box;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #1f2937;
-  font: inherit;
-  font-size: 14px;
-  line-height: 1.5;
-  resize: vertical;
-  outline: none;
-}
-
-.record-form-field input:focus,
-.record-form-field textarea:focus,
-.record-form-field select:focus {
-  outline: none;
-  border-color: #9ca3af;
-  box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.05);
-}
-
-.toolbar input:focus,
-.toolbar select:focus {
-  border-color: #9ca3af;
-  box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.05);
+.search-only {
+  grid-template-columns: 1fr;
 }
 
 /* Tabla */
@@ -287,24 +233,45 @@ main {
   outline: none;
 }
 
-.status-select.pending {
+.status-select option {
+  background: white;
+  color: #1f2937;
+  font-weight: 400;
+  text-align: left;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-select.pending,
+.status-badge.pending {
   background: #dbeafe;
   color: #1d4ed8;
 }
 
 .status-select.replied,
-.status-select.interview {
+.status-select.interview,
+.status-badge.replied,
+.status-badge.interview {
   background: #ede9fe;
   color: #7c3aed;
 }
 
-.status-select.offer {
+.status-select.offer,
+.status-badge.offer {
   background: #dcfce7;
   color: #15803d;
 }
 
 .status-select.rejected,
-.status-select.suspended {
+.status-select.suspended,
+.status-badge.rejected,
+.status-badge.suspended {
   background: #fee2e2;
   color: #b91c1c;
 }
@@ -313,7 +280,101 @@ main {
   white-space: nowrap;
 }
 
-/* Aviso candidaturas antiguas */
+/* Formularios */
+
+.record-form-wrapper {
+  margin-top: 16px;
+  padding-inline: 20px;
+  box-sizing: border-box;
+}
+
+.record-form-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.record-form-field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.record-form-field input,
+.record-form-field textarea,
+.record-form-field select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  color: #1f2937;
+  font: inherit;
+}
+
+.record-form-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  cursor: pointer;
+  font-weight: 400;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.record-form-field select:invalid {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.record-form-field select option {
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.record-form-field textarea {
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.optional-fields-toggle {
+  display: inline-flex;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  color: #374151;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.optional-fields-toggle:hover {
+  background: #f9fafb;
+}
+
+.optional-fields-row {
+  margin-top: 12px;
+}
+
+/* Aviso de registros pendientes */
 
 .stale-alert {
   display: flex;
@@ -348,22 +409,7 @@ main {
   cursor: pointer;
 }
 
-.pagination button {
-  min-width: 90px;
-  padding: 9px 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: white;
-  color: #374151;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.stale-alert button:hover {
-  background: #7c3900;
-}
-
-/* Panel candidaturas antiguas */
+/* Panel de registros pendientes */
 
 .stale-panel {
   margin: 12px 40px 0;
@@ -373,13 +419,47 @@ main {
   overflow: hidden;
 }
 
+.record-details-header > button {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
 .stale-row {
   display: grid;
-  grid-template-columns: 1.3fr 1.5fr 1.2fr 1fr 110px auto;
   align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
+  gap: 10px;
+  padding: 10px 12px;
   border-bottom: 1px solid #e5e7eb;
+}
+
+.stale-row--application {
+  grid-template-columns:
+    minmax(0, 1.2fr)
+    minmax(0, 2fr)
+    minmax(0, 1fr)
+    110px
+    max-content
+    max-content;
+}
+
+.stale-row--contact {
+  grid-template-columns:
+    minmax(0, 1.2fr)
+    minmax(0, 2fr)
+    110px
+    max-content
+    max-content;
+}
+
+.stale-row > button {
+  min-height: 36px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.stale-detail-button {
+  white-space: nowrap;
 }
 
 .stale-row:last-child {
@@ -387,6 +467,7 @@ main {
 }
 
 .stale-row span {
+  min-width: 0;
   color: #6b7280;
   font-size: 14px;
   white-space: nowrap;
@@ -397,10 +478,6 @@ main {
 .stale-row .stale-primary {
   color: #1f2937;
   font-weight: 600;
-}
-
-.stale-row .stale-date {
-  white-space: nowrap;
 }
 
 .suspend-button {
@@ -429,10 +506,25 @@ main {
   margin-top: 20px;
 }
 
+.pagination button {
+  min-width: 90px;
+  padding: 9px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  color: #374151;
+  font-size: 14px;
+  cursor: pointer;
+}
+
 .pagination button:disabled {
   background: #f3f4f6;
   color: #374151;
   cursor: not-allowed;
+}
+
+.stale-alert button:hover {
+  background: #7c3900;
 }
 
 .pagination button:hover:not(:disabled) {
@@ -447,43 +539,7 @@ main {
   color: #6b7280;
 }
 
-/* Botón secundario */
-
-.secondary-button {
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #374151;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.secondary-button:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
-}
-
-/* Acciones del formulario */
-
-.form-actions {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 18px;
-}
-
-.header-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.search-only {
-  grid-template-columns: 1fr;
-}
-
+/* Notas */
 
 .note-button span:first-child {
   font-size: 15px;
@@ -563,6 +619,15 @@ main {
   }
 }
 
+.record-details-header > div {
+  padding: 0 44px;
+  text-align: center;
+}
+
+.record-details-alert > div {
+  flex: 1;
+}
+
 .note-popup-header {
   display: flex;
   align-items: flex-start;
@@ -618,6 +683,42 @@ main {
   padding: 18px 20px;
 }
 
+.note-popup-body textarea {
+  width: 100%;
+  min-height: 130px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #1f2937;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+}
+
+.toolbar input:focus,
+.toolbar select:focus {
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.05);
+}
+
+.record-form-field input:focus,
+.record-form-field textarea:focus,
+.record-form-field select:focus {
+  outline: none;
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.05);
+}
+
+.record-form-field select:has(option[value='']:checked) {
+  color: #6b7280;
+  font-weight: 400;
+  font-size: inherit;
+}
+
 .note-popup-body textarea:focus {
   border-color: #9ca3af;
   box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.05);
@@ -632,52 +733,123 @@ main {
   background: #f9fafb;
 }
 
-.record-form-wrapper {
-  margin-top: 16px;
-  padding-left: 20px;
-  padding-right: 20px;
-  box-sizing: border-box;
-}
+/* Filas interactivas */
 
-.record-form-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-}
-
-.record-form-field {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.optional-fields-toggle {
-  display: inline-flex;
-  flex: 0 0 36px;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 42px;
-  padding: 0;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: white;
-  color: #374151;
-  font-size: 24px;
-  line-height: 1;
+.clickable-record-row {
   cursor: pointer;
 }
 
-.optional-fields-toggle:hover {
-  background: #f9fafb;
+.clickable-record-row:hover {
+  background: var(--surface-hover, #f5f5f5);
 }
 
-.optional-fields-row {
-  margin-top: 12px;
+.clickable-record-row:focus-visible {
+  outline: 2px solid var(--primary-color, #2563eb);
+  outline-offset: -2px;
 }
 
-/* Adaptación para pantallas pequeñas */
+.record-details-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgb(0 0 0 / 45%);
+}
+
+.record-details {
+  width: min(760px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 24px;
+  border-radius: 12px;
+  background: var(--card-background, #fff);
+  color: var(--text-color, #222);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 20%);
+}
+
+.record-details-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.record-details-header h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.record-details-header p {
+  opacity: 0.7;
+}
+
+.record-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.record-details-field {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+}
+
+.record-details-field-wide {
+  grid-column: 1 / -1;
+}
+
+.record-details-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.record-details-value {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.record-details-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.record-details-alert {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* Ajustes responsive */
+
+@media (max-width: 760px) {
+  .stale-panel {
+    margin-inline: 16px;
+  }
+
+  .stale-row--application,
+  .stale-row--contact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stale-row > button {
+    justify-self: start;
+  }
+}
+
 @media (max-width: 600px) {
   .record-form-row {
     flex-wrap: wrap;
@@ -690,10 +862,17 @@ main {
   .optional-fields-toggle {
     flex: 0 0 36px;
   }
-}
 
-.record-form-field select:has(option[value=""]:checked) {
-  color: #6b7280;
-  font-weight: 400;
-  font-size: inherit;
+  .record-details-backdrop {
+    padding: 10px;
+  }
+
+  .record-details {
+    padding: 16px;
+    max-height: 95vh;
+  }
+
+  .record-details-grid {
+    grid-template-columns: 1fr;
+  }
 }

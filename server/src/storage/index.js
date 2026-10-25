@@ -1,4 +1,3 @@
-
 function createStorage(type = process.env.STORAGE_TYPE || 'json') {
   switch (type.toLowerCase()) {
     case 'json':
@@ -8,9 +7,7 @@ function createStorage(type = process.env.STORAGE_TYPE || 'json') {
       return require('./mongodb').createMongoStorage();
 
     default:
-      throw new Error(
-        `STORAGE_TYPE no válido: ${type}. Usa json o mongodb.`,
-      );
+      throw new Error(`STORAGE_TYPE no válido: ${type}. Usa json o mongodb.`);
   }
 }
 

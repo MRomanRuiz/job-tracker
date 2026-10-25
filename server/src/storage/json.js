@@ -1,10 +1,8 @@
-
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
 const DATA_DIR = path.resolve(
-  process.env.JSON_DATA_DIR ||
-    path.join(__dirname, '../../../client/data'),
+  process.env.JSON_DATA_DIR || path.join(__dirname, '../../../client/data'),
 );
 
 const FILES = {
@@ -16,9 +14,7 @@ const queues = new Map();
 
 async function readData(name) {
   const [filename, key] = FILES[name];
-  const data = JSON.parse(
-    await fs.readFile(path.join(DATA_DIR, filename), 'utf8'),
-  );
+  const data = JSON.parse(await fs.readFile(path.join(DATA_DIR, filename), 'utf8'));
 
   if (!Array.isArray(data[key])) {
     throw new TypeError(`${filename} no contiene "${key}"`);
@@ -40,7 +36,10 @@ function serialize(name, operation) {
   const previous = queues.get(name) || Promise.resolve();
   const current = previous.then(operation);
 
-  queues.set(name, current.catch(() => {}));
+  queues.set(
+    name,
+    current.catch(() => {}),
+  );
 
   return current;
 }
@@ -71,10 +70,7 @@ function createJSONStorage() {
         const key = collectionKey(name);
         const records = data[key];
 
-        const maxId = records.reduce(
-          (max, item) => Math.max(max, Number(item.id) || 0),
-          0,
-        );
+        const maxId = records.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0);
 
         const newRecord = {
           ...record,
@@ -92,12 +88,10 @@ function createJSONStorage() {
       return serialize(name, async () => {
         const data = await readData(name);
         const records = data[collectionKey(name)];
-        const record = records.find(
-          item => item.id === Number(id),
-        );
+        const record = records.find(item => item.id === Number(id));
 
         if (!record) {
-            return null;
+          return null;
         }
 
         Object.assign(record, changes);
@@ -113,10 +107,7 @@ function createJSONStorage() {
         const records = data[collectionKey(name)];
 
         const record = records.find(
-          item =>
-            item.id === Number(id) &&
-            item.status === 'pending' &&
-            item[dateField] === date,
+          item => item.id === Number(id) && item.status === 'pending' && item[dateField] === date,
         );
 
         if (!record) {

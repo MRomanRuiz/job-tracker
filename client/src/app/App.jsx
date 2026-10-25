@@ -19,11 +19,7 @@ function App() {
 
   return (
     <div className="app">
-      <Header
-        view={view}
-        onSwitchView={changeView}
-        onNew={() => setShowForm(true)}
-      />
+      <Header view={view} onSwitchView={changeView} onNew={() => setShowForm(true)} />
 
       <div hidden={view !== 'applications'}>
         <Applications

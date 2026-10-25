@@ -1,12 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ALL_STATUSES, ITEMS_PER_PAGE } from '../../shared/lib/constants';
 import usePagination from '../../shared/hooks/usePagination';
-import {
-  countByStatus,
-  matchesStatus,
-  matchesText,
-  sortByDateDesc,
-} from '../../shared/lib/utils';
+import { countByStatus, matchesStatus, matchesText, sortByDateDesc } from '../../shared/lib/utils';
 import ContactsTable from './ContactsTable';
 import NoteForm from '../../shared/components/NoteForm';
 import Pagination from '../../shared/components/Pagination';
@@ -14,7 +9,7 @@ import RecordForm from '../../shared/components/RecordForm';
 import StaleItemsAlert from '../../shared/components/StaleItemsAlert';
 import StatCards from '../../shared/components/StatCards';
 import Toolbar from '../../shared/components/Toolbar';
-
+import RecordDetails from '../../shared/components/RecordDetails';
 
 const REQUIRED_FORM_FIELDS = [
   {
@@ -22,7 +17,7 @@ const REQUIRED_FORM_FIELDS = [
     placeholder: 'Nombre',
     required: true,
   },
-    {
+  {
     name: 'email',
     placeholder: 'Email o contacto',
     required: true,
@@ -61,10 +56,11 @@ const STAT_ITEMS = [
 
 const renderStaleContact = contact => (
   <>
-    <span className="stale-primary">{contact.contact}</span>
-    <span>{contact.institution}</span>
+    <span className="stale-primary" title={contact.contact}>
+      {contact.contact}
+    </span>
+    <span title={contact.institution}>{contact.institution}</span>
     <span className="stale-date">{contact.contactedAt}</span>
-    <span>{contact.notes || '—'}</span>
   </>
 );
 
@@ -73,6 +69,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
   const [noteContact, setNoteContact] = useState(null);
+  const [selectedContact, setSelectedContact] = useState(null);
 
   const filteredContacts = useMemo(() => {
     const searchText = search.trim().toLowerCase();
@@ -84,6 +81,9 @@ function Contacts({ collection, showForm, onCloseForm }) {
             [
               contact.contact,
               contact.institution,
+              contact.department,
+              contact.country,
+              contact.city,
               contact.email,
               contact.notes,
             ],
@@ -148,7 +148,9 @@ function Contacts({ collection, showForm, onCloseForm }) {
         items={staleItems}
         singularLabel="contacto pendiente"
         pluralLabel="contactos pendientes"
+        itemType="contact"
         renderCells={renderStaleContact}
+        onOpen={setSelectedContact}
         onSuspend={suspend}
       />
 
@@ -166,11 +168,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
       )}
 
       <main>
-        <StatCards
-          items={statItems}
-          activeStatus={statusFilter}
-          onSelect={handleStatClick}
-        />
+        <StatCards items={statItems} activeStatus={statusFilter} onSelect={handleStatClick} />
 
         <Toolbar
           search={search}
@@ -188,14 +186,11 @@ function Contacts({ collection, showForm, onCloseForm }) {
             contacts={paginatedContacts}
             onStatusChange={(id, status) => update(id, { status })}
             onOpenNote={setNoteContact}
+            onOpenDetail={setSelectedContact}
           />
         </section>
 
-        <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          onPageChange={setPage}
-        />
+        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
       </main>
 
       {noteContact && (
@@ -203,6 +198,23 @@ function Contacts({ collection, showForm, onCloseForm }) {
           item={noteContact}
           onSave={handleSaveNote}
           onCancel={() => setNoteContact(null)}
+        />
+      )}
+
+      {selectedContact && (
+        <RecordDetails
+          item={selectedContact}
+          kind="contact"
+          isStale={staleItems.some(item => item.id === selectedContact.id)}
+          onClose={() => setSelectedContact(null)}
+          onSuspend={async id => {
+            await suspend(id);
+            setSelectedContact(null);
+          }}
+          onEditNotes={item => {
+            setSelectedContact(null);
+            setNoteContact(item);
+          }}
         />
       )}
     </>

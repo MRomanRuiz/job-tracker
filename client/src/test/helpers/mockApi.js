@@ -14,9 +14,7 @@ export const mockApi = routes => {
   const fetchMock = vi.fn(async (url, { method = 'GET', body } = {}) => {
     const handler = routes[`${method} ${url}`];
     const result =
-      typeof handler === 'function'
-        ? await handler(body && JSON.parse(body))
-        : handler;
+      typeof handler === 'function' ? await handler(body && JSON.parse(body)) : handler;
     const { httpStatus = 200, body: data } =
       result?.httpStatus === undefined ? { body: result } : result;
     const status = handler === undefined ? HTTP_STATUS.NOT_FOUND : httpStatus;

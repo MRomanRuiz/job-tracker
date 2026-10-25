@@ -1,7 +1,6 @@
 import { ALL_STATUSES } from './constants.js';
 
-export const isRejected = item =>
-  item.status === 'rejected' || item.status === 'suspended';
+export const isRejected = item => item.status === 'rejected' || item.status === 'suspended';
 
 export const matchesStatus = (item, statusFilter) => {
   if (statusFilter === ALL_STATUSES) {
@@ -19,9 +18,7 @@ export const matchesText = (values, searchText) =>
   values.some(value => (value || '').toLowerCase().includes(searchText));
 
 export const sortByDateDesc = (items, dateField) =>
-  [...items].sort(
-    (a, b) => new Date(b[dateField]) - new Date(a[dateField]),
-  );
+  [...items].sort((a, b) => new Date(b[dateField]) - new Date(a[dateField]));
 
 export const replaceById = (items, updatedItem) =>
   items.map(item => (item.id === updatedItem.id ? updatedItem : item));
