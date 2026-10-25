@@ -1,19 +1,11 @@
-import {
-  APPLICATION_STATUS_LABELS,
-  APPLICATION_TYPE_LABELS,
-} from '../../shared/lib/constants';
+import { APPLICATION_STATUS_LABELS, APPLICATION_TYPE_LABELS } from '../../shared/lib/constants';
 import EmptyState from '../../shared/components/EmptyState';
 import StatusSelect from '../../shared/components/StatusSelect';
 import NoteButton from '../../shared/components/NoteButton';
 
 const MANUAL_STATUSES = ['pending', 'interview', 'offer', 'rejected'];
 
-function ApplicationsTable({
-  applications,
-  onStatusChange,
-  onOpenNote,
-  onOpenDetail,
-}) {
+function ApplicationsTable({ applications, onStatusChange, onOpenNote, onOpenDetail }) {
   if (applications.length === 0) {
     return <EmptyState label="candidaturas" />;
   }
@@ -70,10 +62,7 @@ function ApplicationsTable({
               />
             </td>
 
-            <td
-              className="notes-cell"
-              onClick={event => event.stopPropagation()}
-            >
+            <td className="notes-cell" onClick={event => event.stopPropagation()}>
               <NoteButton item={job} onOpen={onOpenNote} />
             </td>
           </tr>

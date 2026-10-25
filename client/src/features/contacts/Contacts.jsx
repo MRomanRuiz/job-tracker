@@ -1,12 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ALL_STATUSES, ITEMS_PER_PAGE } from '../../shared/lib/constants';
 import usePagination from '../../shared/hooks/usePagination';
-import {
-  countByStatus,
-  matchesStatus,
-  matchesText,
-  sortByDateDesc,
-} from '../../shared/lib/utils';
+import { countByStatus, matchesStatus, matchesText, sortByDateDesc } from '../../shared/lib/utils';
 import ContactsTable from './ContactsTable';
 import NoteForm from '../../shared/components/NoteForm';
 import Pagination from '../../shared/components/Pagination';
@@ -22,7 +17,7 @@ const REQUIRED_FORM_FIELDS = [
     placeholder: 'Nombre',
     required: true,
   },
-    {
+  {
     name: 'email',
     placeholder: 'Email o contacto',
     required: true,
@@ -61,8 +56,10 @@ const STAT_ITEMS = [
 
 const renderStaleContact = contact => (
   <>
-    <span className="stale-primary" title={contact.contact}>{contact.contact}</span>
-    <span title = {contact.institution}>{contact.institution}</span>
+    <span className="stale-primary" title={contact.contact}>
+      {contact.contact}
+    </span>
+    <span title={contact.institution}>{contact.institution}</span>
     <span className="stale-date">{contact.contactedAt}</span>
   </>
 );
@@ -171,11 +168,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
       )}
 
       <main>
-        <StatCards
-          items={statItems}
-          activeStatus={statusFilter}
-          onSelect={handleStatClick}
-        />
+        <StatCards items={statItems} activeStatus={statusFilter} onSelect={handleStatClick} />
 
         <Toolbar
           search={search}
@@ -197,11 +190,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
           />
         </section>
 
-        <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          onPageChange={setPage}
-        />
+        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
       </main>
 
       {noteContact && (
@@ -216,9 +205,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
         <RecordDetails
           item={selectedContact}
           kind="contact"
-          isStale={staleItems.some(
-            item => item.id === selectedContact.id,
-          )}
+          isStale={staleItems.some(item => item.id === selectedContact.id)}
           onClose={() => setSelectedContact(null)}
           onSuspend={async id => {
             await suspend(id);

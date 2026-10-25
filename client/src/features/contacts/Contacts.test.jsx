@@ -25,11 +25,7 @@ const contacts = [
   },
 ];
 
-const renderContacts = ({
-  items = contacts,
-  staleItems = [],
-  ...props
-} = {}) => {
+const renderContacts = ({ items = contacts, staleItems = [], ...props } = {}) => {
   const collection = {
     items,
     staleItems,
@@ -40,12 +36,7 @@ const renderContacts = ({
   const onCloseForm = vi.fn();
 
   render(
-    <Contacts
-      collection={collection}
-      showForm={false}
-      onCloseForm={onCloseForm}
-      {...props}
-    />,
+    <Contacts collection={collection} showForm={false} onCloseForm={onCloseForm} {...props} />,
   );
 
   return { collection, onCloseForm };
@@ -104,9 +95,7 @@ describe('Contacts', () => {
     renderContacts();
 
     fireEvent.change(
-      screen.getByPlaceholderText(
-        'Buscar contacto, institución, email o notas...',
-      ),
+      screen.getByPlaceholderText('Buscar contacto, institución, email o notas...'),
       { target: { value: 'lunes' } },
     );
 
@@ -125,30 +114,22 @@ describe('Contacts', () => {
     fireEvent.change(screen.getByPlaceholderText('Email o contacto *'), {
       target: { value: 'eva@initech.com' },
     });
-    fireEvent.change(
-      screen.getByPlaceholderText('Empresa o universidad *'),
-      {
+    fireEvent.change(screen.getByPlaceholderText('Empresa o universidad *'), {
       target: { value: 'Initech' },
-      },
-    );
+    });
     fireEvent.change(screen.getByPlaceholderText('País *'), {
       target: { value: 'España' },
     });
 
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Mostrar campos opcionales' }),
-    );
-    fireEvent.change(
-      screen.getByPlaceholderText('Departamento o laboratorio'),
-      { target: { value: 'Investigación' } },
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
+    fireEvent.change(screen.getByPlaceholderText('Departamento o laboratorio'), {
+      target: { value: 'Investigación' },
+    });
     fireEvent.change(screen.getByPlaceholderText('Ciudad'), {
       target: { value: 'Madrid' },
     });
 
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Guardar contacto' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar contacto' }));
 
     await waitFor(() => expect(onCloseForm).toHaveBeenCalled());
 
@@ -177,18 +158,13 @@ describe('Contacts', () => {
     fireEvent.change(screen.getByPlaceholderText('Email o contacto *'), {
       target: { value: 'eva@email.com' },
     });
-    fireEvent.change(
-      screen.getByPlaceholderText('Empresa o universidad *'),
-      {
+    fireEvent.change(screen.getByPlaceholderText('Empresa o universidad *'), {
       target: { value: 'Initech' },
-      },
-    );
+    });
     fireEvent.change(screen.getByPlaceholderText('País *'), {
       target: { value: 'España' },
     });
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Guardar contacto' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar contacto' }));
 
     await waitFor(() => expect(collection.create).toHaveBeenCalled());
     expect(onCloseForm).not.toHaveBeenCalled();
@@ -212,12 +188,8 @@ describe('Contacts', () => {
 
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByText('Marta — Acme')).toBeTruthy();
-    expect(
-      within(dialog).getByText('Notas').parentElement.textContent,
-    ).toBe('Notas—');
-    fireEvent.click(
-      within(dialog).getByRole('button', { name: 'Suspender' }),
-    );
+    expect(within(dialog).getByText('Notas').parentElement.textContent).toBe('Notas—');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Suspender' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(collection.suspend).toHaveBeenCalledWith(3);
   });
@@ -230,9 +202,7 @@ describe('Contacts', () => {
       ],
     });
 
-    expect(
-      screen.getByText('Hay 2 contactos pendientes de más de 30 días.'),
-    ).toBeTruthy();
+    expect(screen.getByText('Hay 2 contactos pendientes de más de 30 días.')).toBeTruthy();
   });
 
   it('updates a contact status from the table', () => {
@@ -261,14 +231,10 @@ describe('Contacts', () => {
     expect(screen.getByText('País')).toBeTruthy();
     expect(screen.getByText('ana@acme.com')).toBeTruthy();
     expect(screen.getAllByText('España')).toHaveLength(2);
-    expect(screen.getByText('ana@acme.com').closest('td').title).toBe(
-      'ana@acme.com',
-    );
+    expect(screen.getByText('ana@acme.com').closest('td').title).toBe('ana@acme.com');
 
     fireEvent.change(
-      screen.getByPlaceholderText(
-        'Buscar contacto, institución, email o notas...',
-      ),
+      screen.getByPlaceholderText('Buscar contacto, institución, email o notas...'),
       { target: { value: 'luis@globex.com' } },
     );
 

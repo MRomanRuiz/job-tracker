@@ -112,8 +112,7 @@ const request = async (method, url, { body, headers = {} } = {}) => {
 
   if (body !== undefined) {
     options.headers['Content-Type'] = 'application/json';
-    options.body =
-      typeof body === 'string' ? body : JSON.stringify(body);
+    options.body = typeof body === 'string' ? body : JSON.stringify(body);
   }
 
   const response = await fetch(`${baseUrl}${url}`, options);
@@ -158,31 +157,23 @@ const clearMongoCollections = async () => {
 
 before(async () => {
   if (!['json', 'mongodb'].includes(STORAGE_TYPE)) {
-    throw new Error(
-      `TEST_STORAGE_TYPE no válido: ${STORAGE_TYPE}. Usa json o mongodb.`,
-    );
+    throw new Error(`TEST_STORAGE_TYPE no válido: ${STORAGE_TYPE}. Usa json o mongodb.`);
   }
 
   if (STORAGE_TYPE === 'json') {
     // No se utilizan ni modifican los archivos de datos reales.
-    tempDataDir = await fs.mkdtemp(
-      path.join(os.tmpdir(), 'job-tracker-test-'),
-    );
+    tempDataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'job-tracker-test-'));
 
     process.env.JSON_DATA_DIR = tempDataDir;
     await resetJSONFiles();
   } else {
     // Impide borrar accidentalmente una base de datos real.
     if (process.env.MONGODB_DB !== TEST_DATABASE_NAME) {
-      throw new Error(
-        `Pruebas canceladas: MONGODB_DB debe ser "${TEST_DATABASE_NAME}".`,
-      );
+      throw new Error(`Pruebas canceladas: MONGODB_DB debe ser "${TEST_DATABASE_NAME}".`);
     }
 
     if (!process.env.MONGODB_URI) {
-      throw new Error(
-        'Pruebas canceladas: falta MONGODB_URI en la configuración.',
-      );
+      throw new Error('Pruebas canceladas: falta MONGODB_URI en la configuración.');
     }
 
     const database = require('../../src/db');
@@ -195,9 +186,7 @@ before(async () => {
     db = database.getDB();
 
     if (db.databaseName !== TEST_DATABASE_NAME) {
-      throw new Error(
-        `Pruebas canceladas: conexión a una base inesperada (${db.databaseName}).`,
-      );
+      throw new Error(`Pruebas canceladas: conexión a una base inesperada (${db.databaseName}).`);
     }
 
     await db.command({ ping: 1 });
@@ -243,9 +232,7 @@ after(async () => {
 
     if (STORAGE_TYPE === 'mongodb' && db) {
       if (db.databaseName !== TEST_DATABASE_NAME) {
-        throw new Error(
-          'Se cancela el borrado: la base conectada no es la base de test.',
-        );
+        throw new Error('Se cancela el borrado: la base conectada no es la base de test.');
       }
 
       await db.dropDatabase();
@@ -275,10 +262,7 @@ describe('isOlderThanPendingLimit', () => {
 
 describe('applications', () => {
   it('lista candidaturas', async () => {
-    const { status, body } = await request(
-      'GET',
-      '/api/applications',
-    );
+    const { status, body } = await request('GET', '/api/applications');
 
     assert.equal(status, 200);
     assert.equal(body.applications.length, 2);
@@ -288,17 +272,13 @@ describe('applications', () => {
   });
 
   it('crea una candidatura con ID numérico generado por el servidor', async () => {
-    const { status, body } = await request(
-      'POST',
-      '/api/applications',
-      {
-        body: {
-          ...validApplication(),
-          id: 'x',
-          foo: 1,
-        },
+    const { status, body } = await request('POST', '/api/applications', {
+      body: {
+        ...validApplication(),
+        id: 'x',
+        foo: 1,
       },
-    );
+    });
 
     assert.equal(status, 201);
     assert.equal(typeof body.id, 'number');
@@ -306,34 +286,24 @@ describe('applications', () => {
     assert.equal(body.foo, undefined);
     assert.equal(body._id, undefined);
 
-    const { body: list } = await request(
-      'GET',
-      '/api/applications',
-    );
+    const { body: list } = await request('GET', '/api/applications');
 
     assert.equal(list.applications.length, 3);
-    assert.ok(
-      list.applications.some(application => application.id === body.id),
-    );
+    assert.ok(list.applications.some(application => application.id === body.id));
   });
 
-
   it('elimina los espacios al principio y al final de los campos de texto', async () => {
-    const { status, body } = await request(
-      'POST',
-      '/api/applications',
-      {
-        body: {
-          ...validApplication(),
-          company: '  Acme España  ',
-          position: '  Software Engineer  ',
-          country: ' España  ',
-          city: ' Málaga    ',
-          durationType: 'fixed',
-          durationMonths: 6,
-        },
+    const { status, body } = await request('POST', '/api/applications', {
+      body: {
+        ...validApplication(),
+        company: '  Acme España  ',
+        position: '  Software Engineer  ',
+        country: ' España  ',
+        city: ' Málaga    ',
+        durationType: 'fixed',
+        durationMonths: 6,
       },
-    );
+    });
 
     assert.equal(status, 201);
     assert.equal(body.company, 'Acme España');
@@ -344,7 +314,6 @@ describe('applications', () => {
     assert.equal(body.durationType, 'fixed');
     assert.equal(body.durationMonths, 6);
   });
-
 
   it('rechaza candidaturas no válidas', async () => {
     for (const body of [
@@ -362,33 +331,25 @@ describe('applications', () => {
         durationMonths: 12,
       }),
     ]) {
-      const response = await request(
-        'POST',
-        '/api/applications',
-        { body },
-      );
+      const response = await request('POST', '/api/applications', { body });
 
       assert.equal(response.status, 400);
     }
   });
 
   it('actualiza el estado de una candidatura', async () => {
-    const { status, body } = await request(
-      'PATCH',
-      '/api/applications/1',
-      { body: { status: 'interview' } },
-    );
+    const { status, body } = await request('PATCH', '/api/applications/1', {
+      body: { status: 'interview' },
+    });
 
     assert.equal(status, 200);
     assert.equal(body.status, 'interview');
   });
 
   it('actualiza solo las notas de una candidatura', async () => {
-    const { status, body } = await request(
-      'PATCH',
-      '/api/applications/1',
-      { body: { notes: '  Revisar oferta  ' } },
-    );
+    const { status, body } = await request('PATCH', '/api/applications/1', {
+      body: { notes: '  Revisar oferta  ' },
+    });
 
     assert.equal(status, 200);
     assert.equal(body.notes, '  Revisar oferta  ');
@@ -396,40 +357,31 @@ describe('applications', () => {
   });
 
   it('rechaza un estado no permitido al actualizar una candidatura', async () => {
-    const { status } = await request(
-      'PATCH',
-      '/api/applications/1',
-      { body: { status: 'bogus' } },
-    );
+    const { status } = await request('PATCH', '/api/applications/1', {
+      body: { status: 'bogus' },
+    });
 
     assert.equal(status, 400);
   });
 
   it('devuelve 400 para un PATCH sin cuerpo', async () => {
-    const { status } = await request(
-      'PATCH',
-      '/api/applications/1',
-    );
+    const { status } = await request('PATCH', '/api/applications/1');
 
     assert.equal(status, 400);
   });
 
   it('devuelve 400 para JSON mal formado', async () => {
-    const { status } = await request(
-      'PATCH',
-      '/api/applications/1',
-      { body: '{bad json' },
-    );
+    const { status } = await request('PATCH', '/api/applications/1', {
+      body: '{bad json',
+    });
 
     assert.equal(status, 400);
   });
 
   it('devuelve 404 para una candidatura inexistente', async () => {
-    const { status } = await request(
-      'PATCH',
-      '/api/applications/99',
-      { body: { status: 'offer' } },
-    );
+    const { status } = await request('PATCH', '/api/applications/99', {
+      body: { status: 'offer' },
+    });
 
     assert.equal(status, 404);
   });
@@ -442,18 +394,12 @@ describe('applications', () => {
       [1],
     );
 
-    const suspended = await request(
-      'PATCH',
-      '/api/applications/1/suspend',
-    );
+    const suspended = await request('PATCH', '/api/applications/1/suspend');
 
     assert.equal(suspended.status, 200);
     assert.equal(suspended.body.status, 'suspended');
 
-    const recent = await request(
-      'PATCH',
-      '/api/applications/2/suspend',
-    );
+    const recent = await request('PATCH', '/api/applications/2/suspend');
 
     assert.equal(recent.status, 400);
   });
@@ -470,32 +416,20 @@ describe('applications', () => {
       ),
     );
 
-    assert.ok(
-      responses.every(response => response.status === 201),
-    );
+    assert.ok(responses.every(response => response.status === 201));
 
-    const { body: list } = await request(
-      'GET',
-      '/api/applications',
-    );
+    const { body: list } = await request('GET', '/api/applications');
 
     const applications = list.applications;
 
     assert.equal(applications.length, 12);
-    assert.equal(
-      new Set(applications.map(item => item.id)).size,
-      12,
-    );
+    assert.equal(new Set(applications.map(item => item.id)).size, 12);
   });
-
 });
 
 describe('contacts', () => {
   it('lista contactos', async () => {
-    const { status, body } = await request(
-      'GET',
-      '/api/contacts',
-    );
+    const { status, body } = await request('GET', '/api/contacts');
 
     assert.equal(status, 200);
     assert.equal(body.contacts.length, 2);
@@ -505,15 +439,11 @@ describe('contacts', () => {
   });
 
   it('crea un contacto', async () => {
-    const { status, body } = await request(
-      'POST',
-      '/api/contacts',
-      {
-        body: {
-          ...validContact({ institution: 'Gamma' }),
-        },
+    const { status, body } = await request('POST', '/api/contacts', {
+      body: {
+        ...validContact({ institution: 'Gamma' }),
       },
-    );
+    });
 
     assert.equal(status, 201);
     assert.equal(typeof body.id, 'number');
@@ -538,32 +468,24 @@ describe('contacts', () => {
       validContact({ status: 'bogus' }),
       validContact({ email: 42 }),
     ]) {
-      const response = await request(
-        'POST',
-        '/api/contacts',
-        { body },
-      );
+      const response = await request('POST', '/api/contacts', { body });
 
       assert.equal(response.status, 400);
     }
   });
 
   it('recorta los campos de texto de un contacto', async () => {
-    const { status, body } = await request(
-      'POST',
-      '/api/contacts',
-      {
-        body: validContact({
-          contact: '  Eva Martínez  ',
-          email: ' eva@example.com ',
-          institution: ' Gamma ',
-          department: ' Investigación ',
-          city: ' Madrid ',
-          country: ' España ',
-          notes: '  Primer contacto  ',
-        }),
-      },
-    );
+    const { status, body } = await request('POST', '/api/contacts', {
+      body: validContact({
+        contact: '  Eva Martínez  ',
+        email: ' eva@example.com ',
+        institution: ' Gamma ',
+        department: ' Investigación ',
+        city: ' Madrid ',
+        country: ' España ',
+        notes: '  Primer contacto  ',
+      }),
+    });
 
     assert.equal(status, 201);
     assert.equal(body.contact, 'Eva Martínez');
@@ -576,11 +498,9 @@ describe('contacts', () => {
   });
 
   it('actualiza el estado y las notas', async () => {
-    const { status, body } = await request(
-      'PATCH',
-      '/api/contacts/2',
-      { body: { status: 'rejected', notes: 'Follow up' } },
-    );
+    const { status, body } = await request('PATCH', '/api/contacts/2', {
+      body: { status: 'rejected', notes: 'Follow up' },
+    });
 
     assert.equal(status, 200);
     assert.equal(body.status, 'rejected');
@@ -588,11 +508,9 @@ describe('contacts', () => {
   });
 
   it('actualiza solo las notas de un contacto', async () => {
-    const { status, body } = await request(
-      'PATCH',
-      '/api/contacts/2',
-      { body: { notes: '  Contactar mañana  ' } },
-    );
+    const { status, body } = await request('PATCH', '/api/contacts/2', {
+      body: { notes: '  Contactar mañana  ' },
+    });
 
     assert.equal(status, 200);
     assert.equal(body.notes, '  Contactar mañana  ');
@@ -600,31 +518,25 @@ describe('contacts', () => {
   });
 
   it('rechaza un estado no permitido al actualizar un contacto', async () => {
-    const { status } = await request(
-      'PATCH',
-      '/api/contacts/2',
-      { body: { status: 'bogus' } },
-    );
+    const { status } = await request('PATCH', '/api/contacts/2', {
+      body: { status: 'bogus' },
+    });
 
     assert.equal(status, 400);
   });
 
   it('rechaza notas que no sean texto', async () => {
-    const { status } = await request(
-      'PATCH',
-      '/api/contacts/2',
-      { body: { notes: { a: 1 } } },
-    );
+    const { status } = await request('PATCH', '/api/contacts/2', {
+      body: { notes: { a: 1 } },
+    });
 
     assert.equal(status, 400);
   });
 
   it('devuelve 404 para un contacto inexistente', async () => {
-    const { status } = await request(
-      'PATCH',
-      '/api/contacts/99',
-      { body: { notes: 'No existe' } },
-    );
+    const { status } = await request('PATCH', '/api/contacts/99', {
+      body: { notes: 'No existe' },
+    });
 
     assert.equal(status, 404);
   });
@@ -637,18 +549,12 @@ describe('contacts', () => {
       [1],
     );
 
-    const suspended = await request(
-      'PATCH',
-      '/api/contacts/1/suspend',
-    );
+    const suspended = await request('PATCH', '/api/contacts/1/suspend');
 
     assert.equal(suspended.status, 200);
     assert.equal(suspended.body.status, 'suspended');
 
-    const notPending = await request(
-      'PATCH',
-      '/api/contacts/2/suspend',
-    );
+    const notPending = await request('PATCH', '/api/contacts/2/suspend');
 
     assert.equal(notPending.status, 400);
   });
@@ -661,18 +567,13 @@ describe('CORS', () => {
     });
 
     assert.equal(response.status, 200);
-    assert.equal(
-      response.headers.get('access-control-allow-origin'),
-      'http://localhost:5173',
-    );
+    assert.equal(response.headers.get('access-control-allow-origin'), 'http://localhost:5173');
   });
 
   it('devuelve 403 para otros orígenes', async () => {
-    const { status } = await request(
-      'GET',
-      '/api/contacts',
-      { headers: { Origin: 'http://evil.example' } },
-    );
+    const { status } = await request('GET', '/api/contacts', {
+      headers: { Origin: 'http://evil.example' },
+    });
 
     assert.equal(status, 403);
   });

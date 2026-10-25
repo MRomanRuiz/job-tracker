@@ -2,16 +2,12 @@ const { execFileSync } = require('node:child_process');
 const { readFileSync } = require('node:fs');
 
 const gitExecutable =
-  process.platform === 'win32'
-    ? String.raw`C:\Program Files\Git\cmd\git.exe`
-    : '/usr/bin/git';
+  process.platform === 'win32' ? String.raw`C:\Program Files\Git\cmd\git.exe` : '/usr/bin/git';
 
 const [baseSha, headSha] = process.argv.slice(2);
 
 if (!baseSha || !headSha || /^0+$/.test(baseSha)) {
-  console.info(
-    'Unable to determine the base and head commits for version validation.',
-  );
+  console.info('Unable to determine the base and head commits for version validation.');
   process.exit(1);
 }
 
@@ -22,7 +18,6 @@ const parseVersion = version => {
     new RegExp(String.raw`^${d}\.${d}\.${d}(?:-${alfanum})?(?:\+${alfanum})?$`, 'i'),
   );
 
-
   if (!match) {
     throw new Error(`Invalid semantic version: ${version}`);
   }
@@ -31,9 +26,7 @@ const parseVersion = version => {
 
   for (const identifier of prerelease) {
     const hasLeadingZero =
-      /^\d+$/.test(identifier) &&
-      identifier.length > 1 &&
-      identifier.startsWith('0');
+      /^\d+$/.test(identifier) && identifier.length > 1 && identifier.startsWith('0');
 
     if (hasLeadingZero) {
       throw new Error(`Invalid semantic version: ${version}`);
@@ -120,9 +113,7 @@ for (const packageName of packages) {
       { encoding: 'utf8' },
     );
     const previousVersion = JSON.parse(basePackageJson).version;
-    const currentVersion = JSON.parse(
-      readFileSync(`${packageName}/package.json`, 'utf8'),
-    ).version;
+    const currentVersion = JSON.parse(readFileSync(`${packageName}/package.json`, 'utf8')).version;
 
     if (
       typeof previousVersion !== 'string' ||
@@ -135,9 +126,7 @@ for (const packageName of packages) {
       );
       failed = true;
     } else {
-      console.info(
-        `${packageName}/ version increased: ${previousVersion} -> ${currentVersion}.`,
-      );
+      console.info(`${packageName}/ version increased: ${previousVersion} -> ${currentVersion}.`);
     }
   } else {
     console.info(`No ${packageName} changes; version bump not required.`);

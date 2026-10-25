@@ -1,4 +1,3 @@
-
 import {
   APPLICATION_STATUS_LABELS,
   APPLICATION_TYPE_LABELS,
@@ -56,19 +55,12 @@ const CONTACT_FIELDS = [
   { name: 'notes', label: 'Notas', multiline: true },
 ];
 
-function RecordDetails({
-  item,
-  kind,
-  isStale = false,
-  onClose,
-  onSuspend,
-}) {
+function RecordDetails({ item, kind, isStale = false, onClose, onSuspend }) {
   if (!item) {
     return null;
   }
 
-  const fields =
-    kind === 'application' ? APPLICATION_FIELDS : CONTACT_FIELDS;
+  const fields = kind === 'application' ? APPLICATION_FIELDS : CONTACT_FIELDS;
 
   const getRecordTitle = () => {
     if (kind === 'application') {
@@ -130,21 +122,10 @@ function RecordDetails({
             <span className="warning-icon">⚠️</span>
 
             <div>
-              <strong>
-                Registro pendiente de más de 30 días
-              </strong>
-              <p>
-                Este registro lleva más de 30 días en espera.
-                Puedes suspenderlo si sigue cumpliendo las
-                condiciones correspondientes.
-              </p>
+              <strong>Registro pendiente de más de 30 días</strong>
             </div>
 
-            <button
-              type="button"
-              className="suspend-button"
-              onClick={() => onSuspend(item.id)}
-            >
+            <button type="button" className="suspend-button" onClick={() => onSuspend(item.id)}>
               Suspender
             </button>
           </div>
@@ -155,11 +136,7 @@ function RecordDetails({
             const rawValue = item[field.name];
             let value = '—';
 
-            if (
-              rawValue !== null &&
-              rawValue !== undefined &&
-              rawValue !== ''
-            ) {
+            if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
               value = field.format ? field.format(rawValue) : rawValue;
             }
 
@@ -170,15 +147,11 @@ function RecordDetails({
                 }`}
                 key={field.name}
               >
-                <span className="record-details-label">
-                  {field.label}
-                </span>
+                <span className="record-details-label">{field.label}</span>
 
                 <div className="record-details-value">
                   {field.badge ? (
-                    <span className={`status-badge ${rawValue}`}>
-                      {String(value)}
-                    </span>
+                    <span className={`status-badge ${rawValue}`}>{String(value)}</span>
                   ) : (
                     String(value)
                   )}
@@ -189,11 +162,7 @@ function RecordDetails({
         </div>
 
         <footer className="record-details-actions">
-          <button
-            type="button"
-            className="primary-button"
-            onClick={onClose}
-          >
+          <button type="button" className="primary-button" onClick={onClose}>
             Cerrar
           </button>
         </footer>

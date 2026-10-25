@@ -57,9 +57,7 @@ describe('apiRequest', () => {
         }),
     );
 
-    await expect(apiRequest('/contacts')).rejects.toThrow(
-      'Invalid contact',
-    );
+    await expect(apiRequest('/contacts')).rejects.toThrow('Invalid contact');
     await expect(apiRequest('/contacts')).rejects.toThrow('Error 502');
   });
 

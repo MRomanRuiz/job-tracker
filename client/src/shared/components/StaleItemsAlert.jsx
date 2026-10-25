@@ -26,11 +26,7 @@ function StaleItemsAlert({
           Hay {items.length} {label} de más de 30 días.
         </strong>
 
-        <button
-          type="button"
-          onClick={() => setIsOpen(open => !open)}
-          aria-expanded={isOpen}
-        >
+        <button type="button" onClick={() => setIsOpen(open => !open)} aria-expanded={isOpen}>
           {isOpen ? 'Ocultar' : 'Revisar'}
         </button>
       </div>
@@ -49,11 +45,7 @@ function StaleItemsAlert({
                 Ver detalle
               </button>
 
-              <button
-                type="button"
-                className="suspend-button"
-                onClick={() => onSuspend(item.id)}
-              >
+              <button type="button" className="suspend-button" onClick={() => onSuspend(item.id)}>
                 Suspender
               </button>
             </div>

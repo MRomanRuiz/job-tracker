@@ -30,7 +30,10 @@ describe('useCollection', () => {
   it('appends created items and reloads the stale items', async () => {
     const created = { id: 2, contact: 'Eva', status: 'pending' };
     const { result, fetchMock } = renderCollection({
-      'POST /api/contacts': body => ({ httpStatus: 201, body: { id: 2, ...body } }),
+      'POST /api/contacts': body => ({
+        httpStatus: 201,
+        body: { id: 2, ...body },
+      }),
     });
 
     await waitFor(() => expect(result.current.items).toHaveLength(1));
@@ -96,9 +99,7 @@ describe('useCollection', () => {
   });
 
   it('logs failed requests and keeps the current items', async () => {
-    const consoleError = vi
-      .spyOn(console, 'info')
-      .mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, 'info').mockImplementation(() => {});
     const { result } = renderCollection({
       'PATCH /api/contacts/1': { httpStatus: 400, body: { error: 'Inválido' } },
     });
@@ -164,8 +165,8 @@ describe('useCollection', () => {
 
         return staleCalls === 1
           ? new Promise(resolve => {
-            resolveFirst = resolve;
-          })
+              resolveFirst = resolve;
+            })
           : { contacts: [] };
       },
       'PATCH /api/contacts/1/suspend': { ...pending, status: 'suspended' },

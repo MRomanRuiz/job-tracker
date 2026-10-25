@@ -1,4 +1,3 @@
-
 const { getDB } = require('../db');
 
 async function generateId(db, collectionName) {
@@ -39,10 +38,9 @@ function createMongoStorage() {
     },
 
     async getById(name, id) {
-      return getDB().collection(name).findOne(
-        { id: Number(id) },
-        { projection: { _id: 0 } },
-      );
+      return getDB()
+        .collection(name)
+        .findOne({ id: Number(id) }, { projection: { _id: 0 } });
     },
 
     async create(name, record) {
@@ -61,10 +59,7 @@ function createMongoStorage() {
     async update(name, id, changes) {
       const collection = getDB().collection(name);
 
-      const result = await collection.updateOne(
-        { id: Number(id) },
-        { $set: changes },
-      );
+      const result = await collection.updateOne({ id: Number(id) }, { $set: changes });
 
       if (result.matchedCount === 0) {
         return null;

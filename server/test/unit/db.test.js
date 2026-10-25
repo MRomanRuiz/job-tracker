@@ -19,10 +19,7 @@ if (STORAGE_TYPE === 'mongodb') {
 
   describe('database connection state', () => {
     it('rejects access before connecting', () => {
-      assert.throws(
-        () => getDB(),
-        { message: 'MongoDB no está conectado' },
-      );
+      assert.throws(() => getDB(), { message: 'MongoDB no está conectado' });
     });
   });
 }

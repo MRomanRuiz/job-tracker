@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 
 const { createApp } = require('./src/app');
@@ -63,9 +62,7 @@ async function startServer() {
   const app = createApp();
 
   server = app.listen(PORT, () => {
-    console.info(
-      `Servidor funcionando en http://localhost:${PORT} (${type})`,
-    );
+    console.info(`Servidor funcionando en http://localhost:${PORT} (${type})`);
   });
 
   process.once('SIGINT', shutdown);

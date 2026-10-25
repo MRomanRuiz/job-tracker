@@ -10,7 +10,8 @@ A small full-stack application for tracking job applications and professional co
 - Search applications or contacts by different fields.
 - Filter applications by type or status and contacts by status, with summary counts for both.
 - Browse results in pages of 10, sorted by application or contact date (newest first).
-- Review pending applications/contacts that have been open for more than 30 days and suspend them.
+- Open full record details in a dedicated modal to review status, notes, dates, and contact information without leaving the list view.
+- Review pending applications/contacts that have been open for more than 30 days with a stale-items alert panel and suspend them directly from there.
 - Add and edit notes for applications and contacts through dedicated modal windows.
 - Persist data using either local JSON files or MongoDB.
 - Run backend tests against both storage implementations.

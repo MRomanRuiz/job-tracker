@@ -1,16 +1,7 @@
 import { useMemo, useState } from 'react';
-import {
-  ALL_STATUSES,
-  APPLICATION_TYPE_LABELS,
-  ITEMS_PER_PAGE,
-} from '../../shared/lib/constants';
+import { ALL_STATUSES, APPLICATION_TYPE_LABELS, ITEMS_PER_PAGE } from '../../shared/lib/constants';
 import usePagination from '../../shared/hooks/usePagination';
-import {
-  countByStatus,
-  matchesStatus,
-  matchesText,
-  sortByDateDesc,
-} from '../../shared/lib/utils';
+import { countByStatus, matchesStatus, matchesText, sortByDateDesc } from '../../shared/lib/utils';
 import ApplicationsTable from './ApplicationsTable';
 import Pagination from '../../shared/components/Pagination';
 import RecordForm from '../../shared/components/RecordForm';
@@ -85,18 +76,13 @@ const renderStaleApplication = application => (
       {application.company}
     </span>
     <span title={application.position}>{application.position}</span>
-    <span>
-      {APPLICATION_TYPE_LABELS[application.type] || application.type}
-    </span>
-    <span className="stale-date">
-      {application.appliedAt}
-    </span>
+    <span>{APPLICATION_TYPE_LABELS[application.type] || application.type}</span>
+    <span className="stale-date">{application.appliedAt}</span>
   </>
 );
 
 function Applications({ collection, showForm, onCloseForm }) {
-  const { items: applications, staleItems, create, update, suspend } =
-    collection;
+  const { items: applications, staleItems, create, update, suspend } = collection;
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
   const [typeFilter, setTypeFilter] = useState('');
@@ -109,10 +95,7 @@ function Applications({ collection, showForm, onCloseForm }) {
     return sortByDateDesc(
       applications.filter(
         job =>
-          matchesText(
-            [job.company, job.position, job.country, job.type, job.city],
-            searchText,
-          ) &&
+          matchesText([job.company, job.position, job.country, job.type, job.city], searchText) &&
           matchesStatus(job, statusFilter) &&
           (typeFilter === '' || job.type === typeFilter),
       ),
@@ -192,21 +175,14 @@ function Applications({ collection, showForm, onCloseForm }) {
       )}
 
       <main>
-        <StatCards
-          items={statItems}
-          activeStatus={statusFilter}
-          onSelect={handleStatClick}
-        />
+        <StatCards items={statItems} activeStatus={statusFilter} onSelect={handleStatClick} />
 
         <Toolbar
           search={search}
           placeholder="Buscar empresa, puesto..."
           onSearchChange={handleSearchChange}
         >
-          <select
-            value={typeFilter}
-            onChange={event => handleTypeChange(event.target.value)}
-          >
+          <select value={typeFilter} onChange={event => handleTypeChange(event.target.value)}>
             <option value="">Todos los tipos</option>
             <option value="industry">Empresa</option>
             <option value="research">Investigación</option>
@@ -227,11 +203,7 @@ function Applications({ collection, showForm, onCloseForm }) {
           />
         </section>
 
-        <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          onPageChange={setPage}
-        />
+        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
       </main>
       {noteApplication && (
         <NoteForm
@@ -245,9 +217,7 @@ function Applications({ collection, showForm, onCloseForm }) {
         <RecordDetails
           item={selectedApplication}
           kind="application"
-          isStale={staleItems.some(
-            item => item.id === selectedApplication.id,
-          )}
+          isStale={staleItems.some(item => item.id === selectedApplication.id)}
           onClose={() => setSelectedApplication(null)}
           onSuspend={async id => {
             await suspend(id);

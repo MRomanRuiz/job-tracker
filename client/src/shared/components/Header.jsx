@@ -24,11 +24,7 @@ function Header({ view, onSwitchView, onNew }) {
       </div>
 
       <div className="header-actions">
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={() => onSwitchView(switchTo)}
-        >
+        <button type="button" className="secondary-button" onClick={() => onSwitchView(switchTo)}>
           {switchLabel}
         </button>
 

@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_STATUSES } from './constants.js';
-import {
-  countByStatus,
-  matchesStatus,
-  matchesText,
-  replaceById,
-  sortByDateDesc,
-} from './utils.js';
+import { countByStatus, matchesStatus, matchesText, replaceById, sortByDateDesc } from './utils.js';
 
 describe('matchesStatus', () => {
   it('treats suspended as rejected', () => {
@@ -16,11 +10,7 @@ describe('matchesStatus', () => {
   });
 
   it('counts items by status', () => {
-    const items = [
-      { status: 'rejected' },
-      { status: 'suspended' },
-      { status: 'pending' },
-    ];
+    const items = [{ status: 'rejected' }, { status: 'suspended' }, { status: 'pending' }];
 
     expect(countByStatus(items, 'rejected')).toBe(2);
     expect(countByStatus(items, ALL_STATUSES)).toBe(3);
@@ -41,8 +31,9 @@ describe('helpers', () => {
   });
 
   it('replaces an item by id', () => {
-    expect(
-      replaceById([{ id: 1, a: 1 }, { id: 2 }], { id: 1, a: 2 }),
-    ).toEqual([{ id: 1, a: 2 }, { id: 2 }]);
+    expect(replaceById([{ id: 1, a: 1 }, { id: 2 }], { id: 1, a: 2 })).toEqual([
+      { id: 1, a: 2 },
+      { id: 2 },
+    ]);
   });
 });

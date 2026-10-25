@@ -167,7 +167,7 @@ main {
   outline: none;
 }
 
- .header-actions {
+.header-actions {
   display: flex;
   gap: 12px;
   align-items: center;
@@ -374,7 +374,7 @@ main {
   margin-top: 12px;
 }
 
-/* Aviso candidaturas antiguas */
+/* Aviso de registros pendientes */
 
 .stale-alert {
   display: flex;
@@ -409,7 +409,7 @@ main {
   cursor: pointer;
 }
 
-/* Panel candidaturas antiguas */
+/* Panel de registros pendientes */
 
 .stale-panel {
   margin: 12px 40px 0;
@@ -713,7 +713,7 @@ main {
   box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.05);
 }
 
-.record-form-field select:has(option[value=""]:checked) {
+.record-form-field select:has(option[value='']:checked) {
   color: #6b7280;
   font-weight: 400;
   font-size: inherit;
