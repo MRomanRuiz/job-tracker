@@ -86,6 +86,14 @@ function createMongoStorage() {
 
       return this.getById(name, id);
     },
+
+    async delete(name, id) {
+      const result = await getDB()
+        .collection(name)
+        .deleteOne({ id: Number(id) });
+
+      return result.deletedCount === 1;
+    },
   };
 }
 

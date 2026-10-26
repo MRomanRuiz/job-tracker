@@ -4,6 +4,7 @@ const HTTP_STATUS = {
   FORBIDDEN: 403,
   INTERNAL_SERVER_ERROR: 500,
   NOT_FOUND: 404,
+  NO_CONTENT: 204,
 };
 
 class HttpError extends Error {

@@ -11,10 +11,7 @@ const NOT_FOUND_MESSAGE = 'Contacto no encontrado';
 
 const validateContactChanges = ({ status, notes }) => {
   if (status === undefined && notes === undefined) {
-    throw new HttpError(
-      HTTP_STATUS.BAD_REQUEST,
-      'No se han proporcionado campos para actualizar',
-    );
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'No se han proporcionado campos para actualizar');
   }
 
   if (status !== undefined && !ALLOWED_CONTACT_STATUSES.has(status)) {
@@ -51,18 +48,13 @@ const addContactRoutes = (app, storage) => {
 
   app.get(
     '/api/contacts/old',
-    handle(
-      'No se pudieron leer los contactos antiguos',
-      async (_req, res) => {
-        const contacts = await storage.list('contacts');
+    handle('No se pudieron leer los contactos antiguos', async (_req, res) => {
+      const contacts = await storage.list('contacts');
 
-        res.json({
-          contacts: contacts.filter(item =>
-            isStalePending(item, 'contactedAt'),
-          ),
-        });
-      },
-    ),
+      res.json({
+        contacts: contacts.filter(item => isStalePending(item, 'contactedAt')),
+      });
+    }),
   );
 
   app.patch(
@@ -91,8 +83,7 @@ const addContactRoutes = (app, storage) => {
 
       suspendIfStale(contact, 'contactedAt', {
         notPending: 'El contacto no está en espera',
-        tooRecent:
-          'El contacto todavía no lleva más de 30 días en espera',
+        tooRecent: 'El contacto todavía no lleva más de 30 días en espera',
       });
 
       const updated = await storage.updatePending(
@@ -111,6 +102,19 @@ const addContactRoutes = (app, storage) => {
       }
 
       res.json(updated);
+    }),
+  );
+
+  app.delete(
+    '/api/contacts/:id',
+    handle('No se pudo eliminar el contacto', async (req, res) => {
+      const deleted = await storage.delete('contacts', req.params.id);
+
+      if (!deleted) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
+      }
+
+      res.status(HTTP_STATUS.NO_CONTENT).end();
     }),
   );
 };

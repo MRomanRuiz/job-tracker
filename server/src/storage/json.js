@@ -120,6 +120,23 @@ function createJSONStorage() {
         return record;
       });
     },
+
+    async delete(name, id) {
+      return serialize(name, async () => {
+        const data = await readData(name);
+        const records = data[collectionKey(name)];
+        const index = records.findIndex(item => item.id === Number(id));
+
+        if (index === -1) {
+          return false;
+        }
+
+        records.splice(index, 1);
+        await writeData(name, data);
+
+        return true;
+      });
+    },
   };
 }
 

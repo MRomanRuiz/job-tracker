@@ -119,7 +119,7 @@ const request = async (method, url, { body, headers = {} } = {}) => {
 
   return {
     status: response.status,
-    body: await response.json(),
+    body: response.status === 204 ? null : await response.json(),
   };
 };
 
@@ -379,6 +379,26 @@ describe('applications', () => {
     assert.equal(status, 400);
   });
 
+  it('elimina una candidatura', async () => {
+    const { status, body } = await request('DELETE', '/api/applications/1');
+
+    assert.equal(status, 204);
+    assert.equal(body, null);
+
+    const { body: list } = await request('GET', '/api/applications');
+
+    assert.deepEqual(
+      list.applications.map(application => application.id),
+      [2],
+    );
+  });
+
+  it('devuelve 404 al eliminar una candidatura inexistente', async () => {
+    const { status } = await request('DELETE', '/api/applications/99');
+
+    assert.equal(status, 404);
+  });
+
   it('devuelve 400 para un PATCH sin cuerpo', async () => {
     const { status } = await request('PATCH', '/api/applications/1');
 
@@ -539,6 +559,26 @@ describe('contacts', () => {
     });
 
     assert.equal(status, 400);
+  });
+
+  it('elimina un contacto', async () => {
+    const { status, body } = await request('DELETE', '/api/contacts/1');
+
+    assert.equal(status, 204);
+    assert.equal(body, null);
+
+    const { body: list } = await request('GET', '/api/contacts');
+
+    assert.deepEqual(
+      list.contacts.map(contact => contact.id),
+      [2],
+    );
+  });
+
+  it('devuelve 404 al eliminar un contacto inexistente', async () => {
+    const { status } = await request('DELETE', '/api/contacts/99');
+
+    assert.equal(status, 404);
   });
 
   it('rechaza notas que no sean texto', async () => {

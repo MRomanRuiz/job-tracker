@@ -108,6 +108,19 @@ const addApplicationRoutes = (app, storage) => {
       res.json(updated);
     }),
   );
+
+  app.delete(
+    '/api/applications/:id',
+    handle('No se pudo eliminar la candidatura', async (req, res) => {
+      const deleted = await storage.delete('applications', req.params.id);
+
+      if (!deleted) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
+      }
+
+      res.status(HTTP_STATUS.NO_CONTENT).end();
+    }),
+  );
 };
 
 module.exports = addApplicationRoutes;
