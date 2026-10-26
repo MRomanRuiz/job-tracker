@@ -1,4 +1,5 @@
 const { getDB } = require('../db');
+const { prepareRecordUpdate } = require('../domain/recordHistory');
 
 async function generateId(db, collectionName) {
   const collection = db.collection(collectionName);
@@ -28,6 +29,49 @@ async function generateId(db, collectionName) {
   return (result?.value ?? result).seq;
 }
 
+async function updateWithHistory(name, id, changes, conditions = {}) {
+  const collection = getDB().collection(name);
+  const numericId = Number(id);
+  const maxAttempts = 5;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const current = await collection.findOne({
+      id: numericId,
+      ...conditions,
+    });
+
+    if (!current) {
+      return null;
+    }
+
+    const updated = prepareRecordUpdate(current, changes);
+
+    if (updated === current) {
+      delete current._id;
+      return current;
+    }
+
+    const filter = { _id: current._id };
+
+    if (Object.hasOwn(current, 'updatedAt')) {
+      filter.updatedAt = current.updatedAt;
+    } else {
+      filter.updatedAt = { $exists: false };
+    }
+
+    const replacement = { ...updated };
+    delete replacement._id;
+
+    const result = await collection.replaceOne(filter, replacement);
+
+    if (result.matchedCount === 1) {
+      return replacement;
+    }
+  }
+
+  throw new Error(`No se pudo actualizar ${name} con id ${numericId} por cambios concurrentes`);
+}
+
 function createMongoStorage() {
   return {
     async list(name) {
@@ -45,9 +89,12 @@ function createMongoStorage() {
 
     async create(name, record) {
       const db = getDB();
+      const now = new Date().toISOString();
       const newRecord = {
         ...record,
         id: await generateId(db, name),
+        updatedAt: now,
+        history: [],
       };
 
       await db.collection(name).insertOne(newRecord);
@@ -57,34 +104,14 @@ function createMongoStorage() {
     },
 
     async update(name, id, changes) {
-      const collection = getDB().collection(name);
-
-      const result = await collection.updateOne({ id: Number(id) }, { $set: changes });
-
-      if (result.matchedCount === 0) {
-        return null;
-      }
-
-      return this.getById(name, id);
+      return updateWithHistory(name, id, changes);
     },
 
     async updatePending(name, id, dateField, date, changes) {
-      const collection = getDB().collection(name);
-
-      const result = await collection.updateOne(
-        {
-          id: Number(id),
-          status: 'pending',
-          [dateField]: date,
-        },
-        { $set: changes },
-      );
-
-      if (result.matchedCount === 0) {
-        return null;
-      }
-
-      return this.getById(name, id);
+      return updateWithHistory(name, id, changes, {
+        status: 'pending',
+        [dateField]: date,
+      });
     },
 
     async delete(name, id) {

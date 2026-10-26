@@ -40,6 +40,9 @@ const storage = {
   async updatePending() {
     return null;
   },
+  async delete(name, id) {
+    return Number(id) === records[name]?.id;
+  },
 };
 
 let server;
