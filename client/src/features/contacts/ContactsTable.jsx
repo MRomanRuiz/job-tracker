@@ -2,6 +2,7 @@ import { CONTACT_STATUS_LABELS } from '../../shared/lib/constants';
 import EmptyState from '../../shared/components/EmptyState';
 import NoteButton from '../../shared/components/NoteButton';
 import StatusSelect from '../../shared/components/StatusSelect';
+import { formatDate } from '../../shared/lib/utils';
 
 const MANUAL_STATUSES = ['pending', 'replied', 'rejected'];
 
@@ -50,8 +51,8 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote, onOpenDetail }) {
             <td title={contact.institution}>{contact.institution}</td>
             <td title={contact.country}>{contact.country}</td>
 
-            <td className="date-cell" title={contact.contactedAt}>
-              {contact.contactedAt}
+            <td className="date-cell" title={formatDate(contact.contactedAt)}>
+              {formatDate(contact.contactedAt)}
             </td>
 
             <td onClick={event => event.stopPropagation()}>

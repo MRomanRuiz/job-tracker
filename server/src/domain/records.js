@@ -2,7 +2,7 @@ const { HTTP_STATUS, HttpError } = require('./httpError');
 
 const MAX_PENDING_DAYS = 30;
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
 const ALLOWED_APPLICATION_STATUSES = new Set(['pending', 'interview', 'offer', 'rejected']);
 
@@ -38,13 +38,17 @@ const isStalePending = (record, dateField) =>
   record.status === 'pending' && isOlderThanPendingLimit(record[dateField]);
 
 const isValidDate = value => {
-  if (typeof value !== 'string' || !DATE_PATTERN.test(value)) {
+  if (typeof value !== 'string' || !TIMESTAMP_PATTERN.test(value)) {
     return false;
   }
 
-  const date = new Date(value);
+  const date = new Date(value.slice(0, 10));
 
-  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  return (
+    !Number.isNaN(date.getTime()) &&
+    date.toISOString().slice(0, 10) === value.slice(0, 10) &&
+    !Number.isNaN(new Date(value).getTime())
+  );
 };
 
 const suspendIfStale = (record, dateField, messages) => {

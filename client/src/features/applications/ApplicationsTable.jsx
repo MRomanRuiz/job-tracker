@@ -2,6 +2,7 @@ import { APPLICATION_STATUS_LABELS, APPLICATION_TYPE_LABELS } from '../../shared
 import EmptyState from '../../shared/components/EmptyState';
 import StatusSelect from '../../shared/components/StatusSelect';
 import NoteButton from '../../shared/components/NoteButton';
+import { formatDate } from '../../shared/lib/utils';
 
 const MANUAL_STATUSES = ['pending', 'interview', 'offer', 'rejected'];
 
@@ -49,8 +50,8 @@ function ApplicationsTable({ applications, onStatusChange, onOpenNote, onOpenDet
             <td title={APPLICATION_TYPE_LABELS[job.type] || job.type}>
               {APPLICATION_TYPE_LABELS[job.type] || job.type}
             </td>
-            <td className="date-cell" title={job.appliedAt}>
-              {job.appliedAt}
+            <td className="date-cell" title={formatDate(job.appliedAt)}>
+              {formatDate(job.appliedAt)}
             </td>
 
             <td onClick={event => event.stopPropagation()}>

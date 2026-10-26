@@ -42,16 +42,6 @@ const renderContacts = ({ items = contacts, staleItems = [], ...props } = {}) =>
   return { collection, onCloseForm };
 };
 
-const getToday = () => {
-  const today = new Date();
-
-  return [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, '0'),
-    String(today.getDate()).padStart(2, '0'),
-  ].join('-');
-};
-
 const names = () =>
   screen
     .queryAllByRole('row')
@@ -69,6 +59,22 @@ describe('Contacts', () => {
 
     fireEvent.click(replied);
     expect(names()).toEqual(['Ana', 'Luis']);
+  });
+
+  it('sorts contacts by timestamp and displays only the date in the table', () => {
+    renderContacts({
+      items: [
+        { ...contacts[0], contact: 'Created later', contactedAt: '2026-10-25T15:30:00.000Z' },
+        {
+          ...contacts[1],
+          contact: 'Created earlier',
+          contactedAt: '2026-10-25T15:29:00.000Z',
+        },
+      ],
+    });
+
+    expect(names()).toEqual(['Created later', 'Created earlier']);
+    expect(screen.getAllByText('2026-10-25')).toHaveLength(2);
   });
 
   it('keeps contact table rows accessible and opens details from the keyboard', () => {
@@ -140,7 +146,7 @@ describe('Contacts', () => {
       country: 'España',
       department: 'Investigación',
       city: 'Madrid',
-      contactedAt: getToday(),
+      contactedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/),
       status: 'pending',
       notes: '',
     });

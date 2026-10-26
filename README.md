@@ -155,7 +155,7 @@ A record can contain the following fields:
 | `type` | Application type: `industry` or `research`. Required. |
 | `country` | Country. Required. |
 | `city` | City. Optional. |
-| `appliedAt` | Application date in `YYYY-MM-DD` format. |
+| `appliedAt` | Application timestamp in ISO 8601 format; the table displays only `YYYY-MM-DD`. |
 | `durationType` | Contract type: `fixed` or `indefinite`. Optional. |
 | `durationMonths` | Positive integer for a `fixed` contract; otherwise `null`. |
 | `notes` | Free-text notes or follow-up comments. Optional. |
@@ -168,7 +168,7 @@ Example `jobs.json`:
   "applications": [
     {
       "id": 1,
-      "appliedAt": "2026-10-01",
+      "appliedAt": "2026-10-01T09:30:15.123Z",
       "company": "Example Company",
       "position": "Software Engineer",
       "type": "industry",
@@ -183,9 +183,9 @@ Example `jobs.json`:
 }
 ```
 
-When using JSON storage, use a top-level `applications` array. Each entry should have a unique numeric `id`, non-empty `company`, `position`, `type`, and `country`, an `appliedAt` date in `YYYY-MM-DD` format, and a valid status. Optional text fields can be empty strings. A fixed duration requires a positive integer `durationMonths`; use `null` when no duration applies.
+When using JSON storage, use a top-level `applications` array. Each entry should have a unique numeric `id`, non-empty `company`, `position`, `type`, and `country`, an `appliedAt` timestamp in ISO 8601 format, and a valid status. Applications are sorted by `appliedAt`; the table displays only its date portion (`YYYY-MM-DD`). Optional text fields can be empty strings. A fixed duration requires a positive integer `durationMonths`; use `null` when no duration applies.
 
-When creating an application through the frontend, the current local date is assigned automatically. The API itself still requires `appliedAt` in the creation request. Omit `id` when creating records through the API; the server generates it.
+When creating an application through the frontend, the current timestamp is assigned automatically. The API also requires `appliedAt` in ISO 8601 format. The server generates the record `id`.
 
 ### Contacts
 
@@ -202,7 +202,7 @@ A record can contain the following fields:
 | `department` | Department or laboratory. Optional. |
 | `city` | City. Optional. |
 | `country` | Country. Required. |
-| `contactedAt` | Date of first contact in `YYYY-MM-DD` format. |
+| `contactedAt` | First-contact timestamp in ISO 8601 format; the table displays only `YYYY-MM-DD`. |
 | `status` | `pending`, `replied`, `rejected`, or `suspended`. New records default to `pending`. |
 | `notes` | Free-text notes or follow-up comments. Optional. |
 
@@ -219,7 +219,7 @@ Example `contacts.json`:
       "department": "Research",
       "city": "Madrid",
       "country": "España",
-      "contactedAt": "2026-10-02",
+      "contactedAt": "2026-10-02T14:45:30.456Z",
       "status": "pending",
       "notes": "Asked for a meeting next week."
     }
@@ -227,9 +227,9 @@ Example `contacts.json`:
 }
 ```
 
-When using JSON storage, use a top-level `contacts` array. Each entry should have a unique numeric `id`, non-empty `contact`, `email`, `institution`, and `country`, a `contactedAt` date in `YYYY-MM-DD` format, and a valid status. Optional text fields can be empty strings.
+When using JSON storage, use a top-level `contacts` array. Each entry should have a unique numeric `id`, non-empty `contact`, `email`, `institution`, and `country`, a `contactedAt` timestamp in ISO 8601 format, and a valid status. Contacts are sorted by `contactedAt`; the table displays only its date portion (`YYYY-MM-DD`). Optional text fields can be empty strings.
 
-When creating a contact through the frontend, the current local date is assigned automatically. The API itself still requires `contactedAt` in the creation request.
+When creating a contact through the frontend, the current timestamp is assigned automatically. The API also requires `contactedAt` in ISO 8601 format. The server generates the record `id`.
 
 Omit `id` when creating records through the API; the server generates it. The `notes` field may be an empty string.
 
@@ -244,7 +244,7 @@ Invalid input, including dates that do not exist (such as `2026-02-31`), returns
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | `GET` | `/api/applications` | Return `{ "applications": [...] }`. |
-| `POST` | `/api/applications` | Create an application. Requires `company`, `position`, `type` (`industry` or `research`), `country`, and `appliedAt` in `YYYY-MM-DD` format. `durationType` may be `fixed` or `indefinite`; a fixed duration requires positive integer `durationMonths`. Status defaults to `pending`. |
+| `POST` | `/api/applications` | Create an application. Requires `company`, `position`, `type` (`industry` or `research`), `country`, and `appliedAt` as an ISO 8601 timestamp. `durationType` may be `fixed` or `indefinite`; a fixed duration may omit `durationMonths`, or provide a positive integer. Status defaults to `pending`. |
 | `PATCH` | `/api/applications/:id` | Update an application's status or notes. Accepted statuses: `pending`, `interview`, `offer`, and `rejected`; use the suspend endpoint for eligible pending applications. |
 | `GET` | `/api/applications/old` | Return pending applications older than 30 days. |
 | `PATCH` | `/api/applications/:id/suspend` | Suspend an eligible pending application older than 30 days. |
@@ -254,7 +254,7 @@ Invalid input, including dates that do not exist (such as `2026-02-31`), returns
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | `GET` | `/api/contacts` | Return `{ "contacts": [...] }`. |
-| `POST` | `/api/contacts` | Create a contact. Requires `contact`, `email`, `institution`, `country`, and `contactedAt` in `YYYY-MM-DD` format. Status defaults to `pending`; accepted statuses are `pending`, `replied`, and `rejected`. |
+| `POST` | `/api/contacts` | Create a contact. Requires `contact`, `email`, `institution`, `country`, and `contactedAt` as an ISO 8601 timestamp. Status defaults to `pending`; accepted statuses are `pending`, `replied`, and `rejected`. |
 | `PATCH` | `/api/contacts/:id` | Update a contact's status and/or notes. Accepted statuses: `pending`, `replied`, and `rejected`; use the suspend endpoint for eligible pending contacts. |
 | `GET` | `/api/contacts/old` | Return pending contacts older than 30 days. |
 | `PATCH` | `/api/contacts/:id/suspend` | Suspend an eligible pending contact older than 30 days. |

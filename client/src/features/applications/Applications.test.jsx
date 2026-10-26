@@ -31,16 +31,6 @@ const renderApplications = ({ items = [], staleItems = [], ...props } = {}) => {
   return { collection, onCloseForm };
 };
 
-const getToday = () => {
-  const today = new Date();
-
-  return [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, '0'),
-    String(today.getDate()).padStart(2, '0'),
-  ].join('-');
-};
-
 const companies = () =>
   screen
     .getAllByRole('row')
@@ -115,6 +105,24 @@ describe('Applications', () => {
     expect(screen.queryByText(/^Página/)).toBeNull();
   });
 
+  it('sorts applications by timestamp and displays only the date in the table', () => {
+    renderApplications({
+      items: [
+        makeApplication(1, {
+          company: 'Created later',
+          appliedAt: '2026-10-25T15:30:00.000Z',
+        }),
+        makeApplication(2, {
+          company: 'Created earlier',
+          appliedAt: '2026-10-25T15:29:00.000Z',
+        }),
+      ],
+    });
+
+    expect(companies()).toEqual(['Created later', 'Created earlier']);
+    expect(screen.getAllByText('2026-10-25')).toHaveLength(2);
+  });
+
   it('uses the singular label for a single application', () => {
     renderApplications({ items: [makeApplication(1)] });
 
@@ -168,7 +176,7 @@ describe('Applications', () => {
       durationType: 'indefinite',
       durationMonths: null,
       notes: '',
-      appliedAt: getToday(),
+      appliedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/),
     });
   });
 

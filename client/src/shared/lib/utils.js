@@ -20,6 +20,8 @@ export const matchesText = (values, searchText) =>
 export const sortByDateDesc = (items, dateField) =>
   [...items].sort((a, b) => new Date(b[dateField]) - new Date(a[dateField]));
 
+export const formatDate = value => value.slice(0, 10);
+
 export const replaceById = (items, updatedItem) =>
   items.map(item => (item.id === updatedItem.id ? updatedItem : item));
 

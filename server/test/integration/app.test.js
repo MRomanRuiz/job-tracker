@@ -21,7 +21,7 @@ process.env.STORAGE_TYPE = STORAGE_TYPE;
 const TEST_DATABASE_NAME = 'job_tracker_test';
 
 const OLD_DATE = '2020-01-01';
-const RECENT_DATE = new Date().toISOString().slice(0, 10);
+const RECENT_DATE = new Date().toISOString();
 
 const validApplication = (overrides = {}) => ({
   company: 'Acme',
@@ -282,6 +282,7 @@ describe('applications', () => {
 
     assert.equal(status, 201);
     assert.equal(typeof body.id, 'number');
+    assert.match(body.appliedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     assert.equal(body.status, 'pending');
     assert.equal(body.foo, undefined);
     assert.equal(body._id, undefined);
@@ -334,7 +335,7 @@ describe('applications', () => {
       validApplication({ company: '   ' }),
       validApplication({ status: 'bogus' }),
       validApplication({ company: 42 }),
-      validApplication({ appliedAt: '2026-02-31' }),
+      validApplication({ appliedAt: '2026-02-31T00:00:00.000Z' }),
       validApplication({ type: 'full-time' }),
       validApplication({ durationMonths: 6 }),
       validApplication({ durationType: 'temporary' }),
@@ -465,6 +466,7 @@ describe('contacts', () => {
     assert.equal(body.status, 'pending');
     assert.equal(body._id, undefined);
     assert.equal(body.institution, 'Gamma');
+    assert.match(body.contactedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
 
     const { body: list } = await request('GET', '/api/contacts');
 
@@ -478,7 +480,7 @@ describe('contacts', () => {
       validContact({ email: '' }),
       validContact({ institution: '' }),
       validContact({ country: '' }),
-      validContact({ contactedAt: '2026-02-31' }),
+      validContact({ contactedAt: '2026-02-31T00:00:00.000Z' }),
       validContact({ status: 'bogus' }),
       validContact({ email: 42 }),
     ]) {

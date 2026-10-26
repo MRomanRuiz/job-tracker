@@ -3,6 +3,7 @@ import {
   APPLICATION_TYPE_LABELS,
   CONTACT_STATUS_LABELS,
 } from '../lib/constants';
+import { formatDate } from '../lib/utils';
 
 const APPLICATION_FIELDS = [
   { name: 'company', label: 'Empresa' },
@@ -14,7 +15,7 @@ const APPLICATION_FIELDS = [
   },
   { name: 'country', label: 'País' },
   { name: 'city', label: 'Ciudad' },
-  { name: 'appliedAt', label: 'Fecha de candidatura' },
+  { name: 'appliedAt', label: 'Fecha de candidatura', format: formatDate },
   {
     name: 'durationType',
     label: 'Tipo de contrato',
@@ -45,7 +46,7 @@ const CONTACT_FIELDS = [
   { name: 'department', label: 'Departamento o laboratorio' },
   { name: 'city', label: 'Ciudad' },
   { name: 'country', label: 'País' },
-  { name: 'contactedAt', label: 'Fecha de contacto' },
+  { name: 'contactedAt', label: 'Fecha de contacto', format: formatDate },
   {
     name: 'status',
     label: 'Estado',

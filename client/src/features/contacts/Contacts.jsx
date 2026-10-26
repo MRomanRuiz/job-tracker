@@ -1,7 +1,13 @@
 import { useMemo, useState } from 'react';
 import { ALL_STATUSES, ITEMS_PER_PAGE } from '../../shared/lib/constants';
 import usePagination from '../../shared/hooks/usePagination';
-import { countByStatus, matchesStatus, matchesText, sortByDateDesc } from '../../shared/lib/utils';
+import {
+  countByStatus,
+  formatDate,
+  matchesStatus,
+  matchesText,
+  sortByDateDesc,
+} from '../../shared/lib/utils';
 import ContactsTable from './ContactsTable';
 import NoteForm from '../../shared/components/NoteForm';
 import Pagination from '../../shared/components/Pagination';
@@ -60,7 +66,7 @@ const renderStaleContact = contact => (
       {contact.contact}
     </span>
     <span title={contact.institution}>{contact.institution}</span>
-    <span className="stale-date">{contact.contactedAt}</span>
+    <span className="stale-date">{formatDate(contact.contactedAt)}</span>
   </>
 );
 
@@ -107,12 +113,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
   }));
 
   const handleCreate = async values => {
-    const today = new Date();
-    const contactedAt = [
-      today.getFullYear(),
-      String(today.getMonth() + 1).padStart(2, '0'),
-      String(today.getDate()).padStart(2, '0'),
-    ].join('-');
+    const contactedAt = new Date().toISOString();
 
     if (
       await create({

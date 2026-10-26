@@ -1,7 +1,13 @@
 import { useMemo, useState } from 'react';
 import { ALL_STATUSES, APPLICATION_TYPE_LABELS, ITEMS_PER_PAGE } from '../../shared/lib/constants';
 import usePagination from '../../shared/hooks/usePagination';
-import { countByStatus, matchesStatus, matchesText, sortByDateDesc } from '../../shared/lib/utils';
+import {
+  countByStatus,
+  formatDate,
+  matchesStatus,
+  matchesText,
+  sortByDateDesc,
+} from '../../shared/lib/utils';
 import ApplicationsTable from './ApplicationsTable';
 import Pagination from '../../shared/components/Pagination';
 import RecordForm from '../../shared/components/RecordForm';
@@ -80,7 +86,7 @@ const renderStaleApplication = application => (
     </span>
     <span title={application.position}>{application.position}</span>
     <span>{APPLICATION_TYPE_LABELS[application.type] || application.type}</span>
-    <span className="stale-date">{application.appliedAt}</span>
+    <span className="stale-date">{formatDate(application.appliedAt)}</span>
   </>
 );
 
@@ -122,12 +128,7 @@ function Applications({ collection, showForm, onCloseForm }) {
   }));
 
   const handleCreate = async values => {
-    const today = new Date();
-    const appliedAt = [
-      today.getFullYear(),
-      String(today.getMonth() + 1).padStart(2, '0'),
-      String(today.getDate()).padStart(2, '0'),
-    ].join('-');
+    const appliedAt = new Date().toISOString();
 
     if (await create({ ...values, notes: '', appliedAt })) {
       onCloseForm();
