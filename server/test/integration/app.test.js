@@ -315,6 +315,20 @@ describe('applications', () => {
     assert.equal(body.durationMonths, 6);
   });
 
+  it('permite una candidatura temporal sin duración indicada', async () => {
+    const { status, body } = await request('POST', '/api/applications', {
+      body: {
+        ...validApplication(),
+        durationType: 'fixed',
+        durationMonths: null,
+      },
+    });
+
+    assert.equal(status, 201);
+    assert.equal(body.durationType, 'fixed');
+    assert.equal(body.durationMonths, null);
+  });
+
   it('rechaza candidaturas no válidas', async () => {
     for (const body of [
       validApplication({ company: '   ' }),
@@ -324,8 +338,8 @@ describe('applications', () => {
       validApplication({ type: 'full-time' }),
       validApplication({ durationMonths: 6 }),
       validApplication({ durationType: 'temporary' }),
-      validApplication({ durationType: 'fixed' }),
       validApplication({ durationType: 'fixed', durationMonths: 1.5 }),
+      validApplication({ durationType: 'fixed', durationMonths: 0 }),
       validApplication({
         durationType: 'indefinite',
         durationMonths: 12,

@@ -22,6 +22,7 @@ function RecordForm({
     setValues(current => ({
       ...current,
       [name]: value,
+      ...(name === 'durationType' && value !== 'fixed' ? { durationMonths: '' } : {}),
     }));
   };
 
@@ -31,10 +32,20 @@ function RecordForm({
     const submittedValues = { ...values };
 
     for (const field of allFields) {
-      if (field.type === 'number') {
-        const value = submittedValues[field.name];
+      switch (field.type) {
+        case 'number': {
+          const value = submittedValues[field.name];
 
-        submittedValues[field.name] = value === '' ? null : Number(value);
+          submittedValues[field.name] = value === '' ? null : Number(value);
+          break;
+        }
+        case 'select':
+          if (submittedValues[field.name] === field.emptyOptionValue) {
+            submittedValues[field.name] = '';
+          }
+          break;
+        default:
+          break;
       }
     }
 

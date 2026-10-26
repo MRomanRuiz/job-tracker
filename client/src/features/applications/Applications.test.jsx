@@ -166,10 +166,99 @@ describe('Applications', () => {
       country: 'España',
       city: 'Madrid',
       durationType: 'indefinite',
-      durationMonths: '',
+      durationMonths: null,
       notes: '',
       appliedAt: getToday(),
     });
+  });
+
+  it('creates a fixed-term application without a duration', async () => {
+    const { collection } = renderApplications({ showForm: true });
+
+    fireEvent.change(screen.getByPlaceholderText('Puesto *'), {
+      target: { value: 'Dev' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Empresa *'), {
+      target: { value: 'Acme' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tipo *'), {
+      target: { value: 'research' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('País *'), {
+      target: { value: 'España' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
+    fireEvent.change(screen.getByPlaceholderText('Tipo de contrato'), {
+      target: { value: 'fixed' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar candidatura' }));
+
+    await waitFor(() =>
+      expect(collection.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          durationType: 'fixed',
+          durationMonths: null,
+        }),
+      ),
+    );
+  });
+
+  it('clears duration when the contract type becomes indefinite or unknown', () => {
+    renderApplications({ showForm: true });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
+
+    const contractType = screen.getByPlaceholderText('Tipo de contrato');
+    const duration = screen.getByPlaceholderText('Duración en meses (si es temporal)');
+
+    fireEvent.change(contractType, { target: { value: 'fixed' } });
+    fireEvent.change(duration, { target: { value: '12' } });
+    fireEvent.change(contractType, { target: { value: 'indefinite' } });
+
+    expect(duration.value).toBe('');
+    expect(duration.disabled).toBe(true);
+
+    fireEvent.change(contractType, { target: { value: 'fixed' } });
+    fireEvent.change(duration, { target: { value: '6' } });
+    fireEvent.change(contractType, { target: { value: '' } });
+
+    expect(contractType.value).toBe('');
+    expect(duration.value).toBe('');
+    expect(duration.disabled).toBe(false);
+  });
+
+  it('shows the contract type placeholder initially and submits unknown as empty', async () => {
+    const { collection } = renderApplications({ showForm: true });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
+    const contractType = screen.getByPlaceholderText('Tipo de contrato');
+
+    expect(contractType.selectedOptions[0].textContent).toBe('Tipo de contrato');
+
+    fireEvent.change(contractType, { target: { value: 'unknown' } });
+    fireEvent.change(screen.getByPlaceholderText('Puesto *'), {
+      target: { value: 'Dev' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Empresa *'), {
+      target: { value: 'Acme' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tipo *'), {
+      target: { value: 'research' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('País *'), {
+      target: { value: 'España' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar candidatura' }));
+
+    await waitFor(() =>
+      expect(collection.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          durationType: '',
+          durationMonths: null,
+        }),
+      ),
+    );
   });
 
   it('shows the current country and translated application types in the table', () => {

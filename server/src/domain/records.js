@@ -95,7 +95,7 @@ const parseApplication = body => {
 
   const hasInvalidDurationMonths =
     durationType === 'fixed'
-      ? !Number.isInteger(durationMonths) || durationMonths <= 0
+      ? durationMonths !== null && (!Number.isInteger(durationMonths) || durationMonths <= 0)
       : durationMonths !== null;
 
   const hasInvalidApplicationData = [

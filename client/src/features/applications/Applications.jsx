@@ -50,7 +50,9 @@ const OPTIONAL_FORM_FIELDS = [
     placeholder: 'Tipo de contrato',
     type: 'select',
     initialValue: '',
+    emptyOptionValue: 'unknown',
     options: [
+      { value: 'unknown', label: 'Desconocido' },
       { value: 'fixed', label: 'Temporal' },
       { value: 'indefinite', label: 'Indefinido' },
     ],
@@ -59,6 +61,7 @@ const OPTIONAL_FORM_FIELDS = [
   {
     name: 'durationMonths',
     placeholder: 'Duración en meses (si es temporal)',
+    type: 'number',
     required: false,
   },
 ];
