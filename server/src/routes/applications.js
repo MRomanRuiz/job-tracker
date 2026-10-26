@@ -1,6 +1,5 @@
 const { HTTP_STATUS, HttpError } = require('../domain/httpError');
 const {
-  ALLOWED_APPLICATION_STATUSES,
   isStalePending,
   parseApplication,
   parseApplicationChanges,
@@ -9,7 +8,7 @@ const {
 const handle = require('./handle');
 
 const NOT_FOUND_MESSAGE = 'Candidatura no encontrada';
-const APPLICATION_DETAIL_FIELDS = new Set([
+const APPLICATION_UPDATE_FIELDS = new Set([
   'status',
   'notes',
   'company',
@@ -34,35 +33,14 @@ const validateAllowedFields = (body, allowedFields) => {
   }
 };
 
-const getApplicationChanges = body => {
-  validateAllowedFields(body, new Set(['status', 'notes']));
-
-  const { status, notes } = body;
-
-  if (status === undefined && notes === undefined) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'No se han proporcionado campos para actualizar');
-  }
-
-  if (status !== undefined && !ALLOWED_APPLICATION_STATUSES.has(status)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Estado no permitido');
-  }
-
-  if (notes !== undefined && typeof notes !== 'string') {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Nota no válida');
-  }
-
-  return {
-    ...(status !== undefined && { status }),
-    ...(notes !== undefined && { notes }),
-  };
-};
-
-const validateApplicationDetails = body => {
-  validateAllowedFields(body, APPLICATION_DETAIL_FIELDS);
+const validateApplicationChanges = body => {
+  validateAllowedFields(body, APPLICATION_UPDATE_FIELDS);
 
   if (Object.keys(body).length === 0) {
     throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'No se han proporcionado campos para actualizar');
   }
+
+  return body;
 };
 
 const addApplicationRoutes = (app, storage) => {
@@ -99,28 +77,19 @@ const addApplicationRoutes = (app, storage) => {
   app.patch(
     '/api/applications/:id',
     handle('No se pudo actualizar la candidatura', async (req, res) => {
-      const changes = getApplicationChanges(req.body);
-      const application = await storage.update('applications', req.params.id, changes);
+      const requestedChanges = validateApplicationChanges(req.body);
+      const requiresCurrentApplication = Object.keys(requestedChanges).some(
+        field => !['status', 'notes'].includes(field),
+      );
+      const currentApplication = requiresCurrentApplication
+        ? await storage.getById('applications', req.params.id)
+        : {};
 
-      if (!application) {
+      if (requiresCurrentApplication && !currentApplication) {
         throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
       }
 
-      res.json(application);
-    }),
-  );
-
-  app.patch(
-    '/api/applications/:id/details',
-    handle('No se pudieron actualizar los detalles de la candidatura', async (req, res) => {
-      validateApplicationDetails(req.body);
-
-      const currentApplication = await storage.getById('applications', req.params.id);
-      if (!currentApplication) {
-        throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
-      }
-
-      const changes = parseApplicationChanges(req.body, currentApplication);
+      const changes = parseApplicationChanges(requestedChanges, currentApplication);
       const application = await storage.update('applications', req.params.id, changes);
 
       if (!application) {

@@ -283,7 +283,9 @@ const parseApplicationChanges = (body, currentApplication) => {
     }),
   );
 
-  validateUpdatedApplication({ ...currentApplication, ...changes }, errorMessage);
+  if (Object.keys(changes).some(field => !['status', 'notes'].includes(field))) {
+    validateUpdatedApplication({ ...currentApplication, ...changes }, errorMessage);
+  }
 
   return changes;
 };

@@ -1,6 +1,5 @@
 const { HTTP_STATUS, HttpError } = require('../domain/httpError');
 const {
-  ALLOWED_CONTACT_STATUSES,
   isStalePending,
   parseContact,
   parseContactChanges,
@@ -8,10 +7,8 @@ const {
 } = require('../domain/records');
 const handle = require('./handle');
 
-const CONTACT_UPDATE_FIELDS = new Set(['status', 'notes']);
-
 const NOT_FOUND_MESSAGE = 'Contacto no encontrado';
-const CONTACT_DETAIL_FIELDS = new Set([
+const CONTACT_UPDATE_FIELDS = new Set([
   'status',
   'notes',
   'contact',
@@ -38,35 +35,7 @@ const validateAllowedFields = (body, allowedFields) => {
 const validateContactChanges = body => {
   validateAllowedFields(body, CONTACT_UPDATE_FIELDS);
 
-  const { status, notes } = body;
-
-  if (status === undefined && notes === undefined) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'No se han proporcionado campos para actualizar');
-  }
-
-  if (status !== undefined && !ALLOWED_CONTACT_STATUSES.has(status)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Estado no permitido');
-  }
-
-  if (notes !== undefined && typeof notes !== 'string') {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Nota no válida');
-  }
-
-  return {
-    ...(status !== undefined && { status }),
-    ...(notes !== undefined && { notes }),
-  };
-};
-
-const validateContactDetails = body => {
-  validateAllowedFields(body, CONTACT_DETAIL_FIELDS);
-
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'El cuerpo de la petición no es válido');
-  }
-
-  const entries = Object.entries(body);
-  if (entries.length === 0) {
+  if (Object.keys(body).length === 0) {
     throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'No se han proporcionado campos para actualizar');
   }
 
@@ -106,20 +75,6 @@ const addContactRoutes = (app, storage) => {
     '/api/contacts/:id',
     handle('No se pudo actualizar el contacto', async (req, res) => {
       const changes = validateContactChanges(req.body);
-      const contact = await storage.update('contacts', req.params.id, changes);
-
-      if (!contact) {
-        throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
-      }
-
-      res.json(contact);
-    }),
-  );
-
-  app.patch(
-    '/api/contacts/:id/details',
-    handle('No se pudieron actualizar los detalles del contacto', async (req, res) => {
-      const changes = validateContactDetails(req.body);
       const contact = await storage.update('contacts', req.params.id, changes);
 
       if (!contact) {

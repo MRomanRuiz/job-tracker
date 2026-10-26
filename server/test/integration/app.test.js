@@ -367,7 +367,7 @@ describe('applications', () => {
     });
 
     assert.equal(status, 200);
-    assert.equal(body.notes, '  Revisar oferta  ');
+    assert.equal(body.notes, 'Revisar oferta');
     assert.equal(body.status, 'pending');
   });
 
@@ -380,7 +380,7 @@ describe('applications', () => {
   });
 
   it('actualiza y recorta los detalles de una candidatura', async () => {
-    const { status, body } = await request('PATCH', '/api/applications/2/details', {
+    const { status, body } = await request('PATCH', '/api/applications/2', {
       body: {
         company: '  Example Labs  ',
         position: '  Researcher  ',
@@ -409,7 +409,7 @@ describe('applications', () => {
   });
 
   it('permite actualizar detalles parciales y conserva los campos omitidos', async () => {
-    const { status, body } = await request('PATCH', '/api/applications/2/details', {
+    const { status, body } = await request('PATCH', '/api/applications/2', {
       body: { notes: '  Revisar la oferta  ' },
     });
 
@@ -436,14 +436,14 @@ describe('applications', () => {
       { unknown: 'value' },
       {},
     ]) {
-      const response = await request('PATCH', '/api/applications/2/details', { body });
+      const response = await request('PATCH', '/api/applications/2', { body });
 
       assert.equal(response.status, 400);
     }
   });
 
   it('devuelve 404 al actualizar los detalles de una candidatura inexistente', async () => {
-    const { status } = await request('PATCH', '/api/applications/99/details', {
+    const { status } = await request('PATCH', '/api/applications/99', {
       body: { company: 'Example' },
     });
 
@@ -620,7 +620,7 @@ describe('contacts', () => {
     });
 
     assert.equal(status, 200);
-    assert.equal(body.notes, '  Contactar mañana  ');
+    assert.equal(body.notes, 'Contactar mañana');
     assert.equal(body.status, 'replied');
   });
 
@@ -633,7 +633,7 @@ describe('contacts', () => {
   });
 
   it('actualiza y recorta los detalles del contacto', async () => {
-    const { status, body } = await request('PATCH', '/api/contacts/2/details', {
+    const { status, body } = await request('PATCH', '/api/contacts/2', {
       body: {
         contact: '  Luis Pérez  ',
         email: ' luis.perez@example.com ',
@@ -660,7 +660,7 @@ describe('contacts', () => {
   });
 
   it('permite actualizar un subconjunto de detalles sin cambiar los demás', async () => {
-    const { status, body } = await request('PATCH', '/api/contacts/2/details', {
+    const { status, body } = await request('PATCH', '/api/contacts/2', {
       body: { department: '  Ciencias  ' },
     });
 
@@ -684,14 +684,14 @@ describe('contacts', () => {
       { unexpected: 'value' },
       {},
     ]) {
-      const response = await request('PATCH', '/api/contacts/2/details', { body });
+      const response = await request('PATCH', '/api/contacts/2', { body });
 
       assert.equal(response.status, 400);
     }
   });
 
   it('devuelve 404 al actualizar los detalles de un contacto inexistente', async () => {
-    const { status } = await request('PATCH', '/api/contacts/99/details', {
+    const { status } = await request('PATCH', '/api/contacts/99', {
       body: { contact: 'Eva' },
     });
 
