@@ -3,6 +3,7 @@ const {
   ALLOWED_CONTACT_STATUSES,
   isStalePending,
   parseContact,
+  parseContactChanges,
   suspendIfStale,
 } = require('../domain/records');
 const handle = require('./handle');
@@ -32,22 +33,6 @@ const validateAllowedFields = (body, allowedFields) => {
   if (invalidFields.length > 0) {
     throw new HttpError(HTTP_STATUS.BAD_REQUEST, `Campos no válidos: ${invalidFields.join(', ')}`);
   }
-};
-
-const validateContactDetailField = ([field, value]) => {
-  if (!CONTACT_DETAIL_FIELDS.has(field)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, `Campo no permitido: ${field}`);
-  }
-
-  if (field === 'status' && value !== undefined && !ALLOWED_CONTACT_STATUSES.has(value)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Estado no permitido');
-  }
-
-  if (field !== 'status' && value !== undefined && typeof value !== 'string') {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, `Campo no válido: ${field}`);
-  }
-
-  return [field, value];
 };
 
 const validateContactChanges = body => {
@@ -85,7 +70,7 @@ const validateContactDetails = body => {
     throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'No se han proporcionado campos para actualizar');
   }
 
-  return Object.fromEntries(entries.map(validateContactDetailField));
+  return parseContactChanges(body);
 };
 
 const addContactRoutes = (app, storage) => {

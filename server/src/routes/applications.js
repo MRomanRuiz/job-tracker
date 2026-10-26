@@ -3,11 +3,24 @@ const {
   ALLOWED_APPLICATION_STATUSES,
   isStalePending,
   parseApplication,
+  parseApplicationChanges,
   suspendIfStale,
 } = require('../domain/records');
 const handle = require('./handle');
 
 const NOT_FOUND_MESSAGE = 'Candidatura no encontrada';
+const APPLICATION_DETAIL_FIELDS = new Set([
+  'status',
+  'notes',
+  'company',
+  'position',
+  'type',
+  'city',
+  'country',
+  'durationType',
+  'durationMonths',
+  'appliedAt',
+]);
 
 const validateAllowedFields = (body, allowedFields) => {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
@@ -44,65 +57,12 @@ const getApplicationChanges = body => {
   };
 };
 
-const validateApplicationDetailStrings = changes => {
-  for (const field of [
-    'notes',
-    'company',
-    'position',
-    'type',
-    'city',
-    'country',
-    'durationType',
-    'appliedAt',
-  ]) {
-    if (changes[field] !== undefined && typeof changes[field] !== 'string') {
-      throw new HttpError(HTTP_STATUS.BAD_REQUEST, `Campo no válido: ${field}`);
-    }
-  }
-};
-
-const validateDurationMonths = durationMonths => {
-  if (
-    durationMonths !== undefined &&
-    durationMonths !== null &&
-    (!Number.isInteger(durationMonths) || durationMonths < 1)
-  ) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'La duración en meses no es válida');
-  }
-};
-
 const validateApplicationDetails = body => {
-  const allowedFields = new Set([
-    'status',
-    'notes',
-    'company',
-    'position',
-    'type',
-    'city',
-    'country',
-    'durationType',
-    'durationMonths',
-    'appliedAt',
-  ]);
+  validateAllowedFields(body, APPLICATION_DETAIL_FIELDS);
 
-  validateAllowedFields(body, allowedFields);
-
-  const changes = Object.fromEntries(
-    Object.entries(body).filter(([field]) => allowedFields.has(field)),
-  );
-
-  if (Object.keys(changes).length === 0) {
+  if (Object.keys(body).length === 0) {
     throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'No se han proporcionado campos para actualizar');
   }
-
-  if (changes.status !== undefined && !ALLOWED_APPLICATION_STATUSES.has(changes.status)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Estado no permitido');
-  }
-
-  validateApplicationDetailStrings(changes);
-  validateDurationMonths(changes.durationMonths);
-
-  return changes;
 };
 
 const addApplicationRoutes = (app, storage) => {
@@ -153,7 +113,14 @@ const addApplicationRoutes = (app, storage) => {
   app.patch(
     '/api/applications/:id/details',
     handle('No se pudieron actualizar los detalles de la candidatura', async (req, res) => {
-      const changes = validateApplicationDetails(req.body);
+      validateApplicationDetails(req.body);
+
+      const currentApplication = await storage.getById('applications', req.params.id);
+      if (!currentApplication) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
+      }
+
+      const changes = parseApplicationChanges(req.body, currentApplication);
       const application = await storage.update('applications', req.params.id, changes);
 
       if (!application) {

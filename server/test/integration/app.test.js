@@ -379,6 +379,77 @@ describe('applications', () => {
     assert.equal(status, 400);
   });
 
+  it('actualiza y recorta los detalles de una candidatura', async () => {
+    const { status, body } = await request('PATCH', '/api/applications/2/details', {
+      body: {
+        company: '  Example Labs  ',
+        position: '  Researcher  ',
+        type: '  research  ',
+        city: '  Madrid  ',
+        country: '  España  ',
+        notes: '  Seguimiento  ',
+        appliedAt: '2026-10-20T12:30:00.000Z',
+        durationType: ' fixed ',
+        durationMonths: 12,
+        status: 'interview',
+      },
+    });
+
+    assert.equal(status, 200);
+    assert.equal(body.company, 'Example Labs');
+    assert.equal(body.position, 'Researcher');
+    assert.equal(body.type, 'research');
+    assert.equal(body.city, 'Madrid');
+    assert.equal(body.country, 'España');
+    assert.equal(body.notes, 'Seguimiento');
+    assert.equal(body.appliedAt, '2026-10-20T12:30:00.000Z');
+    assert.equal(body.durationType, 'fixed');
+    assert.equal(body.durationMonths, 12);
+    assert.equal(body.status, 'interview');
+  });
+
+  it('permite actualizar detalles parciales y conserva los campos omitidos', async () => {
+    const { status, body } = await request('PATCH', '/api/applications/2/details', {
+      body: { notes: '  Revisar la oferta  ' },
+    });
+
+    assert.equal(status, 200);
+    assert.equal(body.notes, 'Revisar la oferta');
+    assert.equal(body.company, 'New');
+    assert.equal(body.position, 'Designer');
+    assert.equal(body.type, 'research');
+    assert.equal(body.status, 'pending');
+  });
+
+  it('rechaza detalles de candidatura no válidos', async () => {
+    for (const body of [
+      { company: '   ' },
+      { position: '' },
+      { type: 'invalid' },
+      { appliedAt: '2026-02-31T00:00:00.000Z' },
+      { appliedAt: '2026-10-20' },
+      { durationType: 'temporary' },
+      { durationMonths: 0 },
+      { durationMonths: 1.5 },
+      { durationType: 'indefinite', durationMonths: 12 },
+      { status: 'invalid' },
+      { unknown: 'value' },
+      {},
+    ]) {
+      const response = await request('PATCH', '/api/applications/2/details', { body });
+
+      assert.equal(response.status, 400);
+    }
+  });
+
+  it('devuelve 404 al actualizar los detalles de una candidatura inexistente', async () => {
+    const { status } = await request('PATCH', '/api/applications/99/details', {
+      body: { company: 'Example' },
+    });
+
+    assert.equal(status, 404);
+  });
+
   it('elimina una candidatura', async () => {
     const { status, body } = await request('DELETE', '/api/applications/1');
 
@@ -559,6 +630,72 @@ describe('contacts', () => {
     });
 
     assert.equal(status, 400);
+  });
+
+  it('actualiza y recorta los detalles del contacto', async () => {
+    const { status, body } = await request('PATCH', '/api/contacts/2/details', {
+      body: {
+        contact: '  Luis Pérez  ',
+        email: ' luis.perez@example.com ',
+        institution: ' Beta Labs ',
+        department: ' Investigación ',
+        city: ' Málaga ',
+        country: ' España ',
+        notes: '  Contactar en noviembre  ',
+        contactedAt: '2026-10-20T12:30:00.000Z',
+        status: 'pending',
+      },
+    });
+
+    assert.equal(status, 200);
+    assert.equal(body.contact, 'Luis Pérez');
+    assert.equal(body.email, 'luis.perez@example.com');
+    assert.equal(body.institution, 'Beta Labs');
+    assert.equal(body.department, 'Investigación');
+    assert.equal(body.city, 'Málaga');
+    assert.equal(body.country, 'España');
+    assert.equal(body.notes, 'Contactar en noviembre');
+    assert.equal(body.contactedAt, '2026-10-20T12:30:00.000Z');
+    assert.equal(body.status, 'pending');
+  });
+
+  it('permite actualizar un subconjunto de detalles sin cambiar los demás', async () => {
+    const { status, body } = await request('PATCH', '/api/contacts/2/details', {
+      body: { department: '  Ciencias  ' },
+    });
+
+    assert.equal(status, 200);
+    assert.equal(body.department, 'Ciencias');
+    assert.equal(body.contact, 'Luis');
+    assert.equal(body.email, 'luis@example.com');
+    assert.equal(body.status, 'replied');
+  });
+
+  it('rechaza detalles que incumplen las validaciones del contacto', async () => {
+    for (const body of [
+      { contact: '   ' },
+      { email: '' },
+      { institution: '   ' },
+      { country: '' },
+      { department: 42 },
+      { contactedAt: '2026-02-31T00:00:00.000Z' },
+      { contactedAt: '2026-10-20' },
+      { status: 'bogus' },
+      { unexpected: 'value' },
+      {},
+    ]) {
+      const response = await request('PATCH', '/api/contacts/2/details', { body });
+
+      assert.equal(response.status, 400);
+    }
+  });
+
+  it('devuelve 404 al actualizar los detalles de un contacto inexistente', async () => {
+    const { status } = await request('PATCH', '/api/contacts/99/details', {
+      body: { contact: 'Eva' },
+    });
+
+    assert.equal(status, 404);
   });
 
   it('elimina un contacto', async () => {
