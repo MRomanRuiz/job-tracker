@@ -1051,3 +1051,136 @@ main {
     width: auto;
   }
 }
+
+.record-timeline {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+  min-width: 0;
+}
+
+.record-timeline-title {
+  margin: 0 0 22px;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.record-timeline-scroll {
+  overflow-x: auto;
+  padding: 2px 2px 16px;
+  scrollbar-width: thin;
+}
+
+.record-timeline-track {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-width: max-content;
+}
+
+.record-timeline-event {
+  position: relative;
+  flex: 0 0 220px;
+  min-width: 0;
+}
+
+.record-timeline-point {
+  position: relative;
+  height: 18px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Segmento que conecta cada círculo con el siguiente. */
+.record-timeline-point::after {
+  content: '';
+  position: absolute;
+  height: 2px;
+  background: #d1d5db;
+  left: 50%;
+  right: -50%;
+  top: 8px;
+}
+
+.record-timeline-event:last-child .record-timeline-point::after {
+  display: none;
+}
+
+.record-timeline-dot {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: var(--record-timeline-color);
+  box-shadow:
+    0 0 0 2px white,
+    0 0 0 3px var(--record-timeline-color);
+}
+
+.record-timeline-event.created .record-timeline-dot {
+  --record-timeline-color: #64748b;
+}
+
+.record-timeline-event.status .record-timeline-dot {
+  --record-timeline-color: #2563eb;
+}
+
+.record-timeline-event.notes .record-timeline-dot {
+  --record-timeline-color: #0f766e;
+}
+
+.record-timeline-card {
+  padding: 0 12px;
+  overflow-wrap: anywhere;
+}
+
+.record-timeline-date {
+  display: block;
+  margin-bottom: 8px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.record-timeline-card h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.record-timeline-status {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.record-timeline-note {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.record-timeline-event.status .record-timeline-card h4 {
+  color: #2563eb;
+}
+
+.record-timeline-event.notes .record-timeline-card h4 {
+  color: #0f766e;
+}
+
+@media (max-width: 600px) {
+  .record-timeline-event {
+    flex-basis: 190px;
+  }
+}

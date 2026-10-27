@@ -1,4 +1,5 @@
 import { getRecordFields } from '../../lib/recordFields';
+import RecordTimeline from './RecordTimeline';
 
 function RecordDetails({ item, kind, isStale = false, onClose, onSuspend, onEdit }) {
   if (!item) {
@@ -105,6 +106,8 @@ function RecordDetails({ item, kind, isStale = false, onClose, onSuspend, onEdit
             );
           })}
         </div>
+
+        <RecordTimeline record={item} recordType={kind} />
 
         <footer className="record-details-actions">
           <button type="button" className="primary-button" onClick={() => onEdit?.(item)}>
