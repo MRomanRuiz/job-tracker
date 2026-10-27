@@ -371,6 +371,29 @@ describe('applications', () => {
     assert.equal(body.status, 'pending');
   });
 
+  it('conserva actualizaciones concurrentes y oculta la revisión interna', async () => {
+    await Promise.all([
+      storage.update('applications', 2, { status: 'interview' }),
+      storage.update('applications', 2, { notes: 'Seguimiento concurrente' }),
+    ]);
+
+    const { body } = await request('GET', '/api/applications');
+    const application = body.applications.find(item => item.id === 2);
+
+    assert.equal(application.status, 'interview');
+    assert.equal(application.notes, 'Seguimiento concurrente');
+    assert.equal(Object.hasOwn(application, '_storageRevision'), false);
+    assert.deepEqual(
+      application.history.map(event => event.field).sort(),
+      ['notes', 'status'],
+    );
+
+    if (STORAGE_TYPE === 'mongodb') {
+      const stored = await db.collection('applications').findOne({ id: 2 });
+      assert.equal(stored._storageRevision, 2);
+    }
+  });
+
   it('rechaza un estado no permitido al actualizar una candidatura', async () => {
     const { status } = await request('PATCH', '/api/applications/1', {
       body: { status: 'bogus' },

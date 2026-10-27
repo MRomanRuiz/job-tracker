@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { getRecordFields } from '../../lib/recordFields';
 
-const getInitialValues = item => ({
-  ...item,
-  contactedAt: item.contactedAt ? String(item.contactedAt).slice(0, 10) : '',
-  durationMonths: item.durationMonths ?? '',
-  durationType: item.durationType ?? '',
-  notes: item.notes ?? '',
-});
+const getInitialValues = item =>
+  item
+    ? {
+        ...item,
+        contactedAt: item.contactedAt ? String(item.contactedAt).slice(0, 10) : '',
+        durationMonths: item.durationMonths ?? '',
+        durationType: item.durationType ?? '',
+        notes: item.notes ?? '',
+      }
+    : {};
 
 const getChangedValue = (field, value) => {
   if (field.type === 'date') {

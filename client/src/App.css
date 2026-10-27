@@ -348,6 +348,11 @@ main {
   font-weight: 400;
 }
 
+.record-form-field select[name='durationType'] option[value=''] {
+  background-color: #4b5563;
+  color: #f9fafb;
+}
+
 .record-form-field textarea {
   resize: vertical;
 }
