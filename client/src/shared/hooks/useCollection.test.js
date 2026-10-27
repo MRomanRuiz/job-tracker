@@ -49,8 +49,9 @@ describe('useCollection', () => {
   });
 
   it('reloads the stale items only when the status changes', async () => {
+    const updated = { ...pending, status: 'replied' };
     const { result, fetchMock } = renderCollection({
-      'PATCH /api/contacts/1': body => ({ ...pending, ...body }),
+      'PATCH /api/contacts/1': body => ({ ...pending, ...body, updatedAt: '2026-02-01' }),
     });
 
     await waitFor(() => expect(result.current.items).toHaveLength(1));
@@ -59,9 +60,13 @@ describe('useCollection', () => {
     expect(result.current.items[0].notes).toBe('Llamar');
     expect(staleRequests(fetchMock)).toBe(1);
 
-    await act(() => result.current.update(1, { status: 'replied' }));
+    let response;
+    await act(async () => {
+      response = await result.current.update(1, { status: 'replied' });
+    });
     expect(result.current.items[0].status).toBe('replied');
     expect(staleRequests(fetchMock)).toBe(2);
+    expect(response).toEqual({ ...updated, updatedAt: '2026-02-01' });
   });
 
   it('suspends an item and reloads the stale items', async () => {

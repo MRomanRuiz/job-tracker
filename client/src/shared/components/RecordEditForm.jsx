@@ -87,7 +87,9 @@ function RecordEditForm({ item, kind, onSave, onClose }) {
         return;
       }
 
-      onClose({ ...item, ...changes });
+      onClose(
+        typeof result === 'object' && result !== null ? result : { ...item, ...changes },
+      );
     } catch (err) {
       setError(err?.message || 'Ha ocurrido un error al guardar.');
     } finally {

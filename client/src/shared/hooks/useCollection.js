@@ -51,7 +51,7 @@ export default function useCollection(name) {
 
     setItems(current => replaceById(current, updated));
 
-    return true;
+    return updated;
   };
 
   const create = async values => {

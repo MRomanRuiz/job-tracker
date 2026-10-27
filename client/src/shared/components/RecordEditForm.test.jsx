@@ -93,6 +93,32 @@ describe('RecordEditForm', () => {
     });
   });
 
+  it('uses the saved record returned by the server when closing', async () => {
+    const savedRecord = {
+      ...application,
+      company: 'Globex',
+      updatedAt: '2026-02-01T10:00:00.000Z',
+      history: [
+        {
+          field: 'status',
+          oldValue: 'pending',
+          newValue: 'interview',
+          changedAt: '2026-02-01T10:00:00.000Z',
+        },
+      ],
+    };
+    const onSave = vi.fn().mockResolvedValue(savedRecord);
+    const { onClose } = renderEditForm({ onSave });
+    const dialog = screen.getByRole('dialog');
+
+    fireEvent.change(within(dialog).getByLabelText('Empresa'), {
+      target: { value: 'Globex' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledWith(savedRecord));
+  });
+
   it('clears a contact date when the submitted value is empty', async () => {
     const { onSave, onClose } = renderEditForm({ item: contact, kind: 'contact' });
     const dialog = screen.getByRole('dialog');
