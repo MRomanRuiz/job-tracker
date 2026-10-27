@@ -16,61 +16,12 @@ import StatCards from '../../shared/components/StatCards';
 import Toolbar from '../../shared/components/Toolbar';
 import NoteForm from '../../shared/components/NoteForm';
 import RecordDetails from '../../shared/components/RecordDetails';
+import RecordEditForm from '../../shared/components/RecordEditForm';
+import { getRecordCreateFields } from '../../lib/recordFields';
 
-const REQUIRED_FORM_FIELDS = [
-  {
-    name: 'position',
-    placeholder: 'Puesto',
-    required: true,
-  },
-  {
-    name: 'company',
-    placeholder: 'Empresa',
-    required: true,
-  },
-  {
-    name: 'type',
-    placeholder: 'Tipo',
-    type: 'select',
-    required: true,
-    options: [
-      { value: 'industry', label: 'Empresa' },
-      { value: 'research', label: 'Investigación' },
-    ],
-  },
-  {
-    name: 'country',
-    placeholder: 'País',
-    required: true,
-  },
-];
-
-const OPTIONAL_FORM_FIELDS = [
-  {
-    name: 'city',
-    placeholder: 'Ciudad',
-    required: false,
-  },
-  {
-    name: 'durationType',
-    placeholder: 'Tipo de contrato',
-    type: 'select',
-    initialValue: '',
-    emptyOptionValue: 'unknown',
-    options: [
-      { value: 'unknown', label: 'Desconocido' },
-      { value: 'fixed', label: 'Temporal' },
-      { value: 'indefinite', label: 'Indefinido' },
-    ],
-    required: false,
-  },
-  {
-    name: 'durationMonths',
-    placeholder: 'Duración en meses (si es temporal)',
-    type: 'number',
-    required: false,
-  },
-];
+const APPLICATION_CREATE_FIELDS = getRecordCreateFields('application');
+const REQUIRED_FORM_FIELDS = APPLICATION_CREATE_FIELDS.filter(field => field.required);
+const OPTIONAL_FORM_FIELDS = APPLICATION_CREATE_FIELDS.filter(field => !field.required);
 
 const STAT_ITEMS = [
   { status: ALL_STATUSES, label: 'Total' },
@@ -97,6 +48,7 @@ function Applications({ collection, showForm, onCloseForm }) {
   const [typeFilter, setTypeFilter] = useState('');
   const [noteApplication, setNoteApplication] = useState(null);
   const [selectedApplication, setSelectedApplication] = useState(null);
+  const [editingApplication, setEditingApplication] = useState(null);
 
   const filteredApplications = useMemo(() => {
     const searchText = search.trim().toLowerCase();
@@ -230,9 +182,25 @@ function Applications({ collection, showForm, onCloseForm }) {
             await suspend(id);
             setSelectedApplication(null);
           }}
+          onEdit={item => {
+            setSelectedApplication(null);
+            setEditingApplication(item);
+          }}
           onEditNotes={item => {
             setSelectedApplication(null);
             setNoteApplication(item);
+          }}
+        />
+      )}
+
+      {editingApplication && (
+        <RecordEditForm
+          item={editingApplication}
+          kind="application"
+          onSave={update}
+          onClose={updatedItem => {
+            setEditingApplication(null);
+            setSelectedApplication(updatedItem ?? editingApplication);
           }}
         />
       )}

@@ -53,7 +53,15 @@ function RecordForm({
   };
 
   const renderField = field => {
-    const { name, type = 'text', placeholder, required = false, options = [], min, step } = field;
+    const {
+      name,
+      type = 'text',
+      placeholder = field.label,
+      required = false,
+      options = [],
+      min,
+      step,
+    } = field;
 
     const props = {
       name,
@@ -71,9 +79,11 @@ function RecordForm({
     } else if (type === 'select') {
       input = (
         <select {...props}>
-          <option value="" hidden disabled>
-            {placeholder}
-          </option>
+          {!options.some(option => option.value === '') && (
+            <option value="" hidden disabled>
+              {placeholder}
+            </option>
+          )}
           {options.map(option => (
             <option key={option.value} value={option.value}>
               {option.label}

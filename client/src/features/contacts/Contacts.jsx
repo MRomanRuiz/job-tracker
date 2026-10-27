@@ -16,42 +16,12 @@ import StaleItemsAlert from '../../shared/components/StaleItemsAlert';
 import StatCards from '../../shared/components/StatCards';
 import Toolbar from '../../shared/components/Toolbar';
 import RecordDetails from '../../shared/components/RecordDetails';
+import RecordEditForm from '../../shared/components/RecordEditForm';
+import { getRecordCreateFields } from '../../lib/recordFields';
 
-const REQUIRED_FORM_FIELDS = [
-  {
-    name: 'contact',
-    placeholder: 'Nombre',
-    required: true,
-  },
-  {
-    name: 'email',
-    placeholder: 'Email o contacto',
-    required: true,
-  },
-  {
-    name: 'institution',
-    placeholder: 'Empresa o universidad',
-    required: true,
-  },
-  {
-    name: 'country',
-    placeholder: 'País',
-    required: true,
-  },
-];
-
-const OPTIONAL_FORM_FIELDS = [
-  {
-    name: 'department',
-    placeholder: 'Departamento o laboratorio',
-    required: false,
-  },
-  {
-    name: 'city',
-    placeholder: 'Ciudad',
-    required: false,
-  },
-];
+const CONTACT_CREATE_FIELDS = getRecordCreateFields('contact');
+const REQUIRED_FORM_FIELDS = CONTACT_CREATE_FIELDS.filter(field => field.required);
+const OPTIONAL_FORM_FIELDS = CONTACT_CREATE_FIELDS.filter(field => !field.required);
 
 const STAT_ITEMS = [
   { status: ALL_STATUSES, label: 'Total' },
@@ -76,6 +46,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
   const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
   const [noteContact, setNoteContact] = useState(null);
   const [selectedContact, setSelectedContact] = useState(null);
+  const [editingContact, setEditingContact] = useState(null);
 
   const filteredContacts = useMemo(() => {
     const searchText = search.trim().toLowerCase();
@@ -215,6 +186,22 @@ function Contacts({ collection, showForm, onCloseForm }) {
           onEditNotes={item => {
             setSelectedContact(null);
             setNoteContact(item);
+          }}
+          onEdit={item => {
+            setSelectedContact(null);
+            setEditingContact(item);
+          }}
+        />
+      )}
+
+      {editingContact && (
+        <RecordEditForm
+          item={editingContact}
+          kind="contact"
+          onSave={update}
+          onClose={updatedItem => {
+            setEditingContact(null);
+            setSelectedContact(updatedItem ?? editingContact);
           }}
         />
       )}

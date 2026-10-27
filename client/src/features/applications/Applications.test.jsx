@@ -344,6 +344,26 @@ describe('Applications', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
+  it('does not include the application date when editing other fields', async () => {
+    const { collection } = renderApplications({
+      items: [makeApplication(1, { appliedAt: '2026-01-15T12:30:00.000Z' })],
+    });
+
+    fireEvent.click(screen.getAllByRole('row')[1]);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Editar' }));
+
+    const editDialog = screen.getByRole('dialog');
+    expect(within(editDialog).queryByLabelText('Fecha de candidatura')).toBeNull();
+    fireEvent.change(within(editDialog).getByLabelText('Empresa'), {
+      target: { value: 'Globex' },
+    });
+    fireEvent.click(within(editDialog).getByRole('button', { name: 'Guardar cambios' }));
+
+    await waitFor(() =>
+      expect(collection.update).toHaveBeenCalledWith(1, { company: 'Globex' }),
+    );
+  });
+
   it('closes application details from the backdrop but not from inside the dialog', () => {
     renderApplications({ items: [makeApplication(1)] });
     fireEvent.click(screen.getAllByRole('row')[1]);
