@@ -1,6 +1,6 @@
 # Job Tracker
 
-A small full-stack application for tracking job applications and professional contacts. The React interface lets you review and update application and contact statuses, while an Express API stores records using either local JSON files or MongoDB.
+A small full-stack application for tracking job applications and professional contacts. The React interface lets you review and edit records, follow status and notes changes over time, while an Express API stores records using either local JSON files or MongoDB.
 
 ## Features
 
@@ -11,6 +11,8 @@ A small full-stack application for tracking job applications and professional co
 - Filter applications by type or status and contacts by status, with summary counts for both.
 - Browse results in pages of 10, sorted by application or contact date (newest first).
 - Open full record details in a dedicated modal to review status, notes, dates, and contact information without leaving the list view.
+- Edit application and contact details from the record view.
+- Review a timeline of record creation and status or notes changes.
 - Review pending applications/contacts that have been open for more than 30 days with a stale-items alert panel and suspend them directly from there.
 - Add and edit notes for applications and contacts through dedicated modal windows.
 - Persist data using either local JSON files or MongoDB.
@@ -71,35 +73,35 @@ npm run dev
 
 ### From the project root
 
-| Command | Description |
-| --- | --- |
-| `npm run install:all` | Install dependencies for the root, backend, and frontend. |
-| `npm run dev` | Start the API and Vite development server concurrently. |
-| `npm run lint` | Run ESLint on the backend and frontend. |
-| `npm test` | Run backend tests with JSON and MongoDB storage, followed by frontend tests. All suites run even if one fails, and the command exits with an error if any suite fails. |
-| `npm run test:json` | Run backend tests using JSON storage. |
-| `npm run test:mongodb` | Run backend tests using MongoDB storage. |
-| `npm run test:client` | Run frontend tests with Vitest and coverage. |
-| `npm run build` | Build the frontend for production in `client/dist`. |
+| Command                | Description                                                                                                                                                            |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run install:all`  | Install dependencies for the root, backend, and frontend.                                                                                                              |
+| `npm run dev`          | Start the API and Vite development server concurrently.                                                                                                                |
+| `npm run lint`         | Run ESLint on the backend and frontend.                                                                                                                                |
+| `npm test`             | Run backend tests with JSON and MongoDB storage, followed by frontend tests. All suites run even if one fails, and the command exits with an error if any suite fails. |
+| `npm run test:json`    | Run backend tests using JSON storage.                                                                                                                                  |
+| `npm run test:mongodb` | Run backend tests using MongoDB storage.                                                                                                                               |
+| `npm run test:client`  | Run frontend tests with Vitest and coverage.                                                                                                                           |
+| `npm run build`        | Build the frontend for production in `client/dist`.                                                                                                                    |
 
 ### From `client`
 
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Start the Vite development server. |
-| `npm run build` | Build the frontend for production. |
-| `npm run preview` | Preview the production build locally. |
-| `npm run lint` | Run ESLint on the frontend. |
-| `npm test` | Run Vitest tests and generate coverage reports. |
+| Command           | Description                                     |
+| ----------------- | ----------------------------------------------- |
+| `npm run dev`     | Start the Vite development server.              |
+| `npm run build`   | Build the frontend for production.              |
+| `npm run preview` | Preview the production build locally.           |
+| `npm run lint`    | Run ESLint on the frontend.                     |
+| `npm test`        | Run Vitest tests and generate coverage reports. |
 
 ### From `server`
 
-| Command | Description |
-| --- | --- |
-| `npm start` | Start the API server. |
-| `npm run dev` | Start the API with automatic restarts on changes. |
-| `npm run lint` | Run ESLint on the backend. |
-| `npm test` | Run backend tests and generate coverage reports. |
+| Command        | Description                                       |
+| -------------- | ------------------------------------------------- |
+| `npm start`    | Start the API server.                             |
+| `npm run dev`  | Start the API with automatic restarts on changes. |
+| `npm run lint` | Run ESLint on the backend.                        |
+| `npm test`     | Run backend tests and generate coverage reports.  |
 
 ## Continuous integration
 
@@ -147,19 +149,21 @@ Application records are stored in the `applications` collection when using Mongo
 
 A record can contain the following fields:
 
-| Field | Description |
-| --- | --- |
-| `id` | Numeric record identifier. |
-| `company` | Company or organization. Required. |
-| `position` | Job title. Required. |
-| `type` | Application type: `industry` or `research`. Required. |
-| `country` | Country. Required. |
-| `city` | City. Optional. |
-| `appliedAt` | Application timestamp in ISO 8601 format; the table displays only `YYYY-MM-DD`. |
-| `durationType` | Contract type: `fixed` or `indefinite`. Optional. |
-| `durationMonths` | Positive integer for a `fixed` contract; otherwise `null`. |
-| `notes` | Free-text notes or follow-up comments. Optional. |
-| `status` | `pending`, `interview`, `offer`, `rejected`, or `suspended`. New records default to `pending`. |
+| Field            | Description                                                                                           |
+| ---------------- | ----------------------------------------------------------------------------------------------------- |
+| `id`             | Numeric record identifier.                                                                            |
+| `company`        | Company or organization. Required.                                                                    |
+| `position`       | Job title. Required.                                                                                  |
+| `type`           | Application type: `industry` or `research`. Required.                                                 |
+| `country`        | Country. Required.                                                                                    |
+| `city`           | City. Optional.                                                                                       |
+| `appliedAt`      | Application timestamp in ISO 8601 format; the table displays only `YYYY-MM-DD`.                       |
+| `durationType`   | Contract type: `fixed` or `indefinite`. Optional.                                                     |
+| `durationMonths` | Positive integer for a `fixed` contract; otherwise `null`.                                            |
+| `notes`          | Free-text notes or follow-up comments. Optional.                                                      |
+| `status`         | `pending`, `interview`, `offer`, `rejected`, or `suspended`. New records default to `pending`.        |
+| `updatedAt`      | Server-managed ISO 8601 timestamp for the most recent change.                                         |
+| `history`        | Server-managed list of status and notes changes, with the old value, new value, and change timestamp. |
 
 Example `jobs.json`:
 
@@ -193,18 +197,20 @@ Contact records are stored in the `contacts` collection when using MongoDB, or i
 
 A record can contain the following fields:
 
-| Field | Description |
-| --- | --- |
-| `id` | Numeric record identifier. |
-| `contact` | Contact person's name. Required. |
-| `email` | Email address or other contact detail. Required. |
-| `institution` | Company, university, or institution. Required. |
-| `department` | Department or laboratory. Optional. |
-| `city` | City. Optional. |
-| `country` | Country. Required. |
-| `contactedAt` | First-contact timestamp in ISO 8601 format; the table displays only `YYYY-MM-DD`. |
-| `status` | `pending`, `replied`, `rejected`, or `suspended`. New records default to `pending`. |
-| `notes` | Free-text notes or follow-up comments. Optional. |
+| Field         | Description                                                                                           |
+| ------------- | ----------------------------------------------------------------------------------------------------- |
+| `id`          | Numeric record identifier.                                                                            |
+| `contact`     | Contact person's name. Required.                                                                      |
+| `email`       | Email address or other contact detail. Required.                                                      |
+| `institution` | Company, university, or institution. Required.                                                        |
+| `department`  | Department or laboratory. Optional.                                                                   |
+| `city`        | City. Optional.                                                                                       |
+| `country`     | Country. Required.                                                                                    |
+| `contactedAt` | First-contact timestamp in ISO 8601 format; the table displays only `YYYY-MM-DD`.                     |
+| `status`      | `pending`, `replied`, `rejected`, or `suspended`. New records default to `pending`.                   |
+| `notes`       | Free-text notes or follow-up comments. Optional.                                                      |
+| `updatedAt`   | Server-managed ISO 8601 timestamp for the most recent change.                                         |
+| `history`     | Server-managed list of status and notes changes, with the old value, new value, and change timestamp. |
 
 Example `contacts.json`:
 
@@ -233,6 +239,8 @@ When creating a contact through the frontend, the current timestamp is assigned 
 
 Omit `id` when creating records through the API; the server generates it. The `notes` field may be an empty string.
 
+New records start with an empty `history`. The API updates `updatedAt` whenever a record changes and appends history entries for changes to `status` or `notes`. The detail view builds the creation event from `appliedAt` or `contactedAt`; older records without history remain readable.
+
 ## API
 
 The API runs at [http://localhost:3001](http://localhost:3001). The frontend accesses it through the Vite proxy at `/api`.
@@ -241,23 +249,25 @@ Invalid input, including dates that do not exist (such as `2026-02-31`), returns
 
 ### Applications
 
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/api/applications` | Return `{ "applications": [...] }`. |
-| `POST` | `/api/applications` | Create an application. Requires `company`, `position`, `type` (`industry` or `research`), `country`, and `appliedAt` as an ISO 8601 timestamp. `durationType` may be `fixed` or `indefinite`; a fixed duration may omit `durationMonths`, or provide a positive integer. Status defaults to `pending`. |
-| `PATCH` | `/api/applications/:id` | Update an application's status or notes. Accepted statuses: `pending`, `interview`, `offer`, and `rejected`; use the suspend endpoint for eligible pending applications. |
-| `GET` | `/api/applications/old` | Return pending applications older than 30 days. |
-| `PATCH` | `/api/applications/:id/suspend` | Suspend an eligible pending application older than 30 days. |
+| Method   | Endpoint                        | Description                                                                                                                                                                                                                                                                                                                           |
+| -------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/applications`             | Return `{ "applications": [...] }`.                                                                                                                                                                                                                                                                                                   |
+| `POST`   | `/api/applications`             | Create an application. Requires `company`, `position`, `type` (`industry` or `research`), `country`, and `appliedAt` as an ISO 8601 timestamp. `durationType` may be `fixed` or `indefinite`; a fixed duration may omit `durationMonths`, or provide a positive integer. Status defaults to `pending`.                                |
+| `PATCH`  | `/api/applications/:id`         | Partially update an application's details, status, or notes. Editable fields: `company`, `position`, `type`, `city`, `country`, `durationType`, `durationMonths`, `appliedAt`, `status`, and `notes`. Accepted statuses: `pending`, `interview`, `offer`, and `rejected`; use the suspend endpoint for eligible pending applications. |
+| `GET`    | `/api/applications/old`         | Return pending applications older than 30 days.                                                                                                                                                                                                                                                                                       |
+| `PATCH`  | `/api/applications/:id/suspend` | Suspend an eligible pending application older than 30 days.                                                                                                                                                                                                                                                                           |
+| `DELETE` | `/api/applications/:id`         | Delete an application.                                                                                                                                                                                                                                                                                                                |
 
 ### Contacts
 
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/api/contacts` | Return `{ "contacts": [...] }`. |
-| `POST` | `/api/contacts` | Create a contact. Requires `contact`, `email`, `institution`, `country`, and `contactedAt` as an ISO 8601 timestamp. Status defaults to `pending`; accepted statuses are `pending`, `replied`, and `rejected`. |
-| `PATCH` | `/api/contacts/:id` | Update a contact's status and/or notes. Accepted statuses: `pending`, `replied`, and `rejected`; use the suspend endpoint for eligible pending contacts. |
-| `GET` | `/api/contacts/old` | Return pending contacts older than 30 days. |
-| `PATCH` | `/api/contacts/:id/suspend` | Suspend an eligible pending contact older than 30 days. |
+| Method   | Endpoint                    | Description                                                                                                                                                                                                                                                                                         |
+| -------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/contacts`             | Return `{ "contacts": [...] }`.                                                                                                                                                                                                                                                                     |
+| `POST`   | `/api/contacts`             | Create a contact. Requires `contact`, `email`, `institution`, `country`, and `contactedAt` as an ISO 8601 timestamp. Status defaults to `pending`; accepted statuses are `pending`, `replied`, and `rejected`.                                                                                      |
+| `PATCH`  | `/api/contacts/:id`         | Partially update a contact's details, status, or notes. Editable fields: `contact`, `email`, `institution`, `department`, `city`, `country`, `contactedAt`, `status`, and `notes`. Accepted statuses: `pending`, `replied`, and `rejected`; use the suspend endpoint for eligible pending contacts. |
+| `GET`    | `/api/contacts/old`         | Return pending contacts older than 30 days.                                                                                                                                                                                                                                                         |
+| `PATCH`  | `/api/contacts/:id/suspend` | Suspend an eligible pending contact older than 30 days.                                                                                                                                                                                                                                             |
+| `DELETE` | `/api/contacts/:id`         | Delete a contact.                                                                                                                                                                                                                                                                                   |
 
 Example contact update request:
 
@@ -284,6 +294,7 @@ Writes are serialized and atomic in JSON storage. MongoDB storage uses database 
 │       ├── features/
 │       │   ├── applications/        Application view, table and feature tests
 │       │   └── contacts/            Contact view, notes, table and feature tests
+│       ├── lib/                     Shared record field
 │       ├── shared/
 │       │   ├── api/                 API request helper and tests
 │       │   ├── components/          UI components shared across features

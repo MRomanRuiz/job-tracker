@@ -1,5 +1,6 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { prepareRecordUpdate } = require('../domain/recordHistory');
 
 const DATA_DIR = path.resolve(
   process.env.JSON_DATA_DIR || path.join(__dirname, '../../../client/data'),
@@ -72,9 +73,13 @@ function createJSONStorage() {
 
         const maxId = records.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0);
 
+        const now = new Date().toISOString();
+
         const newRecord = {
           ...record,
           id: Math.max(Date.now(), maxId + 1),
+          updatedAt: now,
+          history: [],
         };
 
         records.push(newRecord);
@@ -88,16 +93,23 @@ function createJSONStorage() {
       return serialize(name, async () => {
         const data = await readData(name);
         const records = data[collectionKey(name)];
-        const record = records.find(item => item.id === Number(id));
+        const index = records.findIndex(item => item.id === Number(id));
 
-        if (!record) {
+        if (index === -1) {
           return null;
         }
 
-        Object.assign(record, changes);
+        const current = records[index];
+        const updated = prepareRecordUpdate(current, changes);
+
+        if (updated === current) {
+          return current;
+        }
+
+        records[index] = updated;
         await writeData(name, data);
 
-        return record;
+        return updated;
       });
     },
 
@@ -106,18 +118,42 @@ function createJSONStorage() {
         const data = await readData(name);
         const records = data[collectionKey(name)];
 
-        const record = records.find(
+        const index = records.findIndex(
           item => item.id === Number(id) && item.status === 'pending' && item[dateField] === date,
         );
 
-        if (!record) {
+        if (index === -1) {
           return null;
         }
 
-        Object.assign(record, changes);
+        const current = records[index];
+        const updated = prepareRecordUpdate(current, changes);
+
+        if (updated === current) {
+          return current;
+        }
+
+        records[index] = updated;
         await writeData(name, data);
 
-        return record;
+        return updated;
+      });
+    },
+
+    async delete(name, id) {
+      return serialize(name, async () => {
+        const data = await readData(name);
+        const records = data[collectionKey(name)];
+        const index = records.findIndex(item => item.id === Number(id));
+
+        if (index === -1) {
+          return false;
+        }
+
+        records.splice(index, 1);
+        await writeData(name, data);
+
+        return true;
       });
     },
   };

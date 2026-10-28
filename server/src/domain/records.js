@@ -150,6 +150,146 @@ const parseContact = body => {
   };
 };
 
+const parseContactChanges = body => {
+  const errorMessage = 'Datos del contacto no válidos';
+
+  assertValidBody(body);
+
+  const contactData = Object.fromEntries(
+    Object.entries(body)
+      .filter(([field]) => CONTACT_TEXT_FIELDS.includes(field))
+      .map(([field, value]) => {
+        if (typeof value !== 'string') {
+          throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+        }
+
+        const parsedValue = value.trim();
+        if (['contact', 'email', 'institution', 'country'].includes(field) && !parsedValue) {
+          throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+        }
+
+        return [field, parsedValue];
+      }),
+  );
+
+  if (body.contactedAt !== undefined && !isValidDate(body.contactedAt)) {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+  }
+
+  if (body.status !== undefined && !ALLOWED_CONTACT_STATUSES.has(body.status)) {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+  }
+
+  return {
+    ...contactData,
+    ...(body.contactedAt !== undefined && { contactedAt: body.contactedAt }),
+    ...(body.status !== undefined && { status: body.status }),
+  };
+};
+
+const parseApplicationTextFieldChange = (field, value, errorMessage) => {
+  if (typeof value !== 'string') {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+  }
+
+  const parsedValue = value.trim();
+  if (['company', 'position', 'type'].includes(field) && !parsedValue) {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+  }
+
+  if (field === 'type' && !ALLOWED_APPLICATION_TYPES.has(parsedValue)) {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+  }
+
+  return parsedValue;
+};
+
+const parseApplicationDurationTypeChange = (value, errorMessage) => {
+  if (typeof value !== 'string') {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+  }
+
+  const parsedValue = value.trim();
+  if (parsedValue !== '' && !APPLICATION_DURATION_TYPES.has(parsedValue)) {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+  }
+
+  return parsedValue;
+};
+
+const parseApplicationDurationMonthsChange = (value, errorMessage) => {
+  const parsedValue = value === '' ? null : value;
+  if (parsedValue !== null && (!Number.isInteger(parsedValue) || parsedValue <= 0)) {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+  }
+
+  return parsedValue;
+};
+
+const validateUpdatedApplication = (application, errorMessage) => {
+  const hasInvalidApplicationData = [
+    hasEmptyFields(application, ['company', 'position', 'type']),
+    !isValidDate(application.appliedAt),
+    !ALLOWED_APPLICATION_STATUSES.has(application.status),
+    !ALLOWED_APPLICATION_TYPES.has(application.type),
+    application.durationType !== '' && !APPLICATION_DURATION_TYPES.has(application.durationType),
+    application.durationType === 'fixed'
+      ? application.durationMonths !== null &&
+        (!Number.isInteger(application.durationMonths) || application.durationMonths <= 0)
+      : application.durationMonths !== null,
+  ].some(Boolean);
+
+  if (hasInvalidApplicationData) {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+  }
+};
+
+const parseApplicationChanges = (body, currentApplication) => {
+  const errorMessage = 'Datos de la candidatura no válidos';
+
+  assertValidBody(body);
+
+  const changes = Object.fromEntries(
+    Object.entries(body).map(([field, value]) => {
+      if (APPLICATION_TEXT_FIELDS.includes(field)) {
+        return [field, parseApplicationTextFieldChange(field, value, errorMessage)];
+      }
+
+      if (field === 'status') {
+        if (!ALLOWED_APPLICATION_STATUSES.has(value)) {
+          throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+        }
+
+        return [field, value];
+      }
+
+      if (field === 'durationType') {
+        return [field, parseApplicationDurationTypeChange(value, errorMessage)];
+      }
+
+      if (field === 'durationMonths') {
+        return [field, parseApplicationDurationMonthsChange(value, errorMessage)];
+      }
+
+      if (field === 'appliedAt') {
+        if (!isValidDate(value)) {
+          throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+        }
+
+        return [field, value];
+      }
+
+      return [field, value];
+    }),
+  );
+
+  if (Object.keys(changes).some(field => !['status', 'notes'].includes(field))) {
+    validateUpdatedApplication({ ...currentApplication, ...changes }, errorMessage);
+  }
+
+  return changes;
+};
+
 module.exports = {
   ALLOWED_APPLICATION_STATUSES,
   ALLOWED_CONTACT_STATUSES,
@@ -160,5 +300,7 @@ module.exports = {
   isValidDate,
   suspendIfStale,
   parseApplication,
+  parseApplicationChanges,
   parseContact,
+  parseContactChanges,
 };

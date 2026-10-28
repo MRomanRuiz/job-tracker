@@ -1,67 +1,12 @@
-import {
-  APPLICATION_STATUS_LABELS,
-  APPLICATION_TYPE_LABELS,
-  CONTACT_STATUS_LABELS,
-} from '../lib/constants';
-import { formatDate } from '../lib/utils';
+import { getRecordFields } from '../../lib/recordFields';
+import RecordTimeline from './RecordTimeline';
 
-const APPLICATION_FIELDS = [
-  { name: 'company', label: 'Empresa' },
-  { name: 'position', label: 'Puesto' },
-  {
-    name: 'type',
-    label: 'Tipo',
-    format: value => APPLICATION_TYPE_LABELS[value] || value,
-  },
-  { name: 'country', label: 'País' },
-  { name: 'city', label: 'Ciudad' },
-  { name: 'appliedAt', label: 'Fecha de candidatura', format: formatDate },
-  {
-    name: 'durationType',
-    label: 'Tipo de contrato',
-    format: value =>
-      ({
-        fixed: 'Temporal',
-        indefinite: 'Indefinido',
-      })[value] || '—',
-  },
-  {
-    name: 'durationMonths',
-    label: 'Duración (meses)',
-    format: value => value ?? '—',
-  },
-  {
-    name: 'status',
-    label: 'Estado',
-    badge: true,
-    format: value => APPLICATION_STATUS_LABELS[value] || value,
-  },
-  { name: 'notes', label: 'Notas', multiline: true },
-];
-
-const CONTACT_FIELDS = [
-  { name: 'contact', label: 'Nombre' },
-  { name: 'email', label: 'Email / Contacto' },
-  { name: 'institution', label: 'Empresa o universidad' },
-  { name: 'department', label: 'Departamento o laboratorio' },
-  { name: 'city', label: 'Ciudad' },
-  { name: 'country', label: 'País' },
-  { name: 'contactedAt', label: 'Fecha de contacto', format: formatDate },
-  {
-    name: 'status',
-    label: 'Estado',
-    badge: true,
-    format: value => CONTACT_STATUS_LABELS[value] || value,
-  },
-  { name: 'notes', label: 'Notas', multiline: true },
-];
-
-function RecordDetails({ item, kind, isStale = false, onClose, onSuspend }) {
+function RecordDetails({ item, kind, isStale = false, onClose, onSuspend, onEdit }) {
   if (!item) {
     return null;
   }
 
-  const fields = kind === 'application' ? APPLICATION_FIELDS : CONTACT_FIELDS;
+  const fields = getRecordFields(kind);
 
   const getRecordTitle = () => {
     if (kind === 'application') {
@@ -162,8 +107,14 @@ function RecordDetails({ item, kind, isStale = false, onClose, onSuspend }) {
           })}
         </div>
 
+        <RecordTimeline record={item} recordType={kind} />
+
         <footer className="record-details-actions">
-          <button type="button" className="primary-button" onClick={onClose}>
+          <button type="button" className="primary-button" onClick={() => onEdit?.(item)}>
+            Editar
+          </button>
+
+          <button type="button" className="secondary-button" onClick={onClose}>
             Cerrar
           </button>
         </footer>

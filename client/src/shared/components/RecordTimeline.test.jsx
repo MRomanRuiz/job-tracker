@@ -1,0 +1,128 @@
+import { render, screen, within } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import RecordTimeline from './RecordTimeline';
+
+describe('RecordTimeline', () => {
+  it('renders nothing when the record has no timeline events', () => {
+    const { container } = render(<RecordTimeline record={{}} recordType="contact" />);
+
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('shows creation, status, and note events from oldest to newest', () => {
+    const record = {
+      contactedAt: '2026-01-01T10:00:00.000Z',
+      history: [
+        {
+          field: 'notes',
+          oldValue: '',
+          newValue: 'Enviar el informe',
+          changedAt: '2026-01-03T10:00:00.000Z',
+        },
+        {
+          field: 'email',
+          oldValue: 'old@example.com',
+          newValue: 'new@example.com',
+          changedAt: '2026-01-02T10:00:00.000Z',
+        },
+        {
+          field: 'status',
+          oldValue: 'pending',
+          newValue: 'replied',
+          changedAt: '2026-01-02T12:00:00.000Z',
+        },
+        {
+          field: 'notes',
+          oldValue: 'Enviar el informe',
+          newValue: '',
+          changedAt: '2026-01-04T10:00:00.000Z',
+        },
+      ],
+    };
+
+    render(<RecordTimeline record={record} recordType="contact" />);
+
+    const list = screen.getByRole('list');
+    const events = within(list).getAllByRole('listitem');
+    expect(events).toHaveLength(4);
+    expect(events.map(event => event.className)).toEqual([
+      'record-timeline-event created',
+      'record-timeline-event status',
+      'record-timeline-event notes',
+      'record-timeline-event notes',
+    ]);
+
+    expect(within(events[0]).getByRole('heading', { name: 'Registro creado' })).toBeTruthy();
+    expect(within(events[1]).getByRole('heading', { name: 'Estado actualizado' })).toBeTruthy();
+    expect(events[1].textContent).toContain('En espera');
+    expect(events[1].textContent).toContain('Respondido');
+    expect(within(events[2]).getByText('Enviar el informe')).toBeTruthy();
+    expect(within(events[3]).getByText('Notas eliminadas')).toBeTruthy();
+    for (const event of events) {
+      const marker = event.querySelector('.record-timeline-dot');
+      expect(marker.textContent).toBe('');
+      expect(marker.getAttribute('aria-hidden')).toBe('true');
+    }
+  });
+
+  it('uses application labels and handles unknown values and invalid dates', () => {
+    const record = {
+      appliedAt: 'invalid-created-date',
+      contactedAt: '2026-01-01T10:00:00.000Z',
+      history: [
+        {
+          field: 'status',
+          oldValue: 'legacy-status',
+          newValue: null,
+          changedAt: 'invalid-event-date',
+        },
+      ],
+    };
+
+    render(<RecordTimeline record={record} recordType="application" />);
+
+    const events = within(screen.getByRole('list')).getAllByRole('listitem');
+    expect(events).toHaveLength(2);
+    expect(within(events[0]).getByText('Fecha desconocida')).toBeTruthy();
+    expect(events[0].textContent).toContain('legacy-status');
+    expect(events[0].textContent).toContain('—');
+    expect(within(events[1]).getByRole('heading', { name: 'Registro creado' })).toBeTruthy();
+    expect(events[1].querySelector('time').getAttribute('dateTime')).toBe('invalid-created-date');
+  });
+
+  it('uses contact creation date and marks missing dates as unknown', () => {
+    render(
+      <RecordTimeline
+        record={{
+          contactedAt: '2026-02-01T10:00:00.000Z',
+          history: [
+            {
+              field: 'status',
+              oldValue: null,
+              newValue: 'custom',
+              changedAt: null,
+            },
+          ],
+        }}
+        recordType="contact"
+      />,
+    );
+
+    const events = within(screen.getByRole('list')).getAllByRole('listitem');
+    expect(events).toHaveLength(2);
+    expect(within(events[0]).getByText('Fecha desconocida')).toBeTruthy();
+    expect(events[0].textContent).toContain('custom');
+    expect(events[0].textContent).toContain('—');
+    expect(events[1].querySelector('time').getAttribute('dateTime')).toBe(
+      '2026-02-01T10:00:00.000Z',
+    );
+  });
+
+  it('skips creation event when there is no creation date and tolerates missing history', () => {
+    const { container } = render(
+      <RecordTimeline record={{ appliedAt: '', history: undefined }} recordType="application" />,
+    );
+
+    expect(container.firstChild).toBeNull();
+  });
+});

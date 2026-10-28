@@ -1,34 +1,45 @@
 const { HTTP_STATUS, HttpError } = require('../domain/httpError');
 const {
-  ALLOWED_CONTACT_STATUSES,
   isStalePending,
   parseContact,
+  parseContactChanges,
   suspendIfStale,
 } = require('../domain/records');
 const handle = require('./handle');
 
 const NOT_FOUND_MESSAGE = 'Contacto no encontrado';
+const CONTACT_UPDATE_FIELDS = new Set([
+  'status',
+  'notes',
+  'contact',
+  'email',
+  'institution',
+  'department',
+  'city',
+  'country',
+  'contactedAt',
+]);
 
-const validateContactChanges = ({ status, notes }) => {
-  if (status === undefined && notes === undefined) {
-    throw new HttpError(
-      HTTP_STATUS.BAD_REQUEST,
-      'No se han proporcionado campos para actualizar',
-    );
+const validateAllowedFields = (body, allowedFields) => {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Cuerpo de la solicitud no válido');
   }
 
-  if (status !== undefined && !ALLOWED_CONTACT_STATUSES.has(status)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Estado no permitido');
+  const invalidFields = Object.keys(body).filter(field => !allowedFields.has(field));
+
+  if (invalidFields.length > 0) {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, `Campos no válidos: ${invalidFields.join(', ')}`);
+  }
+};
+
+const validateContactChanges = body => {
+  validateAllowedFields(body, CONTACT_UPDATE_FIELDS);
+
+  if (Object.keys(body).length === 0) {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'No se han proporcionado campos para actualizar');
   }
 
-  if (notes !== undefined && typeof notes !== 'string') {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Nota no válida');
-  }
-
-  return {
-    ...(status !== undefined && { status }),
-    ...(notes !== undefined && { notes }),
-  };
+  return parseContactChanges(body);
 };
 
 const addContactRoutes = (app, storage) => {
@@ -51,18 +62,13 @@ const addContactRoutes = (app, storage) => {
 
   app.get(
     '/api/contacts/old',
-    handle(
-      'No se pudieron leer los contactos antiguos',
-      async (_req, res) => {
-        const contacts = await storage.list('contacts');
+    handle('No se pudieron leer los contactos antiguos', async (_req, res) => {
+      const contacts = await storage.list('contacts');
 
-        res.json({
-          contacts: contacts.filter(item =>
-            isStalePending(item, 'contactedAt'),
-          ),
-        });
-      },
-    ),
+      res.json({
+        contacts: contacts.filter(item => isStalePending(item, 'contactedAt')),
+      });
+    }),
   );
 
   app.patch(
@@ -78,7 +84,6 @@ const addContactRoutes = (app, storage) => {
       res.json(contact);
     }),
   );
-
   app.patch(
     '/api/contacts/:id/suspend',
     handle('No se pudo suspender el contacto', async (req, res) => {
@@ -91,8 +96,7 @@ const addContactRoutes = (app, storage) => {
 
       suspendIfStale(contact, 'contactedAt', {
         notPending: 'El contacto no está en espera',
-        tooRecent:
-          'El contacto todavía no lleva más de 30 días en espera',
+        tooRecent: 'El contacto todavía no lleva más de 30 días en espera',
       });
 
       const updated = await storage.updatePending(
@@ -111,6 +115,19 @@ const addContactRoutes = (app, storage) => {
       }
 
       res.json(updated);
+    }),
+  );
+
+  app.delete(
+    '/api/contacts/:id',
+    handle('No se pudo eliminar el contacto', async (req, res) => {
+      const deleted = await storage.delete('contacts', req.params.id);
+
+      if (!deleted) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
+      }
+
+      res.status(HTTP_STATUS.NO_CONTENT).end();
     }),
   );
 };

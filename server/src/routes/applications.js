@@ -1,33 +1,46 @@
 const { HTTP_STATUS, HttpError } = require('../domain/httpError');
 const {
-  ALLOWED_APPLICATION_STATUSES,
   isStalePending,
   parseApplication,
+  parseApplicationChanges,
   suspendIfStale,
 } = require('../domain/records');
 const handle = require('./handle');
 
 const NOT_FOUND_MESSAGE = 'Candidatura no encontrada';
+const APPLICATION_UPDATE_FIELDS = new Set([
+  'status',
+  'notes',
+  'company',
+  'position',
+  'type',
+  'city',
+  'country',
+  'durationType',
+  'durationMonths',
+  'appliedAt',
+]);
 
-const getApplicationChanges = body => {
-  const { status, notes } = body;
+const validateAllowedFields = (body, allowedFields) => {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Cuerpo de la solicitud no válido');
+  }
 
-  if (status === undefined && notes === undefined) {
+  const invalidFields = Object.keys(body).filter(field => !allowedFields.has(field));
+
+  if (invalidFields.length > 0) {
+    throw new HttpError(HTTP_STATUS.BAD_REQUEST, `Campos no válidos: ${invalidFields.join(', ')}`);
+  }
+};
+
+const validateApplicationChanges = body => {
+  validateAllowedFields(body, APPLICATION_UPDATE_FIELDS);
+
+  if (Object.keys(body).length === 0) {
     throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'No se han proporcionado campos para actualizar');
   }
 
-  if (status !== undefined && !ALLOWED_APPLICATION_STATUSES.has(status)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Estado no permitido');
-  }
-
-  if (notes !== undefined && typeof notes !== 'string') {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Nota no válida');
-  }
-
-  return {
-    ...(status !== undefined && { status }),
-    ...(notes !== undefined && { notes }),
-  };
+  return body;
 };
 
 const addApplicationRoutes = (app, storage) => {
@@ -64,7 +77,19 @@ const addApplicationRoutes = (app, storage) => {
   app.patch(
     '/api/applications/:id',
     handle('No se pudo actualizar la candidatura', async (req, res) => {
-      const changes = getApplicationChanges(req.body);
+      const requestedChanges = validateApplicationChanges(req.body);
+      const requiresCurrentApplication = Object.keys(requestedChanges).some(
+        field => !['status', 'notes'].includes(field),
+      );
+      const currentApplication = requiresCurrentApplication
+        ? await storage.getById('applications', req.params.id)
+        : {};
+
+      if (requiresCurrentApplication && !currentApplication) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
+      }
+
+      const changes = parseApplicationChanges(requestedChanges, currentApplication);
       const application = await storage.update('applications', req.params.id, changes);
 
       if (!application) {
@@ -106,6 +131,19 @@ const addApplicationRoutes = (app, storage) => {
       }
 
       res.json(updated);
+    }),
+  );
+
+  app.delete(
+    '/api/applications/:id',
+    handle('No se pudo eliminar la candidatura', async (req, res) => {
+      const deleted = await storage.delete('applications', req.params.id);
+
+      if (!deleted) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
+      }
+
+      res.status(HTTP_STATUS.NO_CONTENT).end();
     }),
   );
 };
