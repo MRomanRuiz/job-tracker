@@ -5,7 +5,7 @@ import {
 } from '../shared/lib/constants';
 import { formatDate } from '../shared/lib/utils';
 
-const TIPO_CONTRATO_LABEL = 'Tipo de contrato';
+const CONTRACT_TYPE_LABEL = 'Tipo de contrato';
 
 export const APPLICATION_FIELDS = [
   { name: 'company', label: 'Empresa', placeholder: 'Empresa', required: true },
@@ -34,11 +34,11 @@ export const APPLICATION_FIELDS = [
   },
   {
     name: 'durationType',
-    label: TIPO_CONTRATO_LABEL,
-    placeholder: TIPO_CONTRATO_LABEL,
+    label: CONTRACT_TYPE_LABEL,
+    placeholder: CONTRACT_TYPE_LABEL,
     type: 'select',
     options: [
-      { value: '', label: TIPO_CONTRATO_LABEL },
+      { value: '', label: CONTRACT_TYPE_LABEL },
       { value: 'fixed', label: 'Temporal' },
       { value: 'indefinite', label: 'Indefinido' },
     ],

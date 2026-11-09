@@ -1,16 +1,16 @@
 import { APPLICATION_STATUS_LABELS, CONTACT_STATUS_LABELS } from '../lib/constants';
 
-const FECHA_DESCONOCIDA_LABEL = 'Fecha desconocida';
+const UNKNOWN_DATE_LABEL = 'Fecha desconocida';
 
 function formatDate(date) {
   if (!date) {
-    return FECHA_DESCONOCIDA_LABEL;
+    return UNKNOWN_DATE_LABEL;
   }
 
   const parsed = new Date(date);
 
   if (Number.isNaN(parsed.getTime())) {
-    return FECHA_DESCONOCIDA_LABEL;
+    return UNKNOWN_DATE_LABEL;
   }
 
   return new Intl.DateTimeFormat('es-ES', {
@@ -42,7 +42,6 @@ function buildTimelineEvents(record, recordType) {
     });
   }
 
-  // De la creación hacia los cambios más recientes.
   events.sort((a, b) => {
     const dateA = new Date(a.date).getTime();
     const dateB = new Date(b.date).getTime();

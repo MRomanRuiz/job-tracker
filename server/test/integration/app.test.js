@@ -123,7 +123,6 @@ const request = async (method, url, { body, headers = {} } = {}) => {
   };
 };
 
-// Inicializa los archivos JSON dentro de un directorio temporal.
 const resetJSONFiles = async () => {
   await fs.mkdir(tempDataDir, { recursive: true });
 
@@ -141,7 +140,6 @@ const resetJSONFiles = async () => {
   ]);
 };
 
-// Reinicia solamente las colecciones de la base de datos de pruebas.
 const clearMongoCollections = async () => {
   await Promise.all([
     db.collection('applications').deleteMany({}),
@@ -161,13 +159,11 @@ before(async () => {
   }
 
   if (STORAGE_TYPE === 'json') {
-    // No se utilizan ni modifican los archivos de datos reales.
     tempDataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'job-tracker-test-'));
 
     process.env.JSON_DATA_DIR = tempDataDir;
     await resetJSONFiles();
   } else {
-    // Impide borrar accidentalmente una base de datos real.
     if (process.env.MONGODB_DB !== TEST_DATABASE_NAME) {
       throw new Error(`Pruebas canceladas: MONGODB_DB debe ser "${TEST_DATABASE_NAME}".`);
     }
@@ -180,7 +176,6 @@ before(async () => {
 
     closeDB = database.closeDB;
 
-    // Verifica la conexión real antes de ejecutar las pruebas.
     await database.connectDB();
 
     db = database.getDB();
@@ -192,7 +187,6 @@ before(async () => {
     await db.command({ ping: 1 });
   }
 
-  // Se carga después de configurar JSON_DATA_DIR.
   const { createStorage } = require('../../src/storage');
   const { createApp } = require('../../src/app');
 
@@ -383,10 +377,7 @@ describe('applications', () => {
     assert.equal(application.status, 'interview');
     assert.equal(application.notes, 'Seguimiento concurrente');
     assert.equal(Object.hasOwn(application, '_storageRevision'), false);
-    assert.deepEqual(
-      application.history.map(event => event.field).sort(),
-      ['notes', 'status'],
-    );
+    assert.deepEqual(application.history.map(event => event.field).sort(), ['notes', 'status']);
 
     if (STORAGE_TYPE === 'mongodb') {
       const stored = await db.collection('applications').findOne({ id: 2 });
