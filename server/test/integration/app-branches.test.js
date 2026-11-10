@@ -94,7 +94,8 @@ describe('additional app branches', () => {
 
     assert.equal(response.status, 500);
     assert.deepEqual(response.body, {
-      error: 'No se pudieron leer las candidaturas',
+      description: 'Could not retrieve applications',
+      message: 'Internal server error',
     });
   });
 
@@ -102,8 +103,16 @@ describe('additional app branches', () => {
     const application = await request('PATCH', '/api/applications/1/suspend');
     const contact = await request('PATCH', '/api/contacts/1/suspend');
 
-    assert.equal(application.status, 400);
-    assert.equal(contact.status, 400);
+    assert.equal(application.status, 409);
+    assert.deepEqual(application.body, {
+      description: 'The application may have changed before the suspension was completed.',
+      message: 'Application could not be suspended',
+    });
+    assert.equal(contact.status, 409);
+    assert.deepEqual(contact.body, {
+      description: 'The contact may have changed before the suspension was completed.',
+      message: 'Contact could not be suspended',
+    });
   });
 
   it('returns 400 when a patch has no changes (contacts)', async () => {
@@ -145,9 +154,10 @@ describe('additional app branches', () => {
       body: JSON.stringify({ notes: 'x'.repeat(1024 * 1024) }),
     });
 
-    assert.equal(response.status, 500);
+    assert.equal(response.status, 413);
     assert.deepEqual(await response.json(), {
-      error: 'Error interno del servidor',
+      message: 'Payload too large',
+      description: 'The request body exceeds the allowed size.',
     });
   });
 });

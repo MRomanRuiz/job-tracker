@@ -110,7 +110,7 @@ const addApplicationRoutes = (app, storage) => {
 
       if (!updated) {
         throw new HttpError(
-          HTTP_STATUS.BAD_REQUEST,
+          HTTP_STATUS.CONFLICT,
           'Application could not be suspended',
           'The application may have changed before the suspension was completed.',
         );

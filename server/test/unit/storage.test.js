@@ -42,6 +42,9 @@ describe('storage factory', () => {
   }
 
   it('rejects unsupported storage types', () => {
-    assert.throws(() => createStorage('unsupported'), /STORAGE_TYPE no válido: unsupported/);
+    assert.throws(
+      () => createStorage('unsupported'),
+      /Unsupported STORAGE_TYPE "unsupported"\. Use "json" or "mongodb"\./,
+    );
   });
 });

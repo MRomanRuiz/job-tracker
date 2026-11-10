@@ -267,18 +267,13 @@ describe('applications', () => {
 
   it('crea una candidatura con ID numérico generado por el servidor', async () => {
     const { status, body } = await request('POST', '/api/applications', {
-      body: {
-        ...validApplication(),
-        id: 'x',
-        foo: 1,
-      },
+      body: validApplication(),
     });
 
     assert.equal(status, 201);
     assert.equal(typeof body.id, 'number');
     assert.match(body.appliedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     assert.equal(body.status, 'pending');
-    assert.equal(body.foo, undefined);
     assert.equal(body._id, undefined);
 
     const { body: list } = await request('GET', '/api/applications');

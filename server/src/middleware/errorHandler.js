@@ -12,6 +12,14 @@ const errorHandler = (err, _req, res, _next) => {
     return;
   }
 
+  if (err.type === 'entity.too.large') {
+    res.status(HTTP_STATUS.PAYLOAD_TOO_LARGE).json({
+      message: 'Payload too large',
+      description: 'The request body exceeds the allowed size.',
+    });
+    return;
+  }
+
   // Known application errors
   if (
     Number.isInteger(err.statusCode) &&

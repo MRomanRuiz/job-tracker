@@ -98,7 +98,7 @@ const addContactRoutes = (app, storage) => {
 
       if (!updated) {
         throw new HttpError(
-          HTTP_STATUS.BAD_REQUEST,
+          HTTP_STATUS.CONFLICT,
           'Contact could not be suspended',
           'The contact may have changed before the suspension was completed.',
         );

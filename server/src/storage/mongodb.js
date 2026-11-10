@@ -80,7 +80,7 @@ async function updateWithHistory(name, id, changes, conditions = {}) {
     }
   }
 
-  throw new Error(`No se pudo actualizar ${name} con id ${numericId} por cambios concurrentes`);
+  throw new Error(`Could not update ${name} with id ${numericId} due to concurrent changes`);
 }
 
 function createMongoStorage() {

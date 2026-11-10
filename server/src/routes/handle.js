@@ -21,7 +21,7 @@ const handle = (errorMessage, handler) => async (req, res) => {
         response.details = err.details;
       }
 
-      res.status(err.status).json(response);
+      res.status(err.statusCode).json(response);
       return;
     }
 
