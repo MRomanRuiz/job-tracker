@@ -7,52 +7,21 @@ const {
 } = require('../domain/records');
 const handle = require('./handle');
 
-const NOT_FOUND_MESSAGE = 'Contacto no encontrado';
-const CONTACT_UPDATE_FIELDS = new Set([
-  'status',
-  'notes',
-  'contact',
-  'email',
-  'institution',
-  'department',
-  'city',
-  'country',
-  'contactedAt',
-]);
-
-const validateAllowedFields = (body, allowedFields) => {
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Cuerpo de la solicitud no válido');
-  }
-
-  const invalidFields = Object.keys(body).filter(field => !allowedFields.has(field));
-
-  if (invalidFields.length > 0) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, `Campos no válidos: ${invalidFields.join(', ')}`);
-  }
-};
-
-const validateContactChanges = body => {
-  validateAllowedFields(body, CONTACT_UPDATE_FIELDS);
-
-  if (Object.keys(body).length === 0) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'No se han proporcionado campos para actualizar');
-  }
-
-  return parseContactChanges(body);
-};
+const NOT_FOUND_MESSAGE = 'Contact not found';
 
 const addContactRoutes = (app, storage) => {
   app.get(
     '/api/contacts',
-    handle('No se pudieron leer los contactos', async (_req, res) => {
-      res.json({ contacts: await storage.list('contacts') });
+    handle('Could not retrieve contacts', async (_req, res) => {
+      res.json({
+        contacts: await storage.list('contacts'),
+      });
     }),
   );
 
   app.post(
     '/api/contacts',
-    handle('No se pudo guardar el contacto', async (req, res) => {
+    handle('Could not create contact', async (req, res) => {
       const contact = parseContact(req.body);
       const created = await storage.create('contacts', contact);
 
@@ -62,7 +31,7 @@ const addContactRoutes = (app, storage) => {
 
   app.get(
     '/api/contacts/old',
-    handle('No se pudieron leer los contactos antiguos', async (_req, res) => {
+    handle('Could not retrieve old contacts', async (_req, res) => {
       const contacts = await storage.list('contacts');
 
       res.json({
@@ -73,8 +42,30 @@ const addContactRoutes = (app, storage) => {
 
   app.patch(
     '/api/contacts/:id',
-    handle('No se pudo actualizar el contacto', async (req, res) => {
-      const changes = validateContactChanges(req.body);
+    handle('Could not update contact', async (req, res) => {
+      const requestedChanges = req.body;
+
+      if (
+        !requestedChanges ||
+        typeof requestedChanges !== 'object' ||
+        Array.isArray(requestedChanges)
+      ) {
+        throw new HttpError(
+          HTTP_STATUS.BAD_REQUEST,
+          'Invalid request body',
+          'The request body must be a valid JSON object.',
+        );
+      }
+
+      if (Object.keys(requestedChanges).length === 0) {
+        throw new HttpError(
+          HTTP_STATUS.BAD_REQUEST,
+          'No fields provided for update',
+          'At least one field must be provided.',
+        );
+      }
+
+      const changes = parseContactChanges(requestedChanges);
       const contact = await storage.update('contacts', req.params.id, changes);
 
       if (!contact) {
@@ -84,9 +75,10 @@ const addContactRoutes = (app, storage) => {
       res.json(contact);
     }),
   );
+
   app.patch(
     '/api/contacts/:id/suspend',
-    handle('No se pudo suspender el contacto', async (req, res) => {
+    handle('Could not suspend contact', async (req, res) => {
       const id = req.params.id;
       const contact = await storage.getById('contacts', id);
 
@@ -94,10 +86,7 @@ const addContactRoutes = (app, storage) => {
         throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
       }
 
-      suspendIfStale(contact, 'contactedAt', {
-        notPending: 'El contacto no está en espera',
-        tooRecent: 'El contacto todavía no lleva más de 30 días en espera',
-      });
+      suspendIfStale(contact, 'contactedAt');
 
       const updated = await storage.updatePending(
         'contacts',
@@ -110,7 +99,8 @@ const addContactRoutes = (app, storage) => {
       if (!updated) {
         throw new HttpError(
           HTTP_STATUS.BAD_REQUEST,
-          'El contacto ha cambiado y no se pudo suspender',
+          'Contact could not be suspended',
+          'The contact may have changed before the suspension was completed.',
         );
       }
 
@@ -120,7 +110,7 @@ const addContactRoutes = (app, storage) => {
 
   app.delete(
     '/api/contacts/:id',
-    handle('No se pudo eliminar el contacto', async (req, res) => {
+    handle('Could not delete contact', async (req, res) => {
       const deleted = await storage.delete('contacts', req.params.id);
 
       if (!deleted) {

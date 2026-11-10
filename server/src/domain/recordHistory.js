@@ -27,7 +27,7 @@ const prepareRecordUpdate = (current, changes, now = new Date()) => {
     ...current,
     ...effectiveChanges,
     updatedAt: changedAt,
-    history: [...(current.history || []), ...historyEvents],
+    history: [...(current.history ?? []), ...historyEvents],
   };
 };
 

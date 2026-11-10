@@ -7,46 +7,12 @@ const {
 } = require('../domain/records');
 const handle = require('./handle');
 
-const NOT_FOUND_MESSAGE = 'Candidatura no encontrada';
-const APPLICATION_UPDATE_FIELDS = new Set([
-  'status',
-  'notes',
-  'company',
-  'position',
-  'type',
-  'city',
-  'country',
-  'durationType',
-  'durationMonths',
-  'appliedAt',
-]);
-
-const validateAllowedFields = (body, allowedFields) => {
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Cuerpo de la solicitud no válido');
-  }
-
-  const invalidFields = Object.keys(body).filter(field => !allowedFields.has(field));
-
-  if (invalidFields.length > 0) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, `Campos no válidos: ${invalidFields.join(', ')}`);
-  }
-};
-
-const validateApplicationChanges = body => {
-  validateAllowedFields(body, APPLICATION_UPDATE_FIELDS);
-
-  if (Object.keys(body).length === 0) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'No se han proporcionado campos para actualizar');
-  }
-
-  return body;
-};
+const NOT_FOUND_MESSAGE = 'Application not found';
 
 const addApplicationRoutes = (app, storage) => {
   app.get(
     '/api/applications',
-    handle('No se pudieron leer las candidaturas', async (_req, res) => {
+    handle('Could not retrieve applications', async (_req, res) => {
       res.json({
         applications: await storage.list('applications'),
       });
@@ -55,7 +21,7 @@ const addApplicationRoutes = (app, storage) => {
 
   app.post(
     '/api/applications',
-    handle('No se pudo guardar la candidatura', async (req, res) => {
+    handle('Could not create application', async (req, res) => {
       const application = parseApplication(req.body);
       const created = await storage.create('applications', application);
 
@@ -65,7 +31,7 @@ const addApplicationRoutes = (app, storage) => {
 
   app.get(
     '/api/applications/old',
-    handle('No se pudieron leer las candidaturas antiguas', async (_req, res) => {
+    handle('Could not retrieve old applications', async (_req, res) => {
       const applications = await storage.list('applications');
 
       res.json({
@@ -76,11 +42,33 @@ const addApplicationRoutes = (app, storage) => {
 
   app.patch(
     '/api/applications/:id',
-    handle('No se pudo actualizar la candidatura', async (req, res) => {
-      const requestedChanges = validateApplicationChanges(req.body);
+    handle('Could not update application', async (req, res) => {
+      const requestedChanges = req.body;
+
+      if (
+        !requestedChanges ||
+        typeof requestedChanges !== 'object' ||
+        Array.isArray(requestedChanges)
+      ) {
+        throw new HttpError(
+          HTTP_STATUS.BAD_REQUEST,
+          'Invalid request body',
+          'The request body must be a valid JSON object.',
+        );
+      }
+
+      if (Object.keys(requestedChanges).length === 0) {
+        throw new HttpError(
+          HTTP_STATUS.BAD_REQUEST,
+          'No fields provided for update',
+          'At least one field must be provided.',
+        );
+      }
+
       const requiresCurrentApplication = Object.keys(requestedChanges).some(
         field => !['status', 'notes'].includes(field),
       );
+
       const currentApplication = requiresCurrentApplication
         ? await storage.getById('applications', req.params.id)
         : {};
@@ -102,7 +90,7 @@ const addApplicationRoutes = (app, storage) => {
 
   app.patch(
     '/api/applications/:id/suspend',
-    handle('No se pudo suspender la candidatura', async (req, res) => {
+    handle('Could not suspend application', async (req, res) => {
       const id = req.params.id;
       const application = await storage.getById('applications', id);
 
@@ -110,10 +98,7 @@ const addApplicationRoutes = (app, storage) => {
         throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
       }
 
-      suspendIfStale(application, 'appliedAt', {
-        notPending: 'La candidatura no está en espera',
-        tooRecent: 'La candidatura todavía no lleva más de 30 días en espera',
-      });
+      suspendIfStale(application, 'appliedAt');
 
       const updated = await storage.updatePending(
         'applications',
@@ -126,7 +111,8 @@ const addApplicationRoutes = (app, storage) => {
       if (!updated) {
         throw new HttpError(
           HTTP_STATUS.BAD_REQUEST,
-          'La candidatura ha cambiado y no se pudo suspender',
+          'Application could not be suspended',
+          'The application may have changed before the suspension was completed.',
         );
       }
 
@@ -136,7 +122,7 @@ const addApplicationRoutes = (app, storage) => {
 
   app.delete(
     '/api/applications/:id',
-    handle('No se pudo eliminar la candidatura', async (req, res) => {
+    handle('Could not delete application', async (req, res) => {
       const deleted = await storage.delete('applications', req.params.id);
 
       if (!deleted) {

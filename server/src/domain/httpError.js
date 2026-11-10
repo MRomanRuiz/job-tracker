@@ -8,9 +8,13 @@ const HTTP_STATUS = {
 };
 
 class HttpError extends Error {
-  constructor(status, message) {
+  constructor(statusCode, message, description = null, details = []) {
     super(message);
-    this.status = status;
+
+    this.name = 'HttpError';
+    this.statusCode = statusCode;
+    this.description = description;
+    this.details = details;
   }
 }
 

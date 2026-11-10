@@ -4,6 +4,14 @@ const MAX_PENDING_DAYS = 30;
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
+const VALIDATION_ERROR_CODES = {
+  REQUIRED_FIELD: 'REQUIRED_FIELD',
+  INVALID_TYPE: 'INVALID_TYPE',
+  INVALID_FORMAT: 'INVALID_FORMAT',
+  INVALID_VALUE: 'INVALID_VALUE',
+  FIELD_NOT_ALLOWED: 'FIELD_NOT_ALLOWED',
+};
+
 const ALLOWED_APPLICATION_STATUSES = new Set(['pending', 'interview', 'offer', 'rejected']);
 
 const ALLOWED_CONTACT_STATUSES = new Set(['pending', 'replied', 'rejected']);
@@ -23,6 +31,151 @@ const CONTACT_TEXT_FIELDS = [
   'country',
   'notes',
 ];
+
+const REQUIRED_APPLICATION_FIELDS = ['company', 'position', 'type'];
+
+const REQUIRED_CONTACT_FIELDS = ['contact', 'email', 'institution', 'country'];
+
+const APPLICATION_FIELDS = [
+  ...APPLICATION_TEXT_FIELDS,
+  'appliedAt',
+  'durationType',
+  'durationMonths',
+  'status',
+];
+
+const CONTACT_FIELDS = [...CONTACT_TEXT_FIELDS, 'contactedAt', 'status'];
+
+const APPLICATION_TYPE_LABEL = 'Application type';
+const MUST_BE_STRING_LABEL = 'Must be a string';
+const INVALID_APPLICATION_DATA_LABEL = 'Invalid application data';
+const DURATION_TYPE_ERROR_LABEL = 'Duration type must be fixed or indefinite';
+
+const APPLICATION_LABELS = {
+  company: 'Company',
+  position: 'Position',
+  type: APPLICATION_TYPE_LABEL,
+};
+
+const CONTACT_LABELS = {
+  contact: 'Contact name',
+  email: 'Email',
+  institution: 'Institution',
+  country: 'Country',
+};
+
+// General validation helpers
+
+const createDetail = (field, code, message) => ({
+  field,
+  code,
+  message,
+});
+
+const throwValidationError = (
+  message,
+  details,
+  description = 'One or more fields contain invalid values.',
+) => {
+  throw new HttpError(HTTP_STATUS.BAD_REQUEST, message, description, details);
+};
+
+const assertValidBody = body => {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    throw new HttpError(
+      HTTP_STATUS.BAD_REQUEST,
+      'Invalid request body',
+      'The request body must be a valid JSON object.',
+    );
+  }
+};
+
+const validateAllowedFields = (body, allowedFields) =>
+  Object.keys(body)
+    .filter(field => !allowedFields.includes(field))
+    .map(field =>
+      createDetail(field, VALIDATION_ERROR_CODES.FIELD_NOT_ALLOWED, 'This field is not allowed'),
+    );
+
+const parseTextFields = (body, fields) => {
+  const data = {};
+  const details = [];
+
+  for (const field of fields) {
+    const value = body[field] ?? '';
+
+    if (typeof value === 'string') {
+      data[field] = value.trim();
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+
+    details.push(createDetail(field, VALIDATION_ERROR_CODES.INVALID_TYPE, MUST_BE_STRING_LABEL));
+  }
+
+  return { data, details };
+};
+
+const validateRequiredFields = (data, fields, labels, existingDetails = []) =>
+  fields
+    .filter(field => !data[field] && !existingDetails.some(detail => detail.field === field))
+    .map(field =>
+      createDetail(field, VALIDATION_ERROR_CODES.REQUIRED_FIELD, `${labels[field]} is required`),
+    );
+
+const validateEnumField = (field, value, allowedValues, label) => {
+  if (typeof value !== 'string') {
+    return [createDetail(field, VALIDATION_ERROR_CODES.INVALID_TYPE, MUST_BE_STRING_LABEL)];
+  }
+
+  if (!allowedValues.has(value)) {
+    return [
+      createDetail(
+        field,
+        VALIDATION_ERROR_CODES.INVALID_VALUE,
+        `${label} must be ${[...allowedValues].join(', ')}`,
+      ),
+    ];
+  }
+
+  return [];
+};
+
+const validateDateField = (field, value) => {
+  if (value === undefined || value === null || value === '') {
+    return [createDetail(field, VALIDATION_ERROR_CODES.REQUIRED_FIELD, 'This field is required')];
+  }
+
+  if (typeof value !== 'string') {
+    return [createDetail(field, VALIDATION_ERROR_CODES.INVALID_TYPE, MUST_BE_STRING_LABEL)];
+  }
+
+  if (!isValidDate(value)) {
+    return [
+      createDetail(
+        field,
+        VALIDATION_ERROR_CODES.INVALID_FORMAT,
+        'Must be a valid ISO 8601 timestamp in UTC',
+      ),
+    ];
+  }
+
+  return [];
+};
+
+const validateTextField = (field, value, required = false) => {
+  if (typeof value !== 'string') {
+    return [createDetail(field, VALIDATION_ERROR_CODES.INVALID_TYPE, MUST_BE_STRING_LABEL)];
+  }
+
+  if (required && !value.trim()) {
+    return [createDetail(field, VALIDATION_ERROR_CODES.REQUIRED_FIELD, 'This field is required')];
+  }
+
+  return [];
+};
+
+// Date and pending validation
 
 const isOlderThanPendingLimit = (date, now = new Date()) => {
   const parsedDate = new Date(date);
@@ -51,68 +204,160 @@ const isValidDate = value => {
   );
 };
 
-const suspendIfStale = (record, dateField, messages) => {
+const DEFAULT_SUSPEND_IF_STALE_MESSAGES = {
+  notPending: 'Only pending records can be suspended',
+  tooRecent: 'The record has not exceeded the pending limit',
+};
+
+const suspendIfStale = (record, dateField, messages = DEFAULT_SUSPEND_IF_STALE_MESSAGES) => {
   if (record.status !== 'pending') {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, messages.notPending);
+    throwValidationError(
+      messages.notPending,
+      [
+        createDetail(
+          'status',
+          VALIDATION_ERROR_CODES.INVALID_VALUE,
+          'Record must have pending status',
+        ),
+      ],
+      'Only pending records can be suspended.',
+    );
   }
 
   if (!isOlderThanPendingLimit(record[dateField])) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, messages.tooRecent);
+    throwValidationError(
+      messages.tooRecent,
+      [
+        createDetail(
+          dateField,
+          VALIDATION_ERROR_CODES.INVALID_VALUE,
+          `Record must be older than ${MAX_PENDING_DAYS} days`,
+        ),
+      ],
+      `The record must exceed the ${MAX_PENDING_DAYS}-day pending limit.`,
+    );
   }
 };
 
-const assertValidBody = body => {
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, 'Cuerpo de la petición no válido');
+// Application validation
+
+const validateDurationType = durationType => {
+  if (typeof durationType !== 'string') {
+    return [
+      createDetail('durationType', VALIDATION_ERROR_CODES.INVALID_TYPE, DURATION_TYPE_ERROR_LABEL),
+    ];
   }
+
+  if (durationType === '') {
+    return [];
+  }
+
+  if (!APPLICATION_DURATION_TYPES.has(durationType)) {
+    return [
+      createDetail('durationType', VALIDATION_ERROR_CODES.INVALID_VALUE, DURATION_TYPE_ERROR_LABEL),
+    ];
+  }
+
+  return [];
 };
 
-const parseTextFields = (body, fields, errorMessage) =>
-  Object.fromEntries(
-    fields.map(field => {
-      const value = body[field] ?? '';
+const validateFixedDurationMonths = durationMonths => {
+  if (durationMonths === null) {
+    return [];
+  }
 
-      if (typeof value !== 'string') {
-        throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
-      }
+  if (!Number.isInteger(durationMonths)) {
+    return [
+      createDetail('durationMonths', VALIDATION_ERROR_CODES.INVALID_TYPE, 'Must be an integer'),
+    ];
+  }
 
-      return [field, value.trim()];
-    }),
-  );
+  if (durationMonths <= 0) {
+    return [
+      createDetail(
+        'durationMonths',
+        VALIDATION_ERROR_CODES.INVALID_VALUE,
+        'Must be a positive integer',
+      ),
+    ];
+  }
 
-const hasEmptyFields = (data, fields) => fields.some(field => !data[field]);
+  return [];
+};
+
+const validateNonFixedDurationMonths = durationMonths => {
+  if (durationMonths === null) {
+    return [];
+  }
+
+  return [
+    createDetail(
+      'durationMonths',
+      VALIDATION_ERROR_CODES.INVALID_VALUE,
+      'Duration months can only be specified for fixed-duration applications',
+    ),
+  ];
+};
+
+const validateApplicationDuration = (durationType, durationMonths) => {
+  const durationTypeDetails = validateDurationType(durationType);
+
+  if (durationTypeDetails.length > 0) {
+    return durationTypeDetails;
+  }
+
+  if (durationType === 'fixed') {
+    return validateFixedDurationMonths(durationMonths);
+  }
+
+  return validateNonFixedDurationMonths(durationMonths);
+};
 
 const parseApplication = body => {
-  const errorMessage = 'Datos de la candidatura no válidos';
+  const errorMessage = INVALID_APPLICATION_DATA_LABEL;
 
   assertValidBody(body);
 
-  const application = parseTextFields(body, APPLICATION_TEXT_FIELDS, errorMessage);
+  const details = validateAllowedFields(body, APPLICATION_FIELDS);
+
+  const { data: application, details: textDetails } = parseTextFields(
+    body,
+    APPLICATION_TEXT_FIELDS,
+  );
+
+  details.push(...textDetails);
 
   const status = body.status ?? 'pending';
   const durationType = body.durationType ?? '';
   const durationMonths =
     body.durationMonths === '' || body.durationMonths == null ? null : body.durationMonths;
 
-  const hasInvalidDurationType =
-    durationType !== '' && !APPLICATION_DURATION_TYPES.has(durationType);
+  details.push(
+    ...validateRequiredFields(
+      application,
+      REQUIRED_APPLICATION_FIELDS,
+      APPLICATION_LABELS,
+      textDetails,
+    ),
+    ...(application.type
+      ? validateEnumField(
+          'type',
+          application.type,
+          ALLOWED_APPLICATION_TYPES,
+          APPLICATION_TYPE_LABEL,
+        )
+      : []),
+    ...validateEnumField('status', status, ALLOWED_APPLICATION_STATUSES, 'Status'),
+    ...validateDateField('appliedAt', body.appliedAt),
+    ...validateApplicationDuration(durationType, durationMonths),
+  );
 
-  const hasInvalidDurationMonths =
-    durationType === 'fixed'
-      ? durationMonths !== null && (!Number.isInteger(durationMonths) || durationMonths <= 0)
-      : durationMonths !== null;
-
-  const hasInvalidApplicationData = [
-    hasEmptyFields(application, ['company', 'position', 'type']),
-    !isValidDate(body.appliedAt),
-    !ALLOWED_APPLICATION_STATUSES.has(status),
-    !ALLOWED_APPLICATION_TYPES.has(application.type),
-    hasInvalidDurationType,
-    hasInvalidDurationMonths,
-  ].some(Boolean);
-
-  if (hasInvalidApplicationData) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+  if (details.length > 0) {
+    throwValidationError(
+      errorMessage,
+      details,
+      'The application could not be created because some fields contain invalid values.',
+    );
   }
 
   return {
@@ -124,23 +369,192 @@ const parseApplication = body => {
   };
 };
 
-const parseContact = body => {
-  const errorMessage = 'Datos del contacto no válidos';
+const validateUpdatedApplication = application => {
+  const details = [
+    ...validateRequiredFields(application, REQUIRED_APPLICATION_FIELDS, APPLICATION_LABELS),
+    ...(application.type
+      ? validateEnumField(
+          'type',
+          application.type,
+          ALLOWED_APPLICATION_TYPES,
+          APPLICATION_TYPE_LABEL,
+        )
+      : []),
+    ...validateDateField('appliedAt', application.appliedAt),
+    ...validateEnumField('status', application.status, ALLOWED_APPLICATION_STATUSES, 'Status'),
+    ...validateApplicationDuration(application.durationType, application.durationMonths),
+  ];
+
+  if (details.length > 0) {
+    throwValidationError(
+      INVALID_APPLICATION_DATA_LABEL,
+      details,
+      'The updated application contains invalid values.',
+    );
+  }
+};
+
+const normalizeStringValue = value => (typeof value === 'string' ? value.trim() : value);
+
+const addTextFieldChange = (field, value, details, changes) => {
+  const fieldDetails = validateTextField(field, value, REQUIRED_APPLICATION_FIELDS.includes(field));
+
+  if (fieldDetails.length > 0) {
+    details.push(...fieldDetails);
+  }
+
+  const parsedValue = normalizeStringValue(value);
+
+  if (
+    field === 'type' &&
+    typeof value === 'string' &&
+    parsedValue &&
+    !ALLOWED_APPLICATION_TYPES.has(parsedValue)
+  ) {
+    details.push(
+      createDetail(
+        field,
+        VALIDATION_ERROR_CODES.INVALID_VALUE,
+        'Application type must be industry or research',
+      ),
+    );
+  }
+
+  changes[field] = parsedValue;
+};
+
+const addEnumFieldChange = (field, value, details, changes, allowedValues, label) => {
+  const fieldDetails = validateEnumField(field, value, allowedValues, label);
+
+  if (fieldDetails.length > 0) {
+    details.push(...fieldDetails);
+  }
+
+  changes[field] = value;
+};
+
+const addDurationTypeChange = (field, value, details, changes) => {
+  if (typeof value !== 'string') {
+    details.push(createDetail(field, VALIDATION_ERROR_CODES.INVALID_TYPE, MUST_BE_STRING_LABEL));
+    changes[field] = value;
+    return;
+  }
+
+  const parsedValue = value.trim();
+
+  if (parsedValue !== '' && !APPLICATION_DURATION_TYPES.has(parsedValue)) {
+    details.push(
+      createDetail(field, VALIDATION_ERROR_CODES.INVALID_VALUE, DURATION_TYPE_ERROR_LABEL),
+    );
+  }
+
+  changes[field] = parsedValue;
+};
+
+const addDurationMonthsChange = (field, value, details, changes) => {
+  const parsedValue = value === '' ? null : value;
+
+  if (parsedValue !== null) {
+    if (!Number.isInteger(parsedValue)) {
+      details.push(createDetail(field, VALIDATION_ERROR_CODES.INVALID_TYPE, 'Must be an integer'));
+      // eslint-disable-next-line sonarjs/no-all-duplicated-branchess
+    } else if (parsedValue <= 0) {
+      details.push(
+        createDetail(field, VALIDATION_ERROR_CODES.INVALID_VALUE, 'Must be a positive integer'),
+      );
+    } else {
+      // The value is a valid positive integer.
+    }
+  }
+
+  changes[field] = parsedValue;
+};
+
+const addDateFieldChange = (field, value, details, changes) => {
+  const fieldDetails = validateDateField(field, value);
+
+  if (fieldDetails.length > 0) {
+    details.push(...fieldDetails);
+  }
+
+  changes[field] = value;
+};
+
+const APPLICATION_CHANGE_HANDLERS = {
+  company: addTextFieldChange,
+  position: addTextFieldChange,
+  city: addTextFieldChange,
+  country: addTextFieldChange,
+  type: addTextFieldChange,
+  notes: addTextFieldChange,
+  status: (field, value, details, changes) =>
+    addEnumFieldChange(field, value, details, changes, ALLOWED_APPLICATION_STATUSES, 'Status'),
+  durationType: addDurationTypeChange,
+  durationMonths: addDurationMonthsChange,
+  appliedAt: addDateFieldChange,
+};
+
+const parseApplicationChanges = (body, currentApplication) => {
+  const errorMessage = INVALID_APPLICATION_DATA_LABEL;
 
   assertValidBody(body);
 
-  const contactData = parseTextFields(body, CONTACT_TEXT_FIELDS, errorMessage);
+  const details = validateAllowedFields(body, APPLICATION_FIELDS);
+  const changes = {};
+
+  for (const [field, value] of Object.entries(body)) {
+    const handler = APPLICATION_CHANGE_HANDLERS[field];
+
+    if (handler) {
+      handler(field, value, details, changes);
+    }
+  }
+
+  if (details.length > 0) {
+    throwValidationError(
+      errorMessage,
+      details,
+      'The application could not be updated because some fields contain invalid values.',
+    );
+  }
+
+  if (Object.keys(changes).some(field => !['status', 'notes'].includes(field))) {
+    validateUpdatedApplication({
+      ...currentApplication,
+      ...changes,
+    });
+  }
+
+  return changes;
+};
+
+// Contact validation
+
+const parseContact = body => {
+  const errorMessage = 'Invalid contact data';
+
+  assertValidBody(body);
+
+  const details = validateAllowedFields(body, CONTACT_FIELDS);
+
+  const { data: contactData, details: textDetails } = parseTextFields(body, CONTACT_TEXT_FIELDS);
+
+  details.push(...textDetails);
 
   const status = body.status ?? 'pending';
 
-  const hasInvalidContactData = [
-    hasEmptyFields(contactData, ['contact', 'email', 'institution', 'country']),
-    !isValidDate(body.contactedAt),
-    !ALLOWED_CONTACT_STATUSES.has(status),
-  ].some(Boolean);
+  details.push(
+    ...validateRequiredFields(contactData, REQUIRED_CONTACT_FIELDS, CONTACT_LABELS, textDetails),
+    ...validateEnumField('status', status, ALLOWED_CONTACT_STATUSES, 'Status'),
+    ...validateDateField('contactedAt', body.contactedAt),
+  );
 
-  if (hasInvalidContactData) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+  if (details.length > 0) {
+    throwValidationError(
+      errorMessage,
+      details,
+      'The contact could not be created because some fields contain invalid values.',
+    );
   }
 
   return {
@@ -150,141 +564,51 @@ const parseContact = body => {
   };
 };
 
+const addContactTextFieldChange = (field, value, details, changes) => {
+  const fieldDetails = validateTextField(field, value, REQUIRED_CONTACT_FIELDS.includes(field));
+
+  if (fieldDetails.length > 0) {
+    details.push(...fieldDetails);
+  }
+
+  changes[field] = normalizeStringValue(value);
+};
+
+const CONTACT_CHANGE_HANDLERS = {
+  contact: addContactTextFieldChange,
+  email: addContactTextFieldChange,
+  institution: addContactTextFieldChange,
+  department: addContactTextFieldChange,
+  city: addContactTextFieldChange,
+  country: addContactTextFieldChange,
+  notes: addContactTextFieldChange,
+  contactedAt: addDateFieldChange,
+  status: (field, value, details, changes) =>
+    addEnumFieldChange(field, value, details, changes, ALLOWED_CONTACT_STATUSES, 'Status'),
+};
+
 const parseContactChanges = body => {
-  const errorMessage = 'Datos del contacto no válidos';
+  const errorMessage = 'Invalid contact data';
 
   assertValidBody(body);
 
-  const contactData = Object.fromEntries(
-    Object.entries(body)
-      .filter(([field]) => CONTACT_TEXT_FIELDS.includes(field))
-      .map(([field, value]) => {
-        if (typeof value !== 'string') {
-          throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
-        }
+  const details = validateAllowedFields(body, CONTACT_FIELDS);
+  const changes = {};
 
-        const parsedValue = value.trim();
-        if (['contact', 'email', 'institution', 'country'].includes(field) && !parsedValue) {
-          throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
-        }
+  for (const [field, value] of Object.entries(body)) {
+    const handler = CONTACT_CHANGE_HANDLERS[field];
 
-        return [field, parsedValue];
-      }),
-  );
-
-  if (body.contactedAt !== undefined && !isValidDate(body.contactedAt)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
+    if (handler) {
+      handler(field, value, details, changes);
+    }
   }
 
-  if (body.status !== undefined && !ALLOWED_CONTACT_STATUSES.has(body.status)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
-  }
-
-  return {
-    ...contactData,
-    ...(body.contactedAt !== undefined && { contactedAt: body.contactedAt }),
-    ...(body.status !== undefined && { status: body.status }),
-  };
-};
-
-const parseApplicationTextFieldChange = (field, value, errorMessage) => {
-  if (typeof value !== 'string') {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
-  }
-
-  const parsedValue = value.trim();
-  if (['company', 'position', 'type'].includes(field) && !parsedValue) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
-  }
-
-  if (field === 'type' && !ALLOWED_APPLICATION_TYPES.has(parsedValue)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
-  }
-
-  return parsedValue;
-};
-
-const parseApplicationDurationTypeChange = (value, errorMessage) => {
-  if (typeof value !== 'string') {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
-  }
-
-  const parsedValue = value.trim();
-  if (parsedValue !== '' && !APPLICATION_DURATION_TYPES.has(parsedValue)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
-  }
-
-  return parsedValue;
-};
-
-const parseApplicationDurationMonthsChange = (value, errorMessage) => {
-  const parsedValue = value === '' ? null : value;
-  if (parsedValue !== null && (!Number.isInteger(parsedValue) || parsedValue <= 0)) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
-  }
-
-  return parsedValue;
-};
-
-const validateUpdatedApplication = (application, errorMessage) => {
-  const hasInvalidApplicationData = [
-    hasEmptyFields(application, ['company', 'position', 'type']),
-    !isValidDate(application.appliedAt),
-    !ALLOWED_APPLICATION_STATUSES.has(application.status),
-    !ALLOWED_APPLICATION_TYPES.has(application.type),
-    application.durationType !== '' && !APPLICATION_DURATION_TYPES.has(application.durationType),
-    application.durationType === 'fixed'
-      ? application.durationMonths !== null &&
-        (!Number.isInteger(application.durationMonths) || application.durationMonths <= 0)
-      : application.durationMonths !== null,
-  ].some(Boolean);
-
-  if (hasInvalidApplicationData) {
-    throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
-  }
-};
-
-const parseApplicationChanges = (body, currentApplication) => {
-  const errorMessage = 'Datos de la candidatura no válidos';
-
-  assertValidBody(body);
-
-  const changes = Object.fromEntries(
-    Object.entries(body).map(([field, value]) => {
-      if (APPLICATION_TEXT_FIELDS.includes(field)) {
-        return [field, parseApplicationTextFieldChange(field, value, errorMessage)];
-      }
-
-      if (field === 'status') {
-        if (!ALLOWED_APPLICATION_STATUSES.has(value)) {
-          throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
-        }
-
-        return [field, value];
-      }
-
-      if (field === 'durationType') {
-        return [field, parseApplicationDurationTypeChange(value, errorMessage)];
-      }
-
-      if (field === 'durationMonths') {
-        return [field, parseApplicationDurationMonthsChange(value, errorMessage)];
-      }
-
-      if (field === 'appliedAt') {
-        if (!isValidDate(value)) {
-          throw new HttpError(HTTP_STATUS.BAD_REQUEST, errorMessage);
-        }
-
-        return [field, value];
-      }
-
-      return [field, value];
-    }),
-  );
-
-  if (Object.keys(changes).some(field => !['status', 'notes'].includes(field))) {
-    validateUpdatedApplication({ ...currentApplication, ...changes }, errorMessage);
+  if (details.length > 0) {
+    throwValidationError(
+      errorMessage,
+      details,
+      'The contact could not be updated because some fields contain invalid values.',
+    );
   }
 
   return changes;
