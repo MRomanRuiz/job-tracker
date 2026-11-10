@@ -1,4 +1,5 @@
 const path = require('node:path');
+const express = require('express');
 
 const { after, before, describe, it } = require('node:test');
 const assert = require('node:assert/strict');
@@ -133,6 +134,12 @@ describe('additional app branches', () => {
     assert.equal(response.status, 404);
   });
 
+  it('returns not found when suspending a missing application', async () => {
+    const response = await request('PATCH', '/api/applications/99/suspend');
+
+    assert.equal(response.status, 404);
+  });
+
   it('passes unknown API paths to the not-found handler', async () => {
     const response = await fetch(`${baseUrl}/api/unknown`);
 
@@ -145,6 +152,26 @@ describe('additional app branches', () => {
     const response = await fetch(`${baseUrl}/dashboard`);
 
     assert.equal(response.status, hasClientBuild ? 200 : 500);
+  });
+
+  it('forwards client fallback errors to the error middleware', async () => {
+    const originalSendFile = express.response.sendFile;
+    express.response.sendFile = function sendFileWithError(_file, callback) {
+      callback(new Error('Client build unavailable'));
+      return this;
+    };
+
+    try {
+      const response = await fetch(`${baseUrl}/dashboard`);
+
+      assert.equal(response.status, 500);
+      assert.deepEqual(await response.json(), {
+        message: 'Internal server error',
+        description: 'An unexpected error occurred while processing the request.',
+      });
+    } finally {
+      express.response.sendFile = originalSendFile;
+    }
   });
 
   it('handles oversized JSON through the generic error middleware', async () => {

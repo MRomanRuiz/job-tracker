@@ -14,7 +14,8 @@ const FILES = {
 const queues = new Map();
 
 async function readData(name) {
-  const [filename, key] = FILES[name];
+  const key = collectionKey(name);
+  const [filename] = FILES[name];
   const data = JSON.parse(await fs.readFile(path.join(DATA_DIR, filename), 'utf8'));
 
   if (!Array.isArray(data[key])) {
