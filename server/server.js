@@ -31,16 +31,16 @@ async function shutdown() {
   }
   shuttingDown = true;
 
-  console.info('\nCerrando servidor...');
+  console.info('\nClosing server...');
 
   try {
     await closeServer();
     await closeDB();
 
-    console.info('Servidor y almacenamiento cerrados correctamente.');
+    console.info('Server and storage closed successfully.');
     process.exitCode = 0;
   } catch (error) {
-    console.info('Error durante el cierre:', error);
+    console.info('Error during shutdown:', error);
     process.exitCode = 1;
   }
 }
@@ -49,7 +49,7 @@ async function startServer() {
   const type = (process.env.STORAGE_TYPE || 'json').toLowerCase();
 
   if (!['json', 'mongodb'].includes(type)) {
-    throw new Error(`STORAGE_TYPE no válido: ${type}`);
+    throw new Error(`Not valid STORAGE_TYPE: ${type}`);
   }
 
   if (type === 'mongodb') {
@@ -62,7 +62,7 @@ async function startServer() {
   const app = createApp();
 
   server = app.listen(PORT, () => {
-    console.info(`Servidor funcionando en http://localhost:${PORT} (${type})`);
+    console.info(`Server running at http://localhost:${PORT} (${type})`);
   });
 
   process.once('SIGINT', shutdown);
@@ -73,12 +73,12 @@ async function startServer() {
 
 if (require.main === module) {
   startServer().catch(async error => {
-    console.info('Error al iniciar el servidor:', error);
+    console.info('Error starting the server:', error);
 
     try {
       await closeDB();
     } catch (closeError) {
-      console.info('Error al cerrar MongoDB:', closeError);
+      console.info('Error closing MongoDB:', closeError);
     }
 
     process.exitCode = 1;
