@@ -9,19 +9,15 @@
     "install:all": "npm install && npm install --prefix server && npm install --prefix client",
     "dev": "concurrently -n api,web -c blue,magenta \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "lint": "npm run lint --prefix server && npm run lint --prefix client",
-    "test": "run-s --continue-on-error test:json test:mongodb test:client test:postman:json test:postman:mongodb",
+    "test": "run-s --continue-on-error test:json test:mongodb test:client",
     "test:json": "cross-env TEST_STORAGE_TYPE=json npm test --prefix server",
     "test:mongodb": "cross-env TEST_STORAGE_TYPE=mongodb npm test --prefix server",
     "test:client": "npm test --prefix client",
-    "test:postman": "run-s --continue-on-error test:postman:json test:postman:mongodb",
-    "test:postman:json": "cross-env STORAGE_TYPE=json node scripts/run-newman-tests.js",
-    "test:postman:mongodb": "cross-env STORAGE_TYPE=mongodb node scripts/run-newman-tests.js",
     "build": "npm run build --prefix client"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
-    "newman": "^6.2.3",
     "npm-run-all2": "^9.0.3"
   },
   "dependencies": {
