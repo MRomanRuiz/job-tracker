@@ -6,6 +6,8 @@ const addSecurityMiddleware = require('./middleware/security');
 const addApplicationRoutes = require('./routes/applications');
 const addContactRoutes = require('./routes/contacts');
 const { isOlderThanPendingLimit } = require('./domain/records');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 
 const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:3000',
@@ -21,6 +23,9 @@ const createApp = ({ storage: injectedStorage, allowedOrigins = DEFAULT_ALLOWED_
   addSecurityMiddleware(app, origins);
   addApplicationRoutes(app, storage);
   addContactRoutes(app, storage);
+
+  // API documentation
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
   const clientDistPath = path.resolve(__dirname, '../../client/dist');
 

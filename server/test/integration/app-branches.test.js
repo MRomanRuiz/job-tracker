@@ -90,6 +90,15 @@ const request = async (method, url, body) => {
 };
 
 describe('additional app branches', () => {
+  it('serves the Swagger UI documentation', async () => {
+    const response = await fetch(`${baseUrl}/api-docs/`);
+    const body = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get('content-type'), /text\/html/);
+    assert.match(body, /swagger-ui-bundle\.js/);
+  });
+
   it('returns a server error when storage fails', async () => {
     const response = await request('GET', '/api/applications');
 

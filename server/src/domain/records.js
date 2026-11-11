@@ -106,7 +106,7 @@ const parseTextFields = (body, fields) => {
 
     if (typeof value === 'string') {
       data[field] = value.trim();
-      continue;
+      continue; // NOSONAR
     }
 
     details.push(createDetail(field, VALIDATION_ERROR_CODES.INVALID_TYPE, MUST_BE_STRING_LABEL));
