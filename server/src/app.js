@@ -15,7 +15,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
 
 const createApp = ({ storage: injectedStorage, allowedOrigins = DEFAULT_ALLOWED_ORIGINS } = {}) => {
   const app = express();
-  const storage = injectedStorage || createStorage();
+  const storage = injectedStorage ?? createStorage();
   const origins = new Set(allowedOrigins);
 
   addSecurityMiddleware(app, origins);
@@ -34,7 +34,7 @@ const createApp = ({ storage: injectedStorage, allowedOrigins = DEFAULT_ALLOWED_
 
     res.sendFile(path.join(clientDistPath, 'index.html'), error => {
       if (error) {
-        next(error);
+        next(new Error('Could not serve the client application.', { cause: error }));
       }
     });
   });

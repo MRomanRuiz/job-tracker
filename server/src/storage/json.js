@@ -14,11 +14,12 @@ const FILES = {
 const queues = new Map();
 
 async function readData(name) {
-  const [filename, key] = FILES[name];
+  const key = collectionKey(name);
+  const [filename] = FILES[name];
   const data = JSON.parse(await fs.readFile(path.join(DATA_DIR, filename), 'utf8'));
 
   if (!Array.isArray(data[key])) {
-    throw new TypeError(`${filename} no contiene "${key}"`);
+    throw new TypeError(`${filename} does not contain "${key}"`);
   }
 
   return data;
@@ -47,7 +48,7 @@ function serialize(name, operation) {
 
 function collectionKey(name) {
   if (!FILES[name]) {
-    throw new Error(`Colección JSON no soportada: ${name}`);
+    throw new Error(`Unsupported JSON collection: ${name}`);
   }
 
   return FILES[name][1];

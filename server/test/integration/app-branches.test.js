@@ -1,4 +1,5 @@
 const path = require('node:path');
+const express = require('express');
 
 const { after, before, describe, it } = require('node:test');
 const assert = require('node:assert/strict');
@@ -94,7 +95,8 @@ describe('additional app branches', () => {
 
     assert.equal(response.status, 500);
     assert.deepEqual(response.body, {
-      error: 'No se pudieron leer las candidaturas',
+      description: 'Could not retrieve applications',
+      message: 'Internal server error',
     });
   });
 
@@ -102,8 +104,16 @@ describe('additional app branches', () => {
     const application = await request('PATCH', '/api/applications/1/suspend');
     const contact = await request('PATCH', '/api/contacts/1/suspend');
 
-    assert.equal(application.status, 400);
-    assert.equal(contact.status, 400);
+    assert.equal(application.status, 409);
+    assert.deepEqual(application.body, {
+      description: 'The application may have changed before the suspension was completed.',
+      message: 'Application could not be suspended',
+    });
+    assert.equal(contact.status, 409);
+    assert.deepEqual(contact.body, {
+      description: 'The contact may have changed before the suspension was completed.',
+      message: 'Contact could not be suspended',
+    });
   });
 
   it('returns 400 when a patch has no changes (contacts)', async () => {
@@ -124,6 +134,12 @@ describe('additional app branches', () => {
     assert.equal(response.status, 404);
   });
 
+  it('returns not found when suspending a missing application', async () => {
+    const response = await request('PATCH', '/api/applications/99/suspend');
+
+    assert.equal(response.status, 404);
+  });
+
   it('passes unknown API paths to the not-found handler', async () => {
     const response = await fetch(`${baseUrl}/api/unknown`);
 
@@ -138,6 +154,29 @@ describe('additional app branches', () => {
     assert.equal(response.status, hasClientBuild ? 200 : 500);
   });
 
+  it('forwards client fallback errors to the error middleware', async () => {
+    const originalSendFile = express.response.sendFile;
+    express.response.sendFile = function sendFileWithError(_file, callback) {
+      const error = new Error('Client build unavailable');
+      error.status = 404;
+      error.statusCode = 404;
+      callback(error);
+      return this;
+    };
+
+    try {
+      const response = await fetch(`${baseUrl}/dashboard`);
+
+      assert.equal(response.status, 500);
+      assert.deepEqual(await response.json(), {
+        message: 'Internal server error',
+        description: 'An unexpected error occurred while processing the request.',
+      });
+    } finally {
+      express.response.sendFile = originalSendFile;
+    }
+  });
+
   it('handles oversized JSON through the generic error middleware', async () => {
     const response = await fetch(`${baseUrl}/api/contacts`, {
       method: 'POST',
@@ -145,9 +184,10 @@ describe('additional app branches', () => {
       body: JSON.stringify({ notes: 'x'.repeat(1024 * 1024) }),
     });
 
-    assert.equal(response.status, 500);
+    assert.equal(response.status, 413);
     assert.deepEqual(await response.json(), {
-      error: 'Error interno del servidor',
+      message: 'Payload too large',
+      description: 'The request body exceeds the allowed size.',
     });
   });
 });

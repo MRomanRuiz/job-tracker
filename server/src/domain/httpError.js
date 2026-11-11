@@ -5,12 +5,18 @@ const HTTP_STATUS = {
   INTERNAL_SERVER_ERROR: 500,
   NOT_FOUND: 404,
   NO_CONTENT: 204,
+  CONFLICT: 409,
+  PAYLOAD_TOO_LARGE: 413,
 };
 
 class HttpError extends Error {
-  constructor(status, message) {
+  constructor(statusCode, message, description = null, details = []) {
     super(message);
-    this.status = status;
+
+    this.name = 'HttpError';
+    this.statusCode = statusCode;
+    this.description = description;
+    this.details = details;
   }
 }
 

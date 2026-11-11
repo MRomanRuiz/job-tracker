@@ -245,7 +245,7 @@ New records start with an empty `history`. The API updates `updatedAt` whenever 
 
 The API runs at [http://localhost:3001](http://localhost:3001). The frontend accesses it through the Vite proxy at `/api`.
 
-Invalid input, including dates that do not exist (such as `2026-02-31`), returns `400`. Unknown record IDs return `404`. API errors are returned as JSON objects containing an `error` field.
+Invalid input, including malformed JSON, empty update payloads, and dates that do not exist (such as `2026-02-31`), returns `400`. Unknown record IDs return `404`. Attempts to suspend a record that is not pending or is still too recent return `400`, while a concurrent update during suspension can return `409`. API errors are returned as JSON objects containing a `message` field and optional `description` and `details` entries.
 
 ### Applications
 

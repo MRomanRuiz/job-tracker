@@ -1,5 +1,11 @@
 function createStorage(type = process.env.STORAGE_TYPE || 'json') {
-  switch (type.toLowerCase()) {
+  if (typeof type !== 'string' || !type.trim()) {
+    throw new TypeError('STORAGE_TYPE must be "json" or "mongodb".');
+  }
+
+  const storageType = type.trim().toLowerCase();
+
+  switch (storageType) {
     case 'json':
       return require('./json').createJSONStorage();
 
@@ -7,7 +13,7 @@ function createStorage(type = process.env.STORAGE_TYPE || 'json') {
       return require('./mongodb').createMongoStorage();
 
     default:
-      throw new Error(`STORAGE_TYPE no válido: ${type}. Usa json o mongodb.`);
+      throw new Error(`Unsupported STORAGE_TYPE "${type}". Use "json" or "mongodb".`);
   }
 }
 

@@ -9,13 +9,13 @@ const addSecurityMiddleware = (app, origins) => {
     const { origin } = req.headers;
 
     if (origin && !origins.has(origin)) {
-      res.status(HTTP_STATUS.FORBIDDEN).json({
-        error: 'Origen no permitido por CORS',
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
+        message: 'Origin not allowed',
+        description: 'The request origin is not included in the allowed origins.',
       });
-      return;
     }
 
-    next();
+    return next();
   });
 
   app.use(cors({ origin: [...origins] }));
@@ -23,7 +23,7 @@ const addSecurityMiddleware = (app, origins) => {
 
   app.use((req, _res, next) => {
     req.body ??= {};
-    next();
+    return next();
   });
 };
 

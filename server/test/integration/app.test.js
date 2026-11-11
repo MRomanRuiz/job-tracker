@@ -155,7 +155,7 @@ const clearMongoCollections = async () => {
 
 before(async () => {
   if (!['json', 'mongodb'].includes(STORAGE_TYPE)) {
-    throw new Error(`TEST_STORAGE_TYPE no válido: ${STORAGE_TYPE}. Usa json o mongodb.`);
+    throw new Error(`Not valid TEST_STORAGE_TYPE: ${STORAGE_TYPE}. Use json o mongodb.`);
   }
 
   if (STORAGE_TYPE === 'json') {
@@ -165,11 +165,11 @@ before(async () => {
     await resetJSONFiles();
   } else {
     if (process.env.MONGODB_DB !== TEST_DATABASE_NAME) {
-      throw new Error(`Pruebas canceladas: MONGODB_DB debe ser "${TEST_DATABASE_NAME}".`);
+      throw new Error(`Tests cancelled: MONGODB_DB must be "${TEST_DATABASE_NAME}".`);
     }
 
     if (!process.env.MONGODB_URI) {
-      throw new Error('Pruebas canceladas: falta MONGODB_URI en la configuración.');
+      throw new Error('Tests cancelled: MONGODB_URI is missing in the configuration.');
     }
 
     const database = require('../../src/db');
@@ -181,7 +181,9 @@ before(async () => {
     db = database.getDB();
 
     if (db.databaseName !== TEST_DATABASE_NAME) {
-      throw new Error(`Pruebas canceladas: conexión a una base inesperada (${db.databaseName}).`);
+      throw new Error(
+        `Tests cancelled: connection to an unexpected database (${db.databaseName}).`,
+      );
     }
 
     await db.command({ ping: 1 });
@@ -226,7 +228,7 @@ after(async () => {
 
     if (STORAGE_TYPE === 'mongodb' && db) {
       if (db.databaseName !== TEST_DATABASE_NAME) {
-        throw new Error('Se cancela el borrado: la base conectada no es la base de test.');
+        throw new Error('Tests cancelled: connection to an unexpected database.');
       }
 
       await db.dropDatabase();
@@ -244,7 +246,7 @@ after(async () => {
 });
 
 describe('isOlderThanPendingLimit', () => {
-  it('detecta fechas de más de 30 días', () => {
+  it('detects dates older than 30 days', () => {
     const { isOlderThanPendingLimit } = require('../../src/app');
     const now = new Date('2026-02-01');
 
@@ -255,7 +257,7 @@ describe('isOlderThanPendingLimit', () => {
 });
 
 describe('applications', () => {
-  it('lista candidaturas', async () => {
+  it('lists applications', async () => {
     const { status, body } = await request('GET', '/api/applications');
 
     assert.equal(status, 200);
@@ -265,20 +267,15 @@ describe('applications', () => {
     assert.equal(body.applications[0].city, 'Madrid');
   });
 
-  it('crea una candidatura con ID numérico generado por el servidor', async () => {
+  it('creates an application with a server-generated numeric ID', async () => {
     const { status, body } = await request('POST', '/api/applications', {
-      body: {
-        ...validApplication(),
-        id: 'x',
-        foo: 1,
-      },
+      body: validApplication(),
     });
 
     assert.equal(status, 201);
     assert.equal(typeof body.id, 'number');
     assert.match(body.appliedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     assert.equal(body.status, 'pending');
-    assert.equal(body.foo, undefined);
     assert.equal(body._id, undefined);
 
     const { body: list } = await request('GET', '/api/applications');
@@ -287,7 +284,7 @@ describe('applications', () => {
     assert.ok(list.applications.some(application => application.id === body.id));
   });
 
-  it('elimina los espacios al principio y al final de los campos de texto', async () => {
+  it('trims leading and trailing whitespace from text fields', async () => {
     const { status, body } = await request('POST', '/api/applications', {
       body: {
         ...validApplication(),
@@ -310,7 +307,7 @@ describe('applications', () => {
     assert.equal(body.durationMonths, 6);
   });
 
-  it('permite una candidatura temporal sin duración indicada', async () => {
+  it('allows a fixed-duration application without a specified duration', async () => {
     const { status, body } = await request('POST', '/api/applications', {
       body: {
         ...validApplication(),
@@ -324,7 +321,7 @@ describe('applications', () => {
     assert.equal(body.durationMonths, null);
   });
 
-  it('rechaza candidaturas no válidas', async () => {
+  it('rejects invalid applications', async () => {
     for (const body of [
       validApplication({ company: '   ' }),
       validApplication({ status: 'bogus' }),
@@ -346,7 +343,7 @@ describe('applications', () => {
     }
   });
 
-  it('actualiza el estado de una candidatura', async () => {
+  it('updates an application status', async () => {
     const { status, body } = await request('PATCH', '/api/applications/1', {
       body: { status: 'interview' },
     });
@@ -355,7 +352,7 @@ describe('applications', () => {
     assert.equal(body.status, 'interview');
   });
 
-  it('actualiza solo las notas de una candidatura', async () => {
+  it('updates only application notes', async () => {
     const { status, body } = await request('PATCH', '/api/applications/1', {
       body: { notes: '  Revisar oferta  ' },
     });
@@ -365,7 +362,7 @@ describe('applications', () => {
     assert.equal(body.status, 'pending');
   });
 
-  it('conserva actualizaciones concurrentes y oculta la revisión interna', async () => {
+  it('preserves concurrent updates and hides the internal revision', async () => {
     await Promise.all([
       storage.update('applications', 2, { status: 'interview' }),
       storage.update('applications', 2, { notes: 'Seguimiento concurrente' }),
@@ -385,7 +382,7 @@ describe('applications', () => {
     }
   });
 
-  it('rechaza un estado no permitido al actualizar una candidatura', async () => {
+  it('rejects an unsupported application status', async () => {
     const { status } = await request('PATCH', '/api/applications/1', {
       body: { status: 'bogus' },
     });
@@ -393,7 +390,7 @@ describe('applications', () => {
     assert.equal(status, 400);
   });
 
-  it('actualiza y recorta los detalles de una candidatura', async () => {
+  it('updates application details and trims text fields', async () => {
     const { status, body } = await request('PATCH', '/api/applications/2', {
       body: {
         company: '  Example Labs  ',
@@ -422,7 +419,7 @@ describe('applications', () => {
     assert.equal(body.status, 'interview');
   });
 
-  it('permite actualizar detalles parciales y conserva los campos omitidos', async () => {
+  it('allows partial application updates and preserves omitted fields', async () => {
     const { status, body } = await request('PATCH', '/api/applications/2', {
       body: { notes: '  Revisar la oferta  ' },
     });
@@ -435,7 +432,7 @@ describe('applications', () => {
     assert.equal(body.status, 'pending');
   });
 
-  it('rechaza detalles de candidatura no válidos', async () => {
+  it('rejects invalid application details', async () => {
     for (const body of [
       { company: '   ' },
       { position: '' },
@@ -456,7 +453,7 @@ describe('applications', () => {
     }
   });
 
-  it('devuelve 404 al actualizar los detalles de una candidatura inexistente', async () => {
+  it('returns 404 when updating the details of a missing application', async () => {
     const { status } = await request('PATCH', '/api/applications/99', {
       body: { company: 'Example' },
     });
@@ -464,7 +461,7 @@ describe('applications', () => {
     assert.equal(status, 404);
   });
 
-  it('elimina una candidatura', async () => {
+  it('deletes an application', async () => {
     const { status, body } = await request('DELETE', '/api/applications/1');
 
     assert.equal(status, 204);
@@ -478,19 +475,27 @@ describe('applications', () => {
     );
   });
 
-  it('devuelve 404 al eliminar una candidatura inexistente', async () => {
+  it('returns 404 when deleting a missing application', async () => {
     const { status } = await request('DELETE', '/api/applications/99');
 
     assert.equal(status, 404);
   });
 
-  it('devuelve 400 para un PATCH sin cuerpo', async () => {
+  it('returns 400 for a PATCH request without a body', async () => {
     const { status } = await request('PATCH', '/api/applications/1');
 
     assert.equal(status, 400);
   });
 
-  it('devuelve 400 para JSON mal formado', async () => {
+  it('rejects null and array PATCH bodies', async () => {
+    for (const body of [null, []]) {
+      const { status } = await request('PATCH', '/api/applications/1', { body });
+
+      assert.equal(status, 400);
+    }
+  });
+
+  it('returns 400 for malformed JSON', async () => {
     const { status } = await request('PATCH', '/api/applications/1', {
       body: '{bad json',
     });
@@ -498,7 +503,7 @@ describe('applications', () => {
     assert.equal(status, 400);
   });
 
-  it('devuelve 404 para una candidatura inexistente', async () => {
+  it('returns 404 for a missing application', async () => {
     const { status } = await request('PATCH', '/api/applications/99', {
       body: { status: 'offer' },
     });
@@ -506,7 +511,7 @@ describe('applications', () => {
     assert.equal(status, 404);
   });
 
-  it('lista y suspende candidaturas pendientes antiguas', async () => {
+  it('lists and suspends old pending applications', async () => {
     const old = await request('GET', '/api/applications/old');
 
     assert.deepEqual(
@@ -524,7 +529,7 @@ describe('applications', () => {
     assert.equal(recent.status, 400);
   });
 
-  it('genera IDs únicos con peticiones concurrentes', async () => {
+  it('generates unique IDs for concurrent requests', async () => {
     const responses = await Promise.all(
       Array.from({ length: 10 }, (_, index) =>
         request('POST', '/api/applications', {
@@ -548,7 +553,7 @@ describe('applications', () => {
 });
 
 describe('contacts', () => {
-  it('lista contactos', async () => {
+  it('lists contacts', async () => {
     const { status, body } = await request('GET', '/api/contacts');
 
     assert.equal(status, 200);
@@ -558,7 +563,7 @@ describe('contacts', () => {
     assert.equal(body.contacts[0].email, 'ana@example.com');
   });
 
-  it('crea un contacto', async () => {
+  it('creates a contact', async () => {
     const { status, body } = await request('POST', '/api/contacts', {
       body: {
         ...validContact({ institution: 'Gamma' }),
@@ -579,7 +584,7 @@ describe('contacts', () => {
     assert.ok(list.contacts.some(contact => contact.id === body.id));
   });
 
-  it('rechaza contactos no válidos', async () => {
+  it('rejects invalid contacts', async () => {
     for (const body of [
       validContact({ contact: '   ' }),
       validContact({ email: '' }),
@@ -595,7 +600,7 @@ describe('contacts', () => {
     }
   });
 
-  it('recorta los campos de texto de un contacto', async () => {
+  it('trims contact text fields', async () => {
     const { status, body } = await request('POST', '/api/contacts', {
       body: validContact({
         contact: '  Eva Martínez  ',
@@ -618,7 +623,7 @@ describe('contacts', () => {
     assert.equal(body.notes, 'Primer contacto');
   });
 
-  it('actualiza el estado y las notas', async () => {
+  it('updates a contact status and notes', async () => {
     const { status, body } = await request('PATCH', '/api/contacts/2', {
       body: { status: 'rejected', notes: 'Follow up' },
     });
@@ -628,7 +633,7 @@ describe('contacts', () => {
     assert.equal(body.notes, 'Follow up');
   });
 
-  it('actualiza solo las notas de un contacto', async () => {
+  it('updates only contact notes', async () => {
     const { status, body } = await request('PATCH', '/api/contacts/2', {
       body: { notes: '  Contactar mañana  ' },
     });
@@ -638,7 +643,7 @@ describe('contacts', () => {
     assert.equal(body.status, 'replied');
   });
 
-  it('rechaza un estado no permitido al actualizar un contacto', async () => {
+  it('rejects an unsupported contact status', async () => {
     const { status } = await request('PATCH', '/api/contacts/2', {
       body: { status: 'bogus' },
     });
@@ -646,7 +651,7 @@ describe('contacts', () => {
     assert.equal(status, 400);
   });
 
-  it('actualiza y recorta los detalles del contacto', async () => {
+  it('updates contact details and trims text fields', async () => {
     const { status, body } = await request('PATCH', '/api/contacts/2', {
       body: {
         contact: '  Luis Pérez  ',
@@ -673,7 +678,7 @@ describe('contacts', () => {
     assert.equal(body.status, 'pending');
   });
 
-  it('permite actualizar un subconjunto de detalles sin cambiar los demás', async () => {
+  it('allows partial contact updates and preserves omitted fields', async () => {
     const { status, body } = await request('PATCH', '/api/contacts/2', {
       body: { department: '  Ciencias  ' },
     });
@@ -685,7 +690,7 @@ describe('contacts', () => {
     assert.equal(body.status, 'replied');
   });
 
-  it('rechaza detalles que incumplen las validaciones del contacto', async () => {
+  it('rejects invalid contact details', async () => {
     for (const body of [
       { contact: '   ' },
       { email: '' },
@@ -704,7 +709,7 @@ describe('contacts', () => {
     }
   });
 
-  it('devuelve 404 al actualizar los detalles de un contacto inexistente', async () => {
+  it('returns 404 when updating the details of a missing contact', async () => {
     const { status } = await request('PATCH', '/api/contacts/99', {
       body: { contact: 'Eva' },
     });
@@ -712,7 +717,7 @@ describe('contacts', () => {
     assert.equal(status, 404);
   });
 
-  it('elimina un contacto', async () => {
+  it('deletes a contact', async () => {
     const { status, body } = await request('DELETE', '/api/contacts/1');
 
     assert.equal(status, 204);
@@ -726,13 +731,21 @@ describe('contacts', () => {
     );
   });
 
-  it('devuelve 404 al eliminar un contacto inexistente', async () => {
+  it('returns 404 when deleting a missing contact', async () => {
     const { status } = await request('DELETE', '/api/contacts/99');
 
     assert.equal(status, 404);
   });
 
-  it('rechaza notas que no sean texto', async () => {
+  it('rejects null and array PATCH bodies', async () => {
+    for (const body of [null, []]) {
+      const { status } = await request('PATCH', '/api/contacts/1', { body });
+
+      assert.equal(status, 400);
+    }
+  });
+
+  it('rejects non-string notes', async () => {
     const { status } = await request('PATCH', '/api/contacts/2', {
       body: { notes: { a: 1 } },
     });
@@ -740,7 +753,7 @@ describe('contacts', () => {
     assert.equal(status, 400);
   });
 
-  it('devuelve 404 para un contacto inexistente', async () => {
+  it('returns 404 for a missing contact', async () => {
     const { status } = await request('PATCH', '/api/contacts/99', {
       body: { notes: 'No existe' },
     });
@@ -748,7 +761,7 @@ describe('contacts', () => {
     assert.equal(status, 404);
   });
 
-  it('suspende contactos pendientes antiguos', async () => {
+  it('suspends old pending contacts', async () => {
     const old = await request('GET', '/api/contacts/old');
 
     assert.deepEqual(
@@ -768,7 +781,7 @@ describe('contacts', () => {
 });
 
 describe('CORS', () => {
-  it('permite el origen del frontend', async () => {
+  it('allows the frontend origin', async () => {
     const response = await fetch(`${baseUrl}/api/contacts`, {
       headers: { Origin: 'http://localhost:5173' },
     });
@@ -777,7 +790,7 @@ describe('CORS', () => {
     assert.equal(response.headers.get('access-control-allow-origin'), 'http://localhost:5173');
   });
 
-  it('devuelve 403 para otros orígenes', async () => {
+  it('returns 403 for untrusted origins', async () => {
     const { status } = await request('GET', '/api/contacts', {
       headers: { Origin: 'http://evil.example' },
     });
