@@ -99,6 +99,38 @@ describe('additional app branches', () => {
     assert.match(body, /swagger-ui-bundle\.js/);
   });
 
+  it('serves the OpenAPI specification as JSON', async () => {
+    const response = await fetch(`${baseUrl}/api-docs.json`);
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get('content-type'), /application\/json/);
+    assert.equal(body.openapi, '3.1.0');
+    assert.equal(body.info.title, 'Job Tracker API');
+    assert.ok(body.paths['/api/applications']);
+    assert.ok(body.paths['/api/contacts']);
+    assert.ok(
+      body.components.schemas.Application.properties.status.enum.includes('suspended'),
+    );
+    assert.ok(
+      body.components.schemas.Contact.properties.status.enum.includes('suspended'),
+    );
+    assert.ok(body.components.schemas.Application.properties.updatedAt);
+    assert.ok(body.components.schemas.Contact.properties.updatedAt);
+    assert.deepEqual(
+      Object.keys(body.components.schemas.Application.properties.history.items.properties).sort(),
+      ['changedAt', 'field', 'newValue', 'oldValue'],
+    );
+    assert.ok(
+      !body.components.schemas.ApplicationInput.properties.status.enum.includes('suspended'),
+    );
+    assert.ok(!body.components.schemas.ContactInput.properties.status.enum.includes('suspended'));
+    assert.ok(body.paths['/api/applications'].get.responses[403]);
+    assert.ok(body.paths['/api/applications/{id}'].patch.responses[413]);
+    assert.ok(body.paths['/api/contacts'].get.responses[403]);
+    assert.ok(body.paths['/api/contacts/{id}'].patch.responses[413]);
+  });
+
   it('returns a server error when storage fails', async () => {
     const response = await request('GET', '/api/applications');
 

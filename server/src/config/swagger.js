@@ -111,17 +111,30 @@ const contactPatch = {
   properties: contactProperties,
 };
 
+const historyEvent = {
+  type: 'object',
+  properties: {
+    oldValue: { type: ['string', 'null'] },
+    newValue: { type: 'string' },
+    field: { type: 'string', enum: ['status', 'notes'] },
+    changedAt: dateTime,
+  },
+  additionalProperties: true,
+};
+
 const application = {
   type: 'object',
   properties: {
     id: { type: 'integer', example: 1 },
     ...applicationProperties,
+    status: {
+      ...applicationProperties.status,
+      enum: [...applicationProperties.status.enum, 'suspended'],
+    },
+    updatedAt: dateTime,
     history: {
       type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: true,
-      },
+      items: historyEvent,
     },
   },
   additionalProperties: true,
@@ -132,12 +145,14 @@ const contact = {
   properties: {
     id: { type: 'integer', example: 1 },
     ...contactProperties,
+    status: {
+      ...contactProperties.status,
+      enum: [...contactProperties.status.enum, 'suspended'],
+    },
+    updatedAt: dateTime,
     history: {
       type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: true,
-      },
+      items: historyEvent,
     },
   },
   additionalProperties: true,
@@ -175,7 +190,7 @@ const spec = {
 
   info: {
     title: 'Job Tracker API',
-    version: '1.0.0',
+    version: '1.0.6',
     description: 'REST API for managing job applications and professional contacts.',
   },
 
@@ -201,6 +216,7 @@ const spec = {
           200: jsonResponse('Applications retrieved', {
             $ref: '#/components/schemas/ApplicationList',
           }),
+          403: errorResponse,
           500: errorResponse,
         },
       },
@@ -222,6 +238,7 @@ const spec = {
             $ref: APPLICATION_LABEL,
           }),
           400: errorResponse,
+          403: errorResponse,
           413: errorResponse,
           500: errorResponse,
         },
@@ -238,6 +255,7 @@ const spec = {
           200: jsonResponse('Old applications retrieved', {
             $ref: '#/components/schemas/ApplicationList',
           }),
+          403: errorResponse,
           500: errorResponse,
         },
       },
@@ -262,6 +280,8 @@ const spec = {
             $ref: APPLICATION_LABEL,
           }),
           400: errorResponse,
+          403: errorResponse,
+          413: errorResponse,
           404: errorResponse,
           500: errorResponse,
         },
@@ -274,6 +294,7 @@ const spec = {
         parameters: [idParameter()],
         responses: {
           204: { description: 'Application deleted' },
+          403: errorResponse,
           404: errorResponse,
           500: errorResponse,
         },
@@ -292,6 +313,7 @@ const spec = {
             $ref: APPLICATION_LABEL,
           }),
           400: errorResponse,
+          403: errorResponse,
           404: errorResponse,
           409: errorResponse,
           500: errorResponse,
@@ -308,6 +330,7 @@ const spec = {
           200: jsonResponse('Contacts retrieved', {
             $ref: '#/components/schemas/ContactList',
           }),
+          403: errorResponse,
           500: errorResponse,
         },
       },
@@ -329,6 +352,7 @@ const spec = {
             $ref: CONTACT_LABEL,
           }),
           400: errorResponse,
+          403: errorResponse,
           413: errorResponse,
           500: errorResponse,
         },
@@ -345,6 +369,7 @@ const spec = {
           200: jsonResponse('Old contacts retrieved', {
             $ref: '#/components/schemas/ContactList',
           }),
+          403: errorResponse,
           500: errorResponse,
         },
       },
@@ -369,6 +394,8 @@ const spec = {
             $ref: CONTACT_LABEL,
           }),
           400: errorResponse,
+          403: errorResponse,
+          413: errorResponse,
           404: errorResponse,
           500: errorResponse,
         },
@@ -381,6 +408,7 @@ const spec = {
         parameters: [idParameter()],
         responses: {
           204: { description: 'Contact deleted' },
+          403: errorResponse,
           404: errorResponse,
           500: errorResponse,
         },
@@ -399,6 +427,7 @@ const spec = {
             $ref: CONTACT_LABEL,
           }),
           400: errorResponse,
+          403: errorResponse,
           404: errorResponse,
           409: errorResponse,
           500: errorResponse,

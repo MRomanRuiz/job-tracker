@@ -27,6 +27,10 @@ const createApp = ({ storage: injectedStorage, allowedOrigins = DEFAULT_ALLOWED_
   // API documentation
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+  app.get('/api-docs.json', (_req, res) => {
+    res.json(swaggerSpec);
+  });
+
   const clientDistPath = path.resolve(__dirname, '../../client/dist');
 
   app.use(express.static(clientDistPath));
