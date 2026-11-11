@@ -1,6 +1,6 @@
 const cors = require('cors');
 const express = require('express');
-const { HTTP_STATUS, HttpError } = require('../domain/httpError');
+const { HTTP_STATUS } = require('../domain/httpError');
 
 const addSecurityMiddleware = (app, origins) => {
   app.disable('x-powered-by');

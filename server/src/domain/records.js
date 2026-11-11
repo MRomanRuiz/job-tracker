@@ -106,7 +106,6 @@ const parseTextFields = (body, fields) => {
 
     if (typeof value === 'string') {
       data[field] = value.trim();
-      // eslint-disable-next-line no-continue
       continue;
     }
 
@@ -457,7 +456,6 @@ const addDurationMonthsChange = (field, value, details, changes) => {
   if (parsedValue !== null) {
     if (!Number.isInteger(parsedValue)) {
       details.push(createDetail(field, VALIDATION_ERROR_CODES.INVALID_TYPE, 'Must be an integer'));
-      // eslint-disable-next-line sonarjs/no-all-duplicated-branchess
     } else if (parsedValue <= 0) {
       details.push(
         createDetail(field, VALIDATION_ERROR_CODES.INVALID_VALUE, 'Must be a positive integer'),
