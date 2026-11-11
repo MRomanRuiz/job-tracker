@@ -157,7 +157,10 @@ describe('additional app branches', () => {
   it('forwards client fallback errors to the error middleware', async () => {
     const originalSendFile = express.response.sendFile;
     express.response.sendFile = function sendFileWithError(_file, callback) {
-      callback(new Error('Client build unavailable'));
+      const error = new Error('Client build unavailable');
+      error.status = 404;
+      error.statusCode = 404;
+      callback(error);
       return this;
     };
 
