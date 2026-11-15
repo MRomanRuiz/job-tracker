@@ -83,5 +83,18 @@ export default function useCollection(name) {
     }
   };
 
-  return { items, staleItems, create, update, suspend };
+  const remove = async id => {
+    const deleted = await request(`/${id}`, { method: 'DELETE' });
+
+    if (!deleted) {
+      return false;
+    }
+
+    setItems(current => current.filter(item => item.id !== Number(id)));
+    void loadStale();
+
+    return true;
+  };
+
+  return { items, staleItems, create, update, suspend, remove };
 }

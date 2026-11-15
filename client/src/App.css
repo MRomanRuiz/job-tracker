@@ -434,6 +434,11 @@ main {
   overflow: hidden;
 }
 
+.delete-confirm h2 {
+  margin: 0 0 12px;
+  font-size: 1.25rem;
+}
+
 .record-details-header > button {
   position: absolute;
   top: 0;
@@ -852,10 +857,9 @@ main {
 
 .record-details-actions {
   display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 24px;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 }
 
 .record-details-alert {
@@ -1182,5 +1186,106 @@ main {
 @media (max-width: 600px) {
   .record-timeline-event {
     flex-basis: 190px;
+  }
+}
+
+.record-details-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.delete-button {
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.delete-button:hover {
+  background-color: #b91c1c;
+}
+
+.delete-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgb(0 0 0 / 50%);
+  animation: delete-fade-in 0.2s ease;
+}
+
+.delete-confirm {
+  width: 100%;
+  max-width: 420px;
+  padding: 28px;
+  background: var(--card-bg, white);
+  color: var(--text-color, #222);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 20%);
+  text-align: center;
+  animation: delete-slide-in 0.2s ease;
+}
+
+.delete-confirm-icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+
+.delete-confirm p {
+  margin: 0 0 24px;
+  line-height: 1.5;
+  color: var(--text-secondary, #666);
+}
+
+.delete-confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@keyframes delete-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes delete-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .delete-confirm-backdrop,
+  .delete-confirm {
+    animation: none;
+  }
+}
+
+@media (max-width: 400px) {
+  .delete-confirm-actions {
+    flex-direction: column-reverse;
+  }
+
+  .delete-confirm-actions button {
+    width: 100%;
   }
 }

@@ -1,7 +1,7 @@
 import { getRecordFields } from '../../lib/recordFields';
 import RecordTimeline from './RecordTimeline';
 
-function RecordDetails({ item, kind, isStale = false, onClose, onSuspend, onEdit }) {
+function RecordDetails({ item, kind, isStale = false, onClose, onSuspend, onEdit, onDelete }) {
   if (!item) {
     return null;
   }
@@ -110,13 +110,19 @@ function RecordDetails({ item, kind, isStale = false, onClose, onSuspend, onEdit
         <RecordTimeline record={item} recordType={kind} />
 
         <footer className="record-details-actions">
-          <button type="button" className="primary-button" onClick={() => onEdit?.(item)}>
-            Editar
+          <button type="button" className="delete-button" onClick={() => onDelete?.(item.id)}>
+            Eliminar
           </button>
 
-          <button type="button" className="secondary-button" onClick={onClose}>
-            Cerrar
-          </button>
+          <div className="record-details-actions-right">
+            <button type="button" className="primary-button" onClick={() => onEdit?.(item)}>
+              Editar
+            </button>
+
+            <button type="button" className="secondary-button" onClick={onClose}>
+              Cerrar
+            </button>
+          </div>
         </footer>
       </section>
     </div>
