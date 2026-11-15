@@ -21,6 +21,7 @@ const renderApplications = ({ items = [], staleItems = [], ...props } = {}) => {
     create: vi.fn().mockResolvedValue(true),
     update: vi.fn().mockResolvedValue(true),
     suspend: vi.fn(),
+    remove: vi.fn().mockResolvedValue(true),
   };
   const onCloseForm = vi.fn();
 
@@ -282,6 +283,14 @@ describe('Applications', () => {
     expect(within(rows[0]).getAllByRole('cell')[3].title).toBe('Investigación');
   });
 
+  it('uses the raw type for unknown types in the table and stale-items alert', () => {
+    const unknownType = makeApplication(3, { type: 'legacy-type' });
+    renderApplications({ items: [unknownType], staleItems: [unknownType] });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revisar' }));
+    expect(screen.getAllByText('legacy-type')).toHaveLength(2);
+  });
+
   it('disables duration months when the contract is indefinite', () => {
     renderApplications({ showForm: true });
 
@@ -332,7 +341,10 @@ describe('Applications', () => {
     fireEvent.click(statusSelect);
     expect(screen.queryByRole('dialog')).toBeNull();
 
-    fireEvent.keyDown(screen.getAllByRole('row')[1], { key: ' ' });
+    const row = screen.getAllByRole('row')[1];
+    fireEvent.keyDown(row, { key: 'a' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    fireEvent.keyDown(row, { key: ' ' });
 
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByText('Desarrollador — Acme 1')).toBeTruthy();
@@ -362,6 +374,17 @@ describe('Applications', () => {
     await waitFor(() =>
       expect(collection.update).toHaveBeenCalledWith(1, { company: 'Globex' }),
     );
+  });
+
+  it('restores application details when closing the edit form without changes', () => {
+    const { collection } = renderApplications({ items: [makeApplication(1)] });
+
+    fireEvent.click(screen.getAllByRole('row')[1]);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Editar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    expect(collection.update).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog').textContent).toContain('Desarrollador — Acme 1');
   });
 
   it('closes application details from the backdrop but not from inside the dialog', () => {
@@ -469,5 +492,45 @@ describe('Applications', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Suspender' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(collection.suspend).toHaveBeenCalledWith(4);
+  });
+
+  it('deletes an application only after confirmation', async () => {
+    const { collection } = renderApplications({ items: [makeApplication(7)] });
+
+    fireEvent.click(screen.getAllByRole('row')[1]);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Eliminar' }));
+
+    const confirmation = screen.getByRole('alertdialog');
+    expect(within(confirmation).getByText('Eliminar candidatura')).toBeTruthy();
+    expect(collection.remove).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      within(confirmation).getByRole('button', { name: 'Eliminar definitivamente' }),
+    );
+
+    await waitFor(() => expect(collection.remove).toHaveBeenCalledWith(7));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('keeps the application and confirmation open when deletion fails', async () => {
+    const { collection } = renderApplications({ items: [makeApplication(7)] });
+    collection.remove.mockResolvedValue(false);
+
+    fireEvent.click(screen.getAllByRole('row')[1]);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Eliminar' }));
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'Eliminar definitivamente',
+      }),
+    );
+
+    await waitFor(() => expect(collection.remove).toHaveBeenCalledWith(7));
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.getByRole('alertdialog')).toBeTruthy();
+
+    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Cancelar' }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(screen.getByRole('dialog')).toBeTruthy();
   });
 });

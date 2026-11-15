@@ -125,4 +125,19 @@ describe('RecordTimeline', () => {
 
     expect(container.firstChild).toBeNull();
   });
+
+  it('renders no detail for an unsupported event type', () => {
+    const history = [];
+    history.filter = () => [
+      {
+        field: 'legacy',
+        changedAt: '2026-01-02T10:00:00.000Z',
+      },
+    ];
+
+    render(<RecordTimeline record={{ history }} recordType="contact" />);
+
+    const event = within(screen.getByRole('list')).getByRole('listitem');
+    expect(within(event).queryByRole('heading')).toBeNull();
+  });
 });
