@@ -1,0 +1,207 @@
+/* Notas */
+
+.note-button span:first-child {
+  font-size: 15px;
+}
+
+.notes-cell {
+  width: 60px;
+  text-align: center;
+}
+
+.note-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 50%;
+  background: #f9fafb;
+  color: #4b5563;
+  font-size: 16px;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.note-button:hover {
+  transform: scale(1.08);
+  border-color: #9ca3af;
+  background: #f3f4f6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note-button,
+  .note-button:hover {
+    transform: none;
+    transition: none;
+  }
+}
+
+.note-button.has-note {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+/* Popup */
+
+.note-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.28);
+  backdrop-filter: blur(2px);
+}
+
+.note-popup {
+  width: min(460px, 100%);
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow:
+    0 20px 40px rgba(15, 23, 42, 0.18),
+    0 4px 12px rgba(15, 23, 42, 0.08);
+  animation: note-popup-in 0.15s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note-popup {
+    animation: none;
+  }
+}
+
+@keyframes note-popup-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.record-details-header > div {
+  padding: 0 44px;
+  text-align: center;
+}
+
+.record-details-alert > div {
+  flex: 1;
+}
+
+.note-popup-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.note-popup-header > div:first-child {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.note-popup-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  background: #f3f4f6;
+  font-size: 16px;
+}
+
+.note-popup-header h3 {
+  margin: 0 0 3px;
+  font-size: 16px;
+}
+
+.note-popup-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.note-popup-close {
+  border: 0;
+  padding: 2px 5px;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.note-popup-close:hover {
+  color: #374151;
+}
+
+.note-popup-body {
+  padding: 18px 20px;
+}
+
+.note-popup-body textarea {
+  width: 100%;
+  min-height: 130px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #1f2937;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+}
+
+.toolbar input:focus,
+.toolbar select:focus {
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.05);
+}
+
+.record-form-field input:focus,
+.record-form-field textarea:focus,
+.record-form-field select:focus {
+  outline: none;
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.05);
+}
+
+.record-form-field select:has(option[value='']:checked) {
+  color: #6b7280;
+  font-weight: 400;
+  font-size: inherit;
+}
+
+.note-popup-body textarea:focus {
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.05);
+}
+
+.note-popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
