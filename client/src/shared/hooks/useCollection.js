@@ -8,13 +8,18 @@ export default function useCollection(name) {
   const latestStaleRequest = useRef(0);
 
   const request = useCallback(
-    async (path = '', options = {}) => {
+    async (path = '', options = {}, { throwErrors = false } = {}) => {
       const url = `/${name}${path}`;
 
       try {
         return await apiRequest(url, options);
       } catch (error) {
         console.info(`Error en ${options.method ?? 'GET'} /api${url}:`, error);
+
+        if (throwErrors) {
+          throw error;
+        }
+
         return null;
       }
     },
@@ -42,8 +47,8 @@ export default function useCollection(name) {
     void loadStale();
   }, [name, request, loadStale]);
 
-  const replace = async (path, body) => {
-    const updated = await request(path, { method: 'PATCH', body });
+  const replace = async (path, body, { throwErrors = false } = {}) => {
+    const updated = await request(path, { method: 'PATCH', body }, { throwErrors });
 
     if (!updated) {
       return false;
@@ -68,7 +73,7 @@ export default function useCollection(name) {
   };
 
   const update = async (id, changes) => {
-    const updated = await replace(`/${id}`, changes);
+    const updated = await replace(`/${id}`, changes, { throwErrors: true });
 
     if (updated && changes.status !== undefined) {
       void loadStale();

@@ -103,24 +103,30 @@ describe('useCollection', () => {
     expect(staleRequests(fetchMock)).toBe(1);
   });
 
-  it('logs failed requests and keeps the current items', async () => {
+  it('propagates detailed update errors and keeps the current items', async () => {
     const consoleError = vi.spyOn(console, 'info').mockImplementation(() => {});
     const { result } = renderCollection({
-      'PATCH /api/contacts/1': { httpStatus: 400, body: { error: 'Inválido' } },
+      'PATCH /api/contacts/1': {
+        httpStatus: 400,
+        body: {
+          message: 'Invalid contact data',
+          details: [{ field: 'email', message: 'Must be a string' }],
+        },
+      },
     });
 
     await waitFor(() => expect(result.current.items).toHaveLength(1));
 
-    let ok;
     await act(async () => {
-      ok = await result.current.update(1, { status: 'replied' });
+      await expect(result.current.update(1, { status: 'replied' })).rejects.toThrow(
+        'email: Must be a string',
+      );
     });
 
-    expect(ok).toBe(false);
     expect(result.current.items).toEqual([pending]);
     expect(consoleError).toHaveBeenCalledWith(
       'Error en PATCH /api/contacts/1:',
-      expect.objectContaining({ message: 'Inválido' }),
+      expect.objectContaining({ message: 'email: Must be a string' }),
     );
   });
 
