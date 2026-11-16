@@ -40,6 +40,21 @@ describe('apiRequest', () => {
     });
   });
 
+  it('returns true for a successful response with no content', async () => {
+    const json = vi.fn();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 204,
+        json,
+      }),
+    );
+
+    await expect(apiRequest('/contacts/1', { method: 'DELETE' })).resolves.toBe(true);
+    expect(json).not.toHaveBeenCalled();
+  });
+
   it('uses the server error or falls back to the HTTP status', async () => {
     vi.stubGlobal(
       'fetch',

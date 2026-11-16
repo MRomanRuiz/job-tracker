@@ -18,6 +18,7 @@ import Toolbar from '../../shared/components/Toolbar';
 import RecordDetails from '../../shared/components/RecordDetails';
 import RecordEditForm from '../../shared/components/RecordEditForm';
 import { getRecordCreateFields } from '../../lib/recordFields';
+import DeleteConfirm from '../../shared/components/DeleteConfirm';
 
 const CONTACT_CREATE_FIELDS = getRecordCreateFields('contact');
 const REQUIRED_FORM_FIELDS = CONTACT_CREATE_FIELDS.filter(field => field.required);
@@ -41,12 +42,13 @@ const renderStaleContact = contact => (
 );
 
 function Contacts({ collection, showForm, onCloseForm }) {
-  const { items: contacts, staleItems, create, update, suspend } = collection;
+  const { items: contacts, staleItems, create, update, suspend, remove } = collection;
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
   const [noteContact, setNoteContact] = useState(null);
   const [selectedContact, setSelectedContact] = useState(null);
   const [editingContact, setEditingContact] = useState(null);
+  const [deletingContact, setDeletingContact] = useState(null);
 
   const filteredContacts = useMemo(() => {
     const searchText = search.trim().toLowerCase();
@@ -111,6 +113,17 @@ function Contacts({ collection, showForm, onCloseForm }) {
   const handleSaveNote = async notes => {
     if (await update(noteContact.id, { notes })) {
       setNoteContact(null);
+    }
+  };
+
+  const handleDelete = id => {
+    setDeletingContact(id);
+  };
+
+  const confirmDelete = async () => {
+    if (await remove(deletingContact)) {
+      setSelectedContact(null);
+      setDeletingContact(null);
     }
   };
 
@@ -191,6 +204,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
             setSelectedContact(null);
             setEditingContact(item);
           }}
+          onDelete={handleDelete}
         />
       )}
 
@@ -203,6 +217,15 @@ function Contacts({ collection, showForm, onCloseForm }) {
             setEditingContact(null);
             setSelectedContact(updatedItem ?? editingContact);
           }}
+        />
+      )}
+
+      {deletingContact !== null && (
+        <DeleteConfirm
+          title="Eliminar contacto"
+          message="¿Quieres eliminar definitivamente este contacto? Esta acción no se puede deshacer."
+          onConfirm={confirmDelete}
+          onCancel={() => setDeletingContact(null)}
         />
       )}
     </>

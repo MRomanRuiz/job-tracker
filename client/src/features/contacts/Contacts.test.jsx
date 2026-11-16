@@ -32,6 +32,7 @@ const renderContacts = ({ items = contacts, staleItems = [], ...props } = {}) =>
     create: vi.fn().mockResolvedValue(true),
     update: vi.fn().mockResolvedValue(true),
     suspend: vi.fn(),
+    remove: vi.fn().mockResolvedValue(true),
   };
   const onCloseForm = vi.fn();
 
@@ -83,6 +84,8 @@ describe('Contacts', () => {
     const rows = screen.getAllByRole('row');
     expect(rows).toHaveLength(3);
 
+    fireEvent.keyDown(rows[1], { key: 'a' });
+    expect(screen.queryByRole('dialog')).toBeNull();
     fireEvent.keyDown(rows[1], { key: 'Enter' });
 
     const dialog = screen.getByRole('dialog');
@@ -301,5 +304,55 @@ describe('Contacts', () => {
     expect(screen.getByText('Página 2 de 2')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '← Anterior' }));
     expect(screen.getByText('Página 1 de 2')).toBeTruthy();
+  });
+
+  it('restores contact details when closing the edit form without changes', () => {
+    const { collection } = renderContacts();
+
+    fireEvent.click(screen.getAllByRole('row')[1]);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Editar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    expect(collection.update).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog').textContent).toContain('Ana — Acme');
+  });
+
+  it('deletes a contact after confirmation', async () => {
+    const { collection } = renderContacts();
+
+    fireEvent.click(screen.getAllByRole('row')[1]);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Eliminar' }));
+
+    const confirmation = screen.getByRole('alertdialog');
+    expect(within(confirmation).getByText('Eliminar contacto')).toBeTruthy();
+    expect(collection.remove).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      within(confirmation).getByRole('button', { name: 'Eliminar definitivamente' }),
+    );
+
+    await waitFor(() => expect(collection.remove).toHaveBeenCalledWith(1));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('keeps the contact confirmation open when deletion fails', async () => {
+    const { collection } = renderContacts();
+    collection.remove.mockResolvedValue(false);
+
+    fireEvent.click(screen.getAllByRole('row')[1]);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Eliminar' }));
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'Eliminar definitivamente',
+      }),
+    );
+
+    await waitFor(() => expect(collection.remove).toHaveBeenCalledWith(1));
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.getByRole('alertdialog')).toBeTruthy();
+
+    fireEvent.mouseDown(screen.getByRole('alertdialog').parentElement);
+    expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 });

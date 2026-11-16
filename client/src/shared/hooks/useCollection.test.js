@@ -183,4 +183,58 @@ describe('useCollection', () => {
 
     expect(result.current.staleItems).toEqual([]);
   });
+
+  it('removes an item and reloads the stale items', async () => {
+    let stale = [pending];
+
+    const { result, fetchMock } = renderCollection({
+      'GET /api/contacts/old': () => ({ contacts: stale }),
+      'DELETE /api/contacts/1': () => {
+        stale = [];
+        return { httpStatus: 204 };
+      },
+    });
+
+    await waitFor(() => expect(result.current.items).toEqual([pending]));
+    await waitFor(() => expect(result.current.staleItems).toEqual([pending]));
+
+    let deleted;
+    await act(async () => {
+      deleted = await result.current.remove(1);
+    });
+
+    expect(deleted).toBe(true);
+    expect(result.current.items).toEqual([]);
+
+    await waitFor(() => expect(result.current.staleItems).toEqual([]));
+
+    expect(staleRequests(fetchMock)).toBe(2);
+  });
+
+  it('keeps the item and does not reload stale items when deletion fails', async () => {
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+    const { result, fetchMock } = renderCollection({
+      'DELETE /api/contacts/1': {
+        httpStatus: 500,
+        body: { error: 'Unavailable' },
+      },
+    });
+
+    await waitFor(() => expect(result.current.items).toEqual([pending]));
+
+    let deleted;
+    await act(async () => {
+      deleted = await result.current.remove(1);
+    });
+
+    expect(deleted).toBe(false);
+    expect(result.current.items).toEqual([pending]);
+    expect(staleRequests(fetchMock)).toBe(1);
+
+    expect(consoleInfo).toHaveBeenCalledWith(
+      'Error en DELETE /api/contacts/1:',
+      expect.objectContaining({ message: 'Unavailable' }),
+    );
+  });
 });

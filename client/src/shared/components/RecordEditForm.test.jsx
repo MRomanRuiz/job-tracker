@@ -63,6 +63,31 @@ describe('RecordEditForm', () => {
     ).toBe('Suspendido');
   });
 
+  it('initializes missing dates and nullable fields to empty values', () => {
+    renderEditForm({
+      item: { id: 3, contactedAt: '', durationMonths: null, durationType: null, notes: null },
+      kind: 'contact',
+    });
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByLabelText('Fecha de contacto').value).toBe('');
+    expect(within(dialog).getByLabelText('Notas').value).toBe('');
+    expect(within(dialog).getByLabelText('Ciudad').value).toBe('');
+  });
+
+  it('uses empty values for fields missing from the record', () => {
+    const { onSave, onClose } = renderEditForm({
+      item: { id: 3, company: null },
+      kind: 'application',
+    });
+
+    expect(screen.getByLabelText('Empresa').value).toBe('');
+    fireEvent.submit(screen.getByRole('dialog').querySelector('form'));
+
+    expect(onSave).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
   it('converts edited contact dates and saves only changed fields', async () => {
     const { onSave, onClose } = renderEditForm({ item: contact, kind: 'contact' });
     const dialog = screen.getByRole('dialog');
@@ -168,6 +193,18 @@ describe('RecordEditForm', () => {
         city: 'Sevilla',
       }),
     );
+  });
+
+  it('converts a non-empty month count to a number', async () => {
+    const { onSave } = renderEditForm();
+    const dialog = screen.getByRole('dialog');
+
+    fireEvent.change(within(dialog).getByLabelText('Duración (meses)'), {
+      target: { value: '6' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(1, { durationMonths: 6 }));
   });
 
   it('shows a save error and clears it after the next change', async () => {

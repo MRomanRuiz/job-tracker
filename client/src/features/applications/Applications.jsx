@@ -18,6 +18,7 @@ import NoteForm from '../../shared/components/NoteForm';
 import RecordDetails from '../../shared/components/RecordDetails';
 import RecordEditForm from '../../shared/components/RecordEditForm';
 import { getRecordCreateFields } from '../../lib/recordFields';
+import DeleteConfirm from '../../shared/components/DeleteConfirm';
 
 const APPLICATION_CREATE_FIELDS = getRecordCreateFields('application');
 const REQUIRED_FORM_FIELDS = APPLICATION_CREATE_FIELDS.filter(field => field.required);
@@ -42,13 +43,14 @@ const renderStaleApplication = application => (
 );
 
 function Applications({ collection, showForm, onCloseForm }) {
-  const { items: applications, staleItems, create, update, suspend } = collection;
+  const { items: applications, staleItems, create, update, suspend, remove } = collection;
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
   const [typeFilter, setTypeFilter] = useState('');
   const [noteApplication, setNoteApplication] = useState(null);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [editingApplication, setEditingApplication] = useState(null);
+  const [deletingApplication, setDeletingApplication] = useState(null);
 
   const filteredApplications = useMemo(() => {
     const searchText = search.trim().toLowerCase();
@@ -106,6 +108,17 @@ function Applications({ collection, showForm, onCloseForm }) {
   const handleTypeChange = value => {
     setTypeFilter(value);
     setPage(1);
+  };
+
+  const handleDelete = id => {
+    setDeletingApplication(id);
+  };
+
+  const confirmDelete = async () => {
+    if (await remove(deletingApplication)) {
+      setSelectedApplication(null);
+      setDeletingApplication(null);
+    }
   };
 
   return (
@@ -190,6 +203,7 @@ function Applications({ collection, showForm, onCloseForm }) {
             setSelectedApplication(null);
             setNoteApplication(item);
           }}
+          onDelete={handleDelete}
         />
       )}
 
@@ -202,6 +216,15 @@ function Applications({ collection, showForm, onCloseForm }) {
             setEditingApplication(null);
             setSelectedApplication(updatedItem ?? editingApplication);
           }}
+        />
+      )}
+
+      {deletingApplication !== null && (
+        <DeleteConfirm
+          title="Eliminar candidatura"
+          message="¿Quieres eliminar definitivamente esta candidatura? Esta acción no se puede deshacer."
+          onConfirm={confirmDelete}
+          onCancel={() => setDeletingApplication(null)}
         />
       )}
     </>
