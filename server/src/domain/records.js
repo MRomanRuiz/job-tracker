@@ -32,7 +32,7 @@ const CONTACT_TEXT_FIELDS = [
   'notes',
 ];
 
-const REQUIRED_APPLICATION_FIELDS = ['company', 'position', 'type'];
+const REQUIRED_APPLICATION_FIELDS = ['company', 'position', 'type', 'country'];
 
 const REQUIRED_CONTACT_FIELDS = ['contact', 'email', 'institution', 'country'];
 
@@ -55,6 +55,7 @@ const APPLICATION_LABELS = {
   company: 'Company',
   position: 'Position',
   type: APPLICATION_TYPE_LABEL,
+  country: 'Country',
 };
 
 const CONTACT_LABELS = {

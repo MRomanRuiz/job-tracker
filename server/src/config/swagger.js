@@ -86,7 +86,7 @@ const contactProperties = {
 const applicationInput = {
   type: 'object',
   additionalProperties: false,
-  required: ['company', 'position', 'type', 'appliedAt'],
+  required: ['company', 'position', 'type', 'country', 'appliedAt'],
   properties: applicationProperties,
 };
 
@@ -190,7 +190,7 @@ const spec = {
 
   info: {
     title: 'Job Tracker API',
-    version: '1.0.6',
+    version: '1.0.7',
     description: 'REST API for managing job applications and professional contacts.',
   },
 

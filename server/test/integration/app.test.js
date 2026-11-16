@@ -324,6 +324,7 @@ describe('applications', () => {
   it('rejects invalid applications', async () => {
     for (const body of [
       validApplication({ company: '   ' }),
+      validApplication({ country: '' }),
       validApplication({ status: 'bogus' }),
       validApplication({ company: 42 }),
       validApplication({ appliedAt: '2026-02-31T00:00:00.000Z' }),
@@ -340,6 +341,18 @@ describe('applications', () => {
       const response = await request('POST', '/api/applications', { body });
 
       assert.equal(response.status, 400);
+    }
+  });
+
+  it('requires a country when creating an application', async () => {
+    for (const body of [
+      validApplication({ country: undefined }),
+      validApplication({ country: ' ' }),
+    ]) {
+      const response = await request('POST', '/api/applications', { body });
+
+      assert.equal(response.status, 400);
+      assert.ok(response.body.details.some(detail => detail.field === 'country'));
     }
   });
 
