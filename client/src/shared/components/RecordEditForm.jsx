@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getRecordFields } from '../../lib/recordFields';
+import { LABELS } from '../lib/labels';
 
 const getInitialValues = item =>
   item
@@ -50,7 +51,10 @@ function RecordEditForm({ item, kind, onSave, onClose }) {
 
   const fields = getRecordFields(kind).filter(field => field.editable !== false);
 
-  const title = kind === 'application' ? 'Editar candidatura' : 'Editar contacto';
+  const title =
+    kind === 'application'
+      ? LABELS.recordEdit.applicationTitle
+      : LABELS.recordEdit.contactTitle;
 
   const handleChange = (name, value) => {
     setForm(current => {
@@ -83,7 +87,7 @@ function RecordEditForm({ item, kind, onSave, onClose }) {
       const result = await onSave(item.id, changes);
 
       if (!result) {
-        setError('No se pudieron guardar los cambios. Comprueba los datos e inténtalo de nuevo.');
+        setError(LABELS.recordEdit.saveError);
         return;
       }
 
@@ -91,7 +95,7 @@ function RecordEditForm({ item, kind, onSave, onClose }) {
         typeof result === 'object' && result !== null ? result : { ...item, ...changes },
       );
     } catch (err) {
-      setError(err?.message || 'Ha ocurrido un error al guardar.');
+      setError(err?.message || LABELS.recordEdit.genericError);
     } finally {
       setIsSaving(false);
     }
@@ -120,7 +124,7 @@ function RecordEditForm({ item, kind, onSave, onClose }) {
             className="secondary-button"
             onClick={onClose}
             disabled={isSaving}
-            aria-label="Cerrar formulario"
+            aria-label={LABELS.common.closeForm}
           >
             ✕
           </button>
@@ -161,7 +165,7 @@ function RecordEditForm({ item, kind, onSave, onClose }) {
                     ))}
 
                     {field.name === 'status' && item.status === 'suspended' && (
-                      <option value="suspended">Suspendido</option>
+                      <option value="suspended">{LABELS.recordEdit.suspended}</option>
                     )}
                   </select>
                 ) : field.type === 'textarea' ? (
@@ -193,7 +197,7 @@ function RecordEditForm({ item, kind, onSave, onClose }) {
 
           <footer className="record-details-actions">
             <button type="submit" className="primary-button" disabled={isSaving}>
-              {isSaving ? 'Guardando…' : 'Guardar cambios'}
+              {isSaving ? LABELS.common.saving : LABELS.common.saveChanges}
             </button>
 
             <button
@@ -202,7 +206,7 @@ function RecordEditForm({ item, kind, onSave, onClose }) {
               onClick={onClose}
               disabled={isSaving}
             >
-              Cancelar
+              {LABELS.common.cancel}
             </button>
           </footer>
         </form>

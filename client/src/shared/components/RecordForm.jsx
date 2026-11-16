@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LABELS } from '../lib/labels';
 
 function RecordForm({
   title,
@@ -124,10 +125,16 @@ function RecordForm({
               className="optional-fields-toggle"
               onClick={() => setShowOptionalFields(current => !current)}
               aria-label={
-                showOptionalFields ? 'Ocultar campos opcionales' : 'Mostrar campos opcionales'
+                showOptionalFields
+                  ? LABELS.common.hideOptionalFields
+                  : LABELS.common.showOptionalFields
               }
               aria-expanded={showOptionalFields}
-              title={showOptionalFields ? 'Ocultar campos opcionales' : 'Mostrar campos opcionales'}
+              title={
+                showOptionalFields
+                  ? LABELS.common.hideOptionalFields
+                  : LABELS.common.showOptionalFields
+              }
             >
               ⋮
             </button>
@@ -146,7 +153,7 @@ function RecordForm({
           </button>
 
           <button type="button" className="secondary-button" onClick={onCancel}>
-            Cancelar
+            {LABELS.common.cancel}
           </button>
         </div>
       </form>

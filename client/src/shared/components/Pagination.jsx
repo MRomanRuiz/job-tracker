@@ -1,3 +1,5 @@
+import { LABELS } from '../lib/labels';
+
 function Pagination({ currentPage, totalPages, onPageChange }) {
   if (totalPages <= 1) {
     return null;
@@ -10,11 +12,11 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
       >
-        ← Anterior
+        {LABELS.pagination.previous}
       </button>
 
       <span>
-        Página {currentPage} de {totalPages}
+        {LABELS.pagination.page} {currentPage} {LABELS.pagination.of} {totalPages}
       </span>
 
       <button
@@ -22,7 +24,7 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
       >
-        Siguiente →
+        {LABELS.pagination.next}
       </button>
     </div>
   );

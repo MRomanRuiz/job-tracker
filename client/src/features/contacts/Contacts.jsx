@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ALL_STATUSES, ITEMS_PER_PAGE } from '../../shared/lib/constants';
+import { LABELS } from '../../shared/lib/labels';
 import usePagination from '../../shared/hooks/usePagination';
 import {
   countByStatus,
@@ -25,10 +26,10 @@ const REQUIRED_FORM_FIELDS = CONTACT_CREATE_FIELDS.filter(field => field.require
 const OPTIONAL_FORM_FIELDS = CONTACT_CREATE_FIELDS.filter(field => !field.required);
 
 const STAT_ITEMS = [
-  { status: ALL_STATUSES, label: 'Total' },
-  { status: 'pending', label: 'En espera' },
-  { status: 'replied', label: 'Respondidos' },
-  { status: 'rejected', label: 'Rechazados' },
+  { status: ALL_STATUSES, label: LABELS.contacts.stats.total },
+  { status: 'pending', label: LABELS.contacts.stats.pending },
+  { status: 'replied', label: LABELS.contacts.stats.replied },
+  { status: 'rejected', label: LABELS.contacts.stats.rejected },
 ];
 
 const renderStaleContact = contact => (
@@ -131,8 +132,8 @@ function Contacts({ collection, showForm, onCloseForm }) {
     <>
       <StaleItemsAlert
         items={staleItems}
-        singularLabel="contacto pendiente"
-        pluralLabel="contactos pendientes"
+        singularLabel={LABELS.contacts.pendingSingular}
+        pluralLabel={LABELS.contacts.pendingPlural}
         itemType="contact"
         renderCells={renderStaleContact}
         onOpen={setSelectedContact}
@@ -142,10 +143,10 @@ function Contacts({ collection, showForm, onCloseForm }) {
       {showForm && (
         <div className="record-form-wrapper">
           <RecordForm
-            title="Nuevo contacto"
+            title={LABELS.contacts.newTitle}
             requiredFields={REQUIRED_FORM_FIELDS}
             optionalFields={OPTIONAL_FORM_FIELDS}
-            submitLabel="Guardar contacto"
+            submitLabel={LABELS.contacts.save}
             onSubmit={handleCreate}
             onCancel={onCloseForm}
           />
@@ -157,13 +158,15 @@ function Contacts({ collection, showForm, onCloseForm }) {
 
         <Toolbar
           search={search}
-          placeholder="Buscar contacto, institución, email o notas..."
+          placeholder={LABELS.contacts.searchPlaceholder}
           onSearchChange={handleSearchChange}
         />
 
         <p>
-          Mostrando {filteredContacts.length} de {contacts.length}{' '}
-          {contacts.length === 1 ? 'contacto' : 'contactos'}
+          {LABELS.contacts.showing} {filteredContacts.length} {LABELS.pagination.of}{' '}
+          {contacts.length} {contacts.length === 1
+            ? LABELS.contacts.singular
+            : LABELS.contacts.plural}
         </p>
 
         <section className="table-container">
@@ -222,8 +225,8 @@ function Contacts({ collection, showForm, onCloseForm }) {
 
       {deletingContact !== null && (
         <DeleteConfirm
-          title="Eliminar contacto"
-          message="¿Quieres eliminar definitivamente este contacto? Esta acción no se puede deshacer."
+          title={LABELS.contacts.deleteTitle}
+          message={LABELS.contacts.deleteMessage}
           onConfirm={confirmDelete}
           onCancel={() => setDeletingContact(null)}
         />

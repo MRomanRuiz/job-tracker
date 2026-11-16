@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LABELS } from '../lib/labels';
 
 function StaleItemsAlert({
   items,
@@ -23,11 +24,13 @@ function StaleItemsAlert({
         <span className="warning-icon">⚠️</span>
 
         <strong>
-          Hay {items.length} {label} de más de 30 días.
+          {LABELS.alerts.staleMessage
+            .replace('{count}', items.length)
+            .replace('{label}', label)}
         </strong>
 
         <button type="button" onClick={() => setIsOpen(open => !open)} aria-expanded={isOpen}>
-          {isOpen ? 'Ocultar' : 'Revisar'}
+          {isOpen ? LABELS.alerts.hide : LABELS.alerts.review}
         </button>
       </div>
 
@@ -42,11 +45,11 @@ function StaleItemsAlert({
                 className="secondary-button stale-detail-button"
                 onClick={() => onOpen?.(item)}
               >
-                Ver detalle
+                {LABELS.alerts.viewDetails}
               </button>
 
               <button type="button" className="suspend-button" onClick={() => onSuspend(item.id)}>
-                Suspender
+                {LABELS.alerts.suspend}
               </button>
             </div>
           ))}

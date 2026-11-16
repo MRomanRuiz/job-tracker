@@ -1,4 +1,4 @@
-import { CONTACT_STATUS_LABELS } from '../../shared/lib/constants';
+import { LABELS } from '../../shared/lib/labels';
 import EmptyState from '../../shared/components/EmptyState';
 import NoteButton from '../../shared/components/NoteButton';
 import StatusSelect from '../../shared/components/StatusSelect';
@@ -8,7 +8,7 @@ const MANUAL_STATUSES = ['pending', 'replied', 'rejected'];
 
 function ContactsTable({ contacts, onStatusChange, onOpenNote, onOpenDetail }) {
   if (contacts.length === 0) {
-    return <EmptyState label="contactos" />;
+    return <EmptyState label={LABELS.contacts.plural} />;
   }
 
   const handleRowKeyDown = (event, contact) => {
@@ -26,13 +26,13 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote, onOpenDetail }) {
     <table>
       <thead>
         <tr>
-          <th>Nombre</th>
-          <th>Email / Contacto</th>
-          <th>Centro / Empresa</th>
-          <th>País</th>
-          <th>Fecha</th>
-          <th>Estado</th>
-          <th>Nota</th>
+          <th>{LABELS.contacts.table.name}</th>
+          <th>{LABELS.contacts.table.email}</th>
+          <th>{LABELS.contacts.table.institution}</th>
+          <th>{LABELS.contacts.table.country}</th>
+          <th>{LABELS.contacts.table.date}</th>
+          <th>{LABELS.contacts.table.status}</th>
+          <th>{LABELS.contacts.table.note}</th>
         </tr>
       </thead>
 
@@ -44,7 +44,7 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote, onOpenDetail }) {
             onClick={() => onOpenDetail?.(contact)}
             onKeyDown={event => handleRowKeyDown(event, contact)}
             tabIndex={0}
-            title="Haz clic para ver todos los datos"
+            title={LABELS.table.rowTitle}
           >
             <td title={contact.contact}>{contact.contact}</td>
             <td title={contact.email}>{contact.email}</td>
@@ -59,7 +59,7 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote, onOpenDetail }) {
               <StatusSelect
                 value={contact.status}
                 statuses={MANUAL_STATUSES}
-                labels={CONTACT_STATUS_LABELS}
+                labels={LABELS.statuses.contact}
                 onChange={status => onStatusChange(contact.id, status)}
               />
             </td>

@@ -1,19 +1,17 @@
-import { APPLICATION_STATUS_LABELS, CONTACT_STATUS_LABELS } from '../lib/constants';
-
-const UNKNOWN_DATE_LABEL = 'Fecha desconocida';
+import { LABELS } from '../lib/labels';
 
 function formatDate(date) {
   if (!date) {
-    return UNKNOWN_DATE_LABEL;
+    return LABELS.common.unknownDate;
   }
 
   const parsed = new Date(date);
 
   if (Number.isNaN(parsed.getTime())) {
-    return UNKNOWN_DATE_LABEL;
+    return LABELS.common.unknownDate;
   }
 
-  return new Intl.DateTimeFormat('es-ES', {
+  return new Intl.DateTimeFormat(LABELS.locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -55,11 +53,11 @@ function buildTimelineEvents(record, recordType) {
 function TimelineEventDetails({ event, labels }) {
   switch (event.type) {
     case 'created':
-      return <h4>Registro creado</h4>;
+      return <h4>{LABELS.timeline.created}</h4>;
     case 'status':
       return (
         <>
-          <h4>Estado actualizado</h4>
+          <h4>{LABELS.timeline.statusUpdated}</h4>
           <p className="record-timeline-status">
             <span>{labels[event.oldValue] ?? event.oldValue ?? '—'}</span>
             <span aria-hidden="true"> → </span>
@@ -70,8 +68,8 @@ function TimelineEventDetails({ event, labels }) {
     case 'notes':
       return (
         <>
-          <h4>Nota añadida</h4>
-          <p className="record-timeline-note">{event.newValue || 'Notas eliminadas'}</p>
+          <h4>{LABELS.timeline.noteAdded}</h4>
+          <p className="record-timeline-note">{event.newValue || LABELS.timeline.notesDeleted}</p>
         </>
       );
     default:
@@ -98,7 +96,8 @@ function TimelineEvent({ event, labels }) {
 }
 
 function RecordTimeline({ record, recordType }) {
-  const labels = recordType === 'application' ? APPLICATION_STATUS_LABELS : CONTACT_STATUS_LABELS;
+  const labels =
+    recordType === 'application' ? LABELS.statuses.application : LABELS.statuses.contact;
   const events = buildTimelineEvents(record, recordType);
 
   if (events.length === 0) {
@@ -107,7 +106,7 @@ function RecordTimeline({ record, recordType }) {
 
   return (
     <section className="record-timeline">
-      <h3 className="record-timeline-title">Línea temporal</h3>
+      <h3 className="record-timeline-title">{LABELS.timeline.title}</h3>
 
       <div className="record-timeline-scroll">
         <ol className="record-timeline-track">
