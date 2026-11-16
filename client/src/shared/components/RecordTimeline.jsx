@@ -1,6 +1,6 @@
 import { LABELS } from '../lib/labels';
 
-function formatDate(date) {
+function formatTimelineDateTime(date) {
   if (!date) {
     return LABELS.common.unknownDate;
   }
@@ -86,7 +86,7 @@ function TimelineEvent({ event, labels }) {
 
       <div className="record-timeline-card">
         <time className="record-timeline-date" dateTime={event.date}>
-          {formatDate(event.date)}
+          {formatTimelineDateTime(event.date)}
         </time>
 
         <TimelineEventDetails event={event} labels={labels} />

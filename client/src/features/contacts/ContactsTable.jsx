@@ -3,8 +3,7 @@ import EmptyState from '../../shared/components/EmptyState';
 import NoteButton from '../../shared/components/NoteButton';
 import StatusSelect from '../../shared/components/StatusSelect';
 import { formatDate } from '../../shared/lib/utils';
-
-const MANUAL_STATUSES = ['pending', 'replied', 'rejected'];
+import sharedConstants from '../../../../shared/constants.json';
 
 function ContactsTable({ contacts, onStatusChange, onOpenNote, onOpenDetail }) {
   if (contacts.length === 0) {
@@ -58,7 +57,7 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote, onOpenDetail }) {
             <td onClick={event => event.stopPropagation()}>
               <StatusSelect
                 value={contact.status}
-                statuses={MANUAL_STATUSES}
+                statuses={sharedConstants.RECORD_STATUSES.contact}
                 labels={LABELS.statuses.contact}
                 onChange={status => onStatusChange(contact.id, status)}
               />

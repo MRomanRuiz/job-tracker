@@ -3,8 +3,7 @@ import EmptyState from '../../shared/components/EmptyState';
 import StatusSelect from '../../shared/components/StatusSelect';
 import NoteButton from '../../shared/components/NoteButton';
 import { formatDate } from '../../shared/lib/utils';
-
-const MANUAL_STATUSES = ['pending', 'interview', 'offer', 'rejected'];
+import sharedConstants from '../../../../shared/constants.json';
 
 function ApplicationsTable({ applications, onStatusChange, onOpenNote, onOpenDetail }) {
   if (applications.length === 0) {
@@ -57,7 +56,7 @@ function ApplicationsTable({ applications, onStatusChange, onOpenNote, onOpenDet
             <td onClick={event => event.stopPropagation()}>
               <StatusSelect
                 value={job.status}
-                statuses={MANUAL_STATUSES}
+                statuses={sharedConstants.RECORD_STATUSES.application}
                 labels={LABELS.statuses.application}
                 onChange={status => onStatusChange(job.id, status)}
               />

@@ -12,10 +12,40 @@ const FILES = {
 };
 
 const queues = new Map();
+const initializationPromises = new Map();
+
+async function ensureDataFile(name) {
+  const [filename, key] = FILES[name];
+  const file = path.join(DATA_DIR, filename);
+
+  if (!initializationPromises.has(file)) {
+    const initialization = (async () => {
+      await fs.mkdir(DATA_DIR, { recursive: true });
+
+      try {
+        await fs.writeFile(file, JSON.stringify({ [key]: [] }, null, 2), { flag: 'wx' });
+      } catch (error) {
+        if (error.code !== 'EEXIST') {
+          throw error;
+        }
+      }
+    })();
+
+    initializationPromises.set(file, initialization);
+  }
+
+  try {
+    await initializationPromises.get(file);
+  } catch (error) {
+    initializationPromises.delete(file);
+    throw error;
+  }
+}
 
 async function readData(name) {
   const key = collectionKey(name);
   const [filename] = FILES[name];
+  await ensureDataFile(name);
   const data = JSON.parse(await fs.readFile(path.join(DATA_DIR, filename), 'utf8'));
 
   if (!Array.isArray(data[key])) {

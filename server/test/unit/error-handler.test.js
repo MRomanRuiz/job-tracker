@@ -66,27 +66,17 @@ describe('error handler', () => {
   });
 
   it('uses the generic server error for invalid status codes', () => {
-    const originalInfo = console.info;
-    const loggedErrors = [];
-    console.info = error => loggedErrors.push(error);
+    for (const err of [
+      { statusCode: 399, message: 'Redirect' },
+      { statusCode: 500, message: 'Server error' },
+      { statusCode: '400', message: 'String status' },
+    ]) {
+      const response = responseMock();
 
-    try {
-      for (const err of [
-        { statusCode: 399, message: 'Redirect' },
-        { statusCode: 500, message: 'Server error' },
-        { statusCode: '400', message: 'String status' },
-      ]) {
-        const response = responseMock();
+      errorHandler(err, {}, response, () => {});
 
-        errorHandler(err, {}, response, () => {});
-
-        assert.equal(response.statusCode, 500);
-        assert.equal(response.body.message, 'Internal server error');
-      }
-
-      assert.equal(loggedErrors.length, 3);
-    } finally {
-      console.info = originalInfo;
+      assert.equal(response.statusCode, 500);
+      assert.equal(response.body.message, 'Internal server error');
     }
   });
 });

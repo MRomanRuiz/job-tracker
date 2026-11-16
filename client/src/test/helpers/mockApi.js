@@ -1,12 +1,7 @@
 import { vi } from 'vitest';
+import sharedConstants from '../../../../shared/constants.json';
 
-const HTTP_STATUS = {
-  BAD_REQUEST: 400,
-  CREATED: 201,
-  FORBIDDEN: 403,
-  INTERNAL_SERVER_ERROR: 500,
-  NOT_FOUND: 404,
-};
+const { HTTP_STATUS } = sharedConstants;
 
 // Routes are keyed by "METHOD /api/path"; a handler returns the JSON body or
 // { httpStatus, body } for other responses, optionally asynchronously.

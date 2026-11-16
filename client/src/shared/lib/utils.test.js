@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_STATUSES } from './constants.js';
-import { countByStatus, matchesStatus, matchesText, replaceById, sortByDateDesc } from './utils.js';
+import {
+  countByStatus,
+  formatDate,
+  matchesStatus,
+  matchesText,
+  replaceById,
+  sortByDateDesc,
+} from './utils.js';
 
 describe('matchesStatus', () => {
   it('treats suspended as rejected', () => {
@@ -28,6 +35,14 @@ describe('helpers', () => {
 
     expect(sortByDateDesc(items, 'd')[0].d).toBe('2026-03-01');
     expect(items[0].d).toBe('2026-01-01');
+  });
+
+  it('formats valid dates and handles missing or non-string values', () => {
+    expect(formatDate('2026-03-04T12:30:00.000Z')).toBe('2026-03-04');
+
+    for (const value of [null, undefined, '', 42]) {
+      expect(formatDate(value)).toBe('Fecha desconocida');
+    }
   });
 
   it('replaces an item by id', () => {

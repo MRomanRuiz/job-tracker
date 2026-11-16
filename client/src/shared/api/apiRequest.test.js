@@ -55,7 +55,7 @@ describe('apiRequest', () => {
     expect(json).not.toHaveBeenCalled();
   });
 
-  it('uses the server error or falls back to the HTTP status', async () => {
+  it('uses server validation details or falls back to the HTTP status', async () => {
     vi.stubGlobal(
       'fetch',
       vi
@@ -63,7 +63,13 @@ describe('apiRequest', () => {
         .mockResolvedValueOnce({
           ok: false,
           status: 400,
-          json: async () => ({ error: 'Invalid contact' }),
+          json: async () => ({
+            message: 'Invalid contact',
+            details: [
+              { field: 'email', message: 'Must be a valid email address' },
+              { field: 'contact', message: 'Contact name is required' },
+            ],
+          }),
         })
         .mockResolvedValueOnce({
           ok: false,
@@ -72,7 +78,9 @@ describe('apiRequest', () => {
         }),
     );
 
-    await expect(apiRequest('/contacts')).rejects.toThrow('Invalid contact');
+    await expect(apiRequest('/contacts')).rejects.toThrow(
+      'email: Must be a valid email address; contact: Contact name is required',
+    );
     await expect(apiRequest('/contacts')).rejects.toThrow('Error 502');
   });
 

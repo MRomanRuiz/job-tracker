@@ -247,7 +247,7 @@ after(async () => {
 
 describe('isOlderThanPendingLimit', () => {
   it('detects dates older than 30 days', () => {
-    const { isOlderThanPendingLimit } = require('../../src/app');
+    const { isOlderThanPendingLimit } = require('../../src/domain/records');
     const now = new Date('2026-02-01');
 
     assert.equal(isOlderThanPendingLimit('2025-12-01', now), true);
@@ -284,7 +284,7 @@ describe('applications', () => {
     assert.ok(list.applications.some(application => application.id === body.id));
   });
 
-  it('trims leading and trailing whitespace from text fields', async () => {
+  it('trims surrounding whitespace from application fields', async () => {
     const { status, body } = await request('POST', '/api/applications', {
       body: {
         ...validApplication(),
@@ -292,7 +292,7 @@ describe('applications', () => {
         position: '  Software Engineer  ',
         country: ' España  ',
         city: ' Málaga    ',
-        durationType: 'fixed',
+        durationType: ' fixed ',
         durationMonths: 6,
       },
     });

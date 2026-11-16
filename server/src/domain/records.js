@@ -1,4 +1,5 @@
 const { HTTP_STATUS, HttpError } = require('./httpError');
+const { RECORD_STATUSES } = require('../../../shared/constants.json');
 
 const MAX_PENDING_DAYS = 30;
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -12,14 +13,14 @@ const VALIDATION_ERROR_CODES = {
   FIELD_NOT_ALLOWED: 'FIELD_NOT_ALLOWED',
 };
 
-const ALLOWED_APPLICATION_STATUSES = new Set(['pending', 'interview', 'offer', 'rejected']);
+const ALLOWED_APPLICATION_STATUSES = new Set(RECORD_STATUSES.application);
 
 const ALLOWED_APPLICATION_RECORD_STATUSES = new Set([
   ...ALLOWED_APPLICATION_STATUSES,
-  'suspended',
+  RECORD_STATUSES.suspended,
 ]);
 
-const ALLOWED_CONTACT_STATUSES = new Set(['pending', 'replied', 'rejected']);
+const ALLOWED_CONTACT_STATUSES = new Set(RECORD_STATUSES.contact);
 
 const APPLICATION_TEXT_FIELDS = ['company', 'position', 'city', 'country', 'type', 'notes'];
 
@@ -333,7 +334,8 @@ const parseApplication = body => {
   details.push(...textDetails);
 
   const status = body.status ?? 'pending';
-  const durationType = body.durationType ?? '';
+  const durationType =
+    typeof body.durationType === 'string' ? body.durationType.trim() : (body.durationType ?? '');
   const durationMonths =
     body.durationMonths === '' || body.durationMonths == null ? null : body.durationMonths;
 
@@ -512,7 +514,9 @@ const parseApplicationChanges = (body, currentApplication) => {
   const changes = {};
 
   for (const [field, value] of Object.entries(body)) {
-    const handler = APPLICATION_CHANGE_HANDLERS[field];
+    const handler = Object.hasOwn(APPLICATION_CHANGE_HANDLERS, field)
+      ? APPLICATION_CHANGE_HANDLERS[field]
+      : null;
 
     if (handler) {
       handler(field, value, details, changes);
@@ -605,7 +609,9 @@ const parseContactChanges = body => {
   const changes = {};
 
   for (const [field, value] of Object.entries(body)) {
-    const handler = CONTACT_CHANGE_HANDLERS[field];
+    const handler = Object.hasOwn(CONTACT_CHANGE_HANDLERS, field)
+      ? CONTACT_CHANGE_HANDLERS[field]
+      : null;
 
     if (handler) {
       handler(field, value, details, changes);

@@ -109,12 +109,22 @@ describe('additional app branches', () => {
     assert.equal(body.info.title, 'Job Tracker API');
     assert.ok(body.paths['/api/applications']);
     assert.ok(body.paths['/api/contacts']);
-    assert.ok(
-      body.components.schemas.Application.properties.status.enum.includes('suspended'),
+    assert.ok(body.components.schemas.Application.properties.status.enum.includes('suspended'));
+    assert.ok(body.components.schemas.Contact.properties.status.enum.includes('suspended'));
+    assert.equal(body.components.schemas.Application.additionalProperties, false);
+    assert.equal(body.components.schemas.Contact.additionalProperties, false);
+    assert.equal(
+      body.components.schemas.Application.properties.history.items.additionalProperties,
+      false,
     );
-    assert.ok(
-      body.components.schemas.Contact.properties.status.enum.includes('suspended'),
+    assert.equal(
+      body.components.schemas.Contact.properties.history.items.additionalProperties,
+      false,
     );
+    assert.deepEqual(body.components.schemas.Application.properties.durationMonths.type, [
+      'integer',
+      'null',
+    ]);
     assert.ok(body.components.schemas.Application.properties.updatedAt);
     assert.ok(body.components.schemas.Contact.properties.updatedAt);
     assert.deepEqual(

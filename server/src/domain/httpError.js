@@ -1,12 +1,15 @@
-const HTTP_STATUS = {
-  BAD_REQUEST: 400,
-  CREATED: 201,
-  FORBIDDEN: 403,
-  INTERNAL_SERVER_ERROR: 500,
-  NOT_FOUND: 404,
-  NO_CONTENT: 204,
-  CONFLICT: 409,
-  PAYLOAD_TOO_LARGE: 413,
+const { HTTP_STATUS } = require('../../../shared/constants.json');
+
+const serializeError = (error, fallbackDescription) => {
+  const description = error.description || fallbackDescription;
+
+  return {
+    message: error.message,
+    ...(description && { description }),
+    ...(error.details?.length > 0 && {
+      details: error.details,
+    }),
+  };
 };
 
 class HttpError extends Error {
@@ -20,4 +23,4 @@ class HttpError extends Error {
   }
 }
 
-module.exports = { HTTP_STATUS, HttpError };
+module.exports = { HTTP_STATUS, HttpError, serializeError };

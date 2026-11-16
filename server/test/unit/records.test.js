@@ -8,6 +8,7 @@ const {
   parseApplication,
   parseApplicationChanges,
   parseContact,
+  parseContactChanges,
   suspendIfStale,
 } = require('../../src/domain/records');
 const { HttpError } = require('../../src/domain/httpError');
@@ -84,6 +85,21 @@ describe('record validation helpers', () => {
       () => parseApplicationChanges({ durationType: 1 }, validApplication({ status: 'pending' })),
       error => error instanceof HttpError && error.details[0].field === 'durationType',
     );
+  });
+
+  it('rejects inherited object property names when updating records', () => {
+    for (const field of ['__proto__', 'valueOf', 'hasOwnProperty']) {
+      const body = JSON.parse(`{"${field}":{}}`);
+
+      assert.throws(
+        () => parseApplicationChanges(body, validApplication({ status: 'pending' })),
+        error => error instanceof HttpError && error.details[0].field === field,
+      );
+      assert.throws(
+        () => parseContactChanges(body),
+        error => error instanceof HttpError && error.details[0].field === field,
+      );
+    }
   });
 
   it('handles empty types and empty duration updates', () => {
