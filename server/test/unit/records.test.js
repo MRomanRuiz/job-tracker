@@ -15,6 +15,7 @@ const { HttpError } = require('../../src/domain/httpError');
 const validApplication = overrides => ({
   company: 'Acme',
   position: 'Engineer',
+  country: 'España',
   type: 'research',
   appliedAt: '2026-10-20T12:30:00.000Z',
   status: 'pending',

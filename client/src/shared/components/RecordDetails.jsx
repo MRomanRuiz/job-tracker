@@ -1,4 +1,5 @@
 import { getRecordFields } from '../../lib/recordFields';
+import { LABELS } from '../lib/labels';
 import RecordTimeline from './RecordTimeline';
 
 function RecordDetails({ item, kind, isStale = false, onClose, onSuspend, onEdit, onDelete }) {
@@ -10,13 +11,13 @@ function RecordDetails({ item, kind, isStale = false, onClose, onSuspend, onEdit
 
   const getRecordTitle = () => {
     if (kind === 'application') {
-      const position = item.position || 'Candidatura';
+      const position = item.position || LABELS.recordDetails.applicationFallback;
       const company = item.company || '';
 
       return company ? `${position} — ${company}` : position;
     }
 
-    const contact = item.contact || 'Contacto';
+    const contact = item.contact || LABELS.recordDetails.contactFallback;
     const institution = item.institution || '';
 
     return institution ? `${contact} — ${institution}` : contact;
@@ -57,7 +58,7 @@ function RecordDetails({ item, kind, isStale = false, onClose, onSuspend, onEdit
             type="button"
             className="secondary-button"
             onClick={onClose}
-            aria-label="Cerrar detalle"
+            aria-label={LABELS.common.closeDetails}
           >
             ✕
           </button>
@@ -68,11 +69,11 @@ function RecordDetails({ item, kind, isStale = false, onClose, onSuspend, onEdit
             <span className="warning-icon">⚠️</span>
 
             <div>
-              <strong>Registro pendiente de más de 30 días</strong>
+              <strong>{LABELS.alerts.staleRecord}</strong>
             </div>
 
             <button type="button" className="suspend-button" onClick={() => onSuspend(item.id)}>
-              Suspender
+              {LABELS.alerts.suspend}
             </button>
           </div>
         )}
@@ -111,16 +112,16 @@ function RecordDetails({ item, kind, isStale = false, onClose, onSuspend, onEdit
 
         <footer className="record-details-actions">
           <button type="button" className="delete-button" onClick={() => onDelete?.(item.id)}>
-            Eliminar
+            {LABELS.common.delete}
           </button>
 
           <div className="record-details-actions-right">
             <button type="button" className="primary-button" onClick={() => onEdit?.(item)}>
-              Editar
+              {LABELS.common.edit}
             </button>
 
             <button type="button" className="secondary-button" onClick={onClose}>
-              Cerrar
+              {LABELS.common.close}
             </button>
           </div>
         </footer>

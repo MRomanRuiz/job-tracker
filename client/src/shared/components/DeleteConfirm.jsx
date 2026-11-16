@@ -1,4 +1,6 @@
-function DeleteConfirm({ title = '¿Eliminar registro?', message, onConfirm, onCancel }) {
+import { LABELS } from '../lib/labels';
+
+function DeleteConfirm({ title = LABELS.deleteConfirm.title, message, onConfirm, onCancel }) {
   return (
     <div
       className="delete-confirm-backdrop"
@@ -23,11 +25,11 @@ function DeleteConfirm({ title = '¿Eliminar registro?', message, onConfirm, onC
 
         <div className="delete-confirm-actions">
           <button type="button" className="secondary-button" onClick={onCancel}>
-            Cancelar
+            {LABELS.common.cancel}
           </button>
 
           <button type="button" className="delete-button" onClick={onConfirm}>
-            Eliminar definitivamente
+            {LABELS.common.deletePermanently}
           </button>
         </div>
       </section>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ALL_STATUSES, APPLICATION_TYPE_LABELS, ITEMS_PER_PAGE } from '../../shared/lib/constants';
+import { ALL_STATUSES, ITEMS_PER_PAGE } from '../../shared/lib/constants';
+import { LABELS } from '../../shared/lib/labels';
 import usePagination from '../../shared/hooks/usePagination';
 import {
   countByStatus,
@@ -25,10 +26,10 @@ const REQUIRED_FORM_FIELDS = APPLICATION_CREATE_FIELDS.filter(field => field.req
 const OPTIONAL_FORM_FIELDS = APPLICATION_CREATE_FIELDS.filter(field => !field.required);
 
 const STAT_ITEMS = [
-  { status: ALL_STATUSES, label: 'Total' },
-  { status: 'pending', label: 'En espera' },
-  { status: 'interview', label: 'Entrevistas' },
-  { status: 'rejected', label: 'Rechazadas' },
+  { status: ALL_STATUSES, label: LABELS.applications.stats.total },
+  { status: 'pending', label: LABELS.applications.stats.pending },
+  { status: 'interview', label: LABELS.applications.stats.interviews },
+  { status: 'rejected', label: LABELS.applications.stats.rejected },
 ];
 
 const renderStaleApplication = application => (
@@ -37,7 +38,7 @@ const renderStaleApplication = application => (
       {application.company}
     </span>
     <span title={application.position}>{application.position}</span>
-    <span>{APPLICATION_TYPE_LABELS[application.type] || application.type}</span>
+    <span>{LABELS.applicationTypes[application.type] || application.type}</span>
     <span className="stale-date">{formatDate(application.appliedAt)}</span>
   </>
 );
@@ -125,8 +126,8 @@ function Applications({ collection, showForm, onCloseForm }) {
     <>
       <StaleItemsAlert
         items={staleItems}
-        singularLabel="candidatura pendiente"
-        pluralLabel="candidaturas pendientes"
+        singularLabel={LABELS.applications.pendingSingular}
+        pluralLabel={LABELS.applications.pendingPlural}
         itemType="application"
         renderCells={renderStaleApplication}
         onSuspend={suspend}
@@ -136,10 +137,10 @@ function Applications({ collection, showForm, onCloseForm }) {
       {showForm && (
         <div className="record-form-wrapper">
           <RecordForm
-            title="Nueva candidatura"
+            title={LABELS.applications.newTitle}
             requiredFields={REQUIRED_FORM_FIELDS}
             optionalFields={OPTIONAL_FORM_FIELDS}
-            submitLabel="Guardar candidatura"
+            submitLabel={LABELS.applications.save}
             onSubmit={handleCreate}
             onCancel={onCloseForm}
           />
@@ -151,19 +152,21 @@ function Applications({ collection, showForm, onCloseForm }) {
 
         <Toolbar
           search={search}
-          placeholder="Buscar empresa, puesto..."
+          placeholder={LABELS.applications.searchPlaceholder}
           onSearchChange={handleSearchChange}
         >
           <select value={typeFilter} onChange={event => handleTypeChange(event.target.value)}>
-            <option value="">Todos los tipos</option>
-            <option value="industry">Empresa</option>
-            <option value="research">Investigación</option>
+            <option value="">{LABELS.applications.allTypes}</option>
+            <option value="industry">{LABELS.applicationTypes.industry}</option>
+            <option value="research">{LABELS.applicationTypes.research}</option>
           </select>
         </Toolbar>
 
         <p>
-          Mostrando {filteredApplications.length} de {applications.length}{' '}
-          {applications.length === 1 ? 'candidatura' : 'candidaturas'}
+          {LABELS.applications.showing} {filteredApplications.length} {LABELS.pagination.of}{' '}
+          {applications.length} {applications.length === 1
+            ? LABELS.applications.singular
+            : LABELS.applications.plural}
         </p>
 
         <section className="table-container">
@@ -221,8 +224,8 @@ function Applications({ collection, showForm, onCloseForm }) {
 
       {deletingApplication !== null && (
         <DeleteConfirm
-          title="Eliminar candidatura"
-          message="¿Quieres eliminar definitivamente esta candidatura? Esta acción no se puede deshacer."
+          title={LABELS.applications.deleteTitle}
+          message={LABELS.applications.deleteMessage}
           onConfirm={confirmDelete}
           onCancel={() => setDeletingApplication(null)}
         />

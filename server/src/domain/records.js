@@ -14,6 +14,11 @@ const VALIDATION_ERROR_CODES = {
 
 const ALLOWED_APPLICATION_STATUSES = new Set(['pending', 'interview', 'offer', 'rejected']);
 
+const ALLOWED_APPLICATION_RECORD_STATUSES = new Set([
+  ...ALLOWED_APPLICATION_STATUSES,
+  'suspended',
+]);
+
 const ALLOWED_CONTACT_STATUSES = new Set(['pending', 'replied', 'rejected']);
 
 const APPLICATION_TEXT_FIELDS = ['company', 'position', 'city', 'country', 'type', 'notes'];
@@ -32,7 +37,7 @@ const CONTACT_TEXT_FIELDS = [
   'notes',
 ];
 
-const REQUIRED_APPLICATION_FIELDS = ['company', 'position', 'type'];
+const REQUIRED_APPLICATION_FIELDS = ['company', 'position', 'type', 'country'];
 
 const REQUIRED_CONTACT_FIELDS = ['contact', 'email', 'institution', 'country'];
 
@@ -55,6 +60,7 @@ const APPLICATION_LABELS = {
   company: 'Company',
   position: 'Position',
   type: APPLICATION_TYPE_LABEL,
+  country: 'Country',
 };
 
 const CONTACT_LABELS = {
@@ -380,7 +386,12 @@ const validateUpdatedApplication = application => {
         )
       : []),
     ...validateDateField('appliedAt', application.appliedAt),
-    ...validateEnumField('status', application.status, ALLOWED_APPLICATION_STATUSES, 'Status'),
+    ...validateEnumField(
+      'status',
+      application.status,
+      ALLOWED_APPLICATION_RECORD_STATUSES,
+      'Status',
+    ),
     ...validateApplicationDuration(application.durationType, application.durationMonths),
   ];
 

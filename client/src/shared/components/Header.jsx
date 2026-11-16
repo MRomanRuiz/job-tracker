@@ -1,15 +1,17 @@
+import { LABELS } from '../lib/labels';
+
 const VIEWS = {
   applications: {
-    description: 'Control de tus candidaturas',
-    switchLabel: 'Contactos',
+    description: LABELS.header.applicationsDescription,
+    switchLabel: LABELS.header.contacts,
     switchTo: 'contacts',
-    newLabel: '+ Nueva candidatura',
+    newLabel: LABELS.header.newApplication,
   },
   contacts: {
-    description: 'Control de tus contactos',
-    switchLabel: '← Candidaturas',
+    description: LABELS.header.contactsDescription,
+    switchLabel: LABELS.header.applications,
     switchTo: 'applications',
-    newLabel: '+ Nuevo contacto',
+    newLabel: LABELS.header.newContact,
   },
 };
 
@@ -19,7 +21,7 @@ function Header({ view, onSwitchView, onNew }) {
   return (
     <header className="header">
       <div>
-        <h1>Job Tracker</h1>
+        <h1>{LABELS.header.appName}</h1>
         <p>{description}</p>
       </div>
 

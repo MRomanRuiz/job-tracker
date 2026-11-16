@@ -48,7 +48,7 @@ describe('RecordEditForm', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('shows a contact form with normalized date and suspended status option', () => {
+  it('keeps the contact date read-only and shows suspended status', () => {
     renderEditForm({
       item: { ...contact, status: 'suspended' },
       kind: 'contact',
@@ -56,21 +56,21 @@ describe('RecordEditForm', () => {
 
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByRole('heading', { name: 'Editar contacto' })).toBeTruthy();
-    expect(within(dialog).getByLabelText('Fecha de contacto').value).toBe('2026-01-02');
+    expect(within(dialog).queryByLabelText('Fecha de contacto')).toBeNull();
     expect(
       within(dialog).getByLabelText('Estado').querySelector('option[value="suspended"]')
         .textContent,
     ).toBe('Suspendido');
   });
 
-  it('initializes missing dates and nullable fields to empty values', () => {
+  it('initializes nullable contact fields to empty values', () => {
     renderEditForm({
       item: { id: 3, contactedAt: '', durationMonths: null, durationType: null, notes: null },
       kind: 'contact',
     });
 
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByLabelText('Fecha de contacto').value).toBe('');
+    expect(within(dialog).queryByLabelText('Fecha de contacto')).toBeNull();
     expect(within(dialog).getByLabelText('Notas').value).toBe('');
     expect(within(dialog).getByLabelText('Ciudad').value).toBe('');
   });
@@ -88,15 +88,12 @@ describe('RecordEditForm', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it('converts edited contact dates and saves only changed fields', async () => {
+  it('preserves the contact date when saving other changed fields', async () => {
     const { onSave, onClose } = renderEditForm({ item: contact, kind: 'contact' });
     const dialog = screen.getByRole('dialog');
 
     fireEvent.change(within(dialog).getByLabelText('Nombre'), {
       target: { value: 'Eva' },
-    });
-    fireEvent.change(within(dialog).getByLabelText('Fecha de contacto'), {
-      target: { value: '2026-02-10' },
     });
     fireEvent.change(within(dialog).getByLabelText('Notas'), {
       target: { value: 'Seguimiento' },
@@ -106,14 +103,12 @@ describe('RecordEditForm', () => {
     await waitFor(() =>
       expect(onSave).toHaveBeenCalledWith(2, {
         contact: 'Eva',
-        contactedAt: '2026-02-10T00:00:00.000Z',
         notes: 'Seguimiento',
       }),
     );
     expect(onClose).toHaveBeenCalledWith({
       ...contact,
       contact: 'Eva',
-      contactedAt: '2026-02-10T00:00:00.000Z',
       notes: 'Seguimiento',
     });
   });
@@ -142,19 +137,6 @@ describe('RecordEditForm', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalledWith(savedRecord));
-  });
-
-  it('clears a contact date when the submitted value is empty', async () => {
-    const { onSave, onClose } = renderEditForm({ item: contact, kind: 'contact' });
-    const dialog = screen.getByRole('dialog');
-
-    fireEvent.change(within(dialog).getByLabelText('Fecha de contacto'), {
-      target: { value: '' },
-    });
-    fireEvent.submit(dialog.querySelector('form'));
-
-    await waitFor(() => expect(onSave).toHaveBeenCalledWith(2, { contactedAt: '' }));
-    expect(onClose).toHaveBeenCalledWith({ ...contact, contactedAt: '' });
   });
 
   it('closes without saving when submitted values have not changed', () => {

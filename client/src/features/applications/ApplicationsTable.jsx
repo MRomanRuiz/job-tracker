@@ -1,4 +1,4 @@
-import { APPLICATION_STATUS_LABELS, APPLICATION_TYPE_LABELS } from '../../shared/lib/constants';
+import { LABELS } from '../../shared/lib/labels';
 import EmptyState from '../../shared/components/EmptyState';
 import StatusSelect from '../../shared/components/StatusSelect';
 import NoteButton from '../../shared/components/NoteButton';
@@ -8,20 +8,20 @@ const MANUAL_STATUSES = ['pending', 'interview', 'offer', 'rejected'];
 
 function ApplicationsTable({ applications, onStatusChange, onOpenNote, onOpenDetail }) {
   if (applications.length === 0) {
-    return <EmptyState label="candidaturas" />;
+    return <EmptyState label={LABELS.applications.plural} />;
   }
 
   return (
     <table>
       <thead>
         <tr>
-          <th>Empresa</th>
-          <th>Puesto</th>
-          <th>País</th>
-          <th>Tipo</th>
-          <th>Fecha</th>
-          <th>Estado</th>
-          <th>Nota</th>
+          <th>{LABELS.applications.table.company}</th>
+          <th>{LABELS.applications.table.position}</th>
+          <th>{LABELS.applications.table.country}</th>
+          <th>{LABELS.applications.table.type}</th>
+          <th>{LABELS.applications.table.date}</th>
+          <th>{LABELS.applications.table.status}</th>
+          <th>{LABELS.applications.table.note}</th>
         </tr>
       </thead>
 
@@ -42,13 +42,13 @@ function ApplicationsTable({ applications, onStatusChange, onOpenNote, onOpenDet
               }
             }}
             tabIndex={0}
-            title="Haz clic para ver todos los datos"
+            title={LABELS.table.rowTitle}
           >
             <td title={job.company}>{job.company}</td>
             <td title={job.position}>{job.position}</td>
             <td title={job.country}>{job.country}</td>
-            <td title={APPLICATION_TYPE_LABELS[job.type] || job.type}>
-              {APPLICATION_TYPE_LABELS[job.type] || job.type}
+            <td title={LABELS.applicationTypes[job.type] || job.type}>
+              {LABELS.applicationTypes[job.type] || job.type}
             </td>
             <td className="date-cell" title={formatDate(job.appliedAt)}>
               {formatDate(job.appliedAt)}
@@ -58,7 +58,7 @@ function ApplicationsTable({ applications, onStatusChange, onOpenNote, onOpenDet
               <StatusSelect
                 value={job.status}
                 statuses={MANUAL_STATUSES}
-                labels={APPLICATION_STATUS_LABELS}
+                labels={LABELS.statuses.application}
                 onChange={status => onStatusChange(job.id, status)}
               />
             </td>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LABELS } from '../lib/labels';
 
 function NoteForm({ item, onSave, onCancel }) {
   const [note, setNote] = useState(item.notes || '');
@@ -23,12 +24,17 @@ function NoteForm({ item, onSave, onCancel }) {
             <span className="note-popup-icon">📝</span>
 
             <div>
-              <h3 id="note-popup-title">Nota</h3>
+              <h3 id="note-popup-title">{LABELS.common.note}</h3>
               <p>{title}</p>
             </div>
           </div>
 
-          <button type="button" className="note-popup-close" onClick={onCancel} aria-label="Cerrar">
+          <button
+            type="button"
+            className="note-popup-close"
+            onClick={onCancel}
+            aria-label={LABELS.noteForm.close}
+          >
             ×
           </button>
         </div>
@@ -38,7 +44,7 @@ function NoteForm({ item, onSave, onCancel }) {
             <textarea
               value={note}
               onChange={event => setNote(event.target.value)}
-              placeholder="Escribe una nota..."
+              placeholder={LABELS.noteForm.placeholder}
               rows="5"
               autoFocus
             />
@@ -46,11 +52,11 @@ function NoteForm({ item, onSave, onCancel }) {
 
           <div className="note-popup-actions">
             <button type="button" className="secondary-button" onClick={onCancel}>
-              Cancelar
+              {LABELS.common.cancel}
             </button>
 
             <button type="submit" className="primary-button">
-              Guardar
+              {LABELS.common.save}
             </button>
           </div>
         </form>
