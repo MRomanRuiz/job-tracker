@@ -512,7 +512,9 @@ const parseApplicationChanges = (body, currentApplication) => {
   const changes = {};
 
   for (const [field, value] of Object.entries(body)) {
-    const handler = APPLICATION_CHANGE_HANDLERS[field];
+    const handler = Object.hasOwn(APPLICATION_CHANGE_HANDLERS, field)
+      ? APPLICATION_CHANGE_HANDLERS[field]
+      : null;
 
     if (handler) {
       handler(field, value, details, changes);
@@ -605,7 +607,9 @@ const parseContactChanges = body => {
   const changes = {};
 
   for (const [field, value] of Object.entries(body)) {
-    const handler = CONTACT_CHANGE_HANDLERS[field];
+    const handler = Object.hasOwn(CONTACT_CHANGE_HANDLERS, field)
+      ? CONTACT_CHANGE_HANDLERS[field]
+      : null;
 
     if (handler) {
       handler(field, value, details, changes);
