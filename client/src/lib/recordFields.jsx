@@ -124,6 +124,7 @@ export const CONTACT_FIELDS = [
     required: true,
     format: formatDate,
     create: false,
+    editable: false,
   },
   {
     name: 'status',

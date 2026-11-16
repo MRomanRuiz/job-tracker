@@ -6,7 +6,6 @@ const getInitialValues = item =>
   item
     ? {
         ...item,
-        contactedAt: item.contactedAt ? String(item.contactedAt).slice(0, 10) : '',
         durationMonths: item.durationMonths ?? '',
         durationType: item.durationType ?? '',
         notes: item.notes ?? '',
