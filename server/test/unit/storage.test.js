@@ -99,28 +99,30 @@ describe('storage factory', () => {
 });
 
 describe('JSON storage', () => {
-  it('uses the default data directory when JSON_DATA_DIR is unset', async () => {
+  it('creates a missing data directory and empty collection files', async () => {
     const jsonModulePath = require.resolve('../../src/storage/json');
     const configuredDataDir = process.env.JSON_DATA_DIR;
-    const defaultJobsPath = path.resolve(__dirname, '../../../client/data/jobs.json');
-    delete process.env.JSON_DATA_DIR;
+    const missingDataDir = path.join(dataDir, 'not-created-yet');
+    process.env.JSON_DATA_DIR = missingDataDir;
     delete require.cache[jsonModulePath];
 
     try {
-      const defaultStorage = require('../../src/storage/json').createJSONStorage();
-      try {
-        await fs.access(defaultJobsPath);
-        assert.ok(Array.isArray(await defaultStorage.list('applications')));
-      } catch (error) {
-        if (error.code !== 'ENOENT') {
-          throw error;
-        }
+      const emptyStorage = require('../../src/storage/json').createJSONStorage();
+      const [applications, contacts] = await Promise.all([
+        emptyStorage.list('applications'),
+        emptyStorage.list('contacts'),
+      ]);
 
-        await assert.rejects(defaultStorage.list('applications'), {
-          code: 'ENOENT',
-          path: defaultJobsPath,
-        });
-      }
+      assert.deepEqual(applications, []);
+      assert.deepEqual(contacts, []);
+      assert.deepEqual(
+        JSON.parse(await fs.readFile(path.join(missingDataDir, 'jobs.json'), 'utf8')),
+        { applications: [] },
+      );
+      assert.deepEqual(
+        JSON.parse(await fs.readFile(path.join(missingDataDir, 'contacts.json'), 'utf8')),
+        { contacts: [] },
+      );
     } finally {
       if (configuredDataDir === undefined) {
         delete process.env.JSON_DATA_DIR;

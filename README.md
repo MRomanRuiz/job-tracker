@@ -133,7 +133,7 @@ The CI currently reports coverage but does not enforce minimum coverage threshol
 
 The backend supports two storage implementations.
 
-- **JSON:** Stores applications and contacts in `jobs.json` and `contacts.json`. Set `JSON_DATA_DIR` to choose the directory used for these files. If unset, the JSON storage implementation uses its configured default directory.
+- **JSON:** Stores applications and contacts in `jobs.json` and `contacts.json` under `client/data` by default. On first read, the server creates the directory and any missing files with empty collections, without replacing existing files. Set `JSON_DATA_DIR` to choose another directory.
 - **MongoDB:** Stores applications and contacts in separate collections and uses a counter collection to generate numeric record IDs. Configure the connection with `MONGODB_URI` and `MONGODB_DB`.
 
 Select the storage implementation with `STORAGE_TYPE=json` or `STORAGE_TYPE=mongodb`. JSON storage is the default when no storage type is configured.
@@ -291,7 +291,7 @@ Writes are serialized and atomic in JSON storage. MongoDB storage uses database 
 .
 ├── package.json                    Root scripts for development, lint, tests and build
 ├── client/                          React frontend (Vite)
-│   ├── data/                        Local JSON data and MongoDB import script
+│   ├── data/                        Ignored local JSON data, created as needed
 │   └── src/
 │       ├── app/                     Application composition and app-level tests
 │       ├── features/
