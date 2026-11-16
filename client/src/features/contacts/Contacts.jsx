@@ -102,7 +102,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
   };
 
   const handleStatClick = status => {
-    setStatusFilter(current => (current === status ? ALL_STATUSES : status));
+    setStatusFilter(status);
     setPage(1);
   };
 
@@ -164,9 +164,8 @@ function Contacts({ collection, showForm, onCloseForm }) {
 
         <p>
           {LABELS.contacts.showing} {filteredContacts.length} {LABELS.pagination.of}{' '}
-          {contacts.length} {contacts.length === 1
-            ? LABELS.contacts.singular
-            : LABELS.contacts.plural}
+          {contacts.length}{' '}
+          {contacts.length === 1 ? LABELS.contacts.singular : LABELS.contacts.plural}
         </p>
 
         <section className="table-container">

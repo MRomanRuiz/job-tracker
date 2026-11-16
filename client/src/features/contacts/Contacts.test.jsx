@@ -50,7 +50,7 @@ const names = () =>
     .map(row => within(row).getAllByRole('cell')[0].textContent);
 
 describe('Contacts', () => {
-  it('toggles the status filter when a stat card is clicked twice', () => {
+  it('keeps the status filter selected until another stat card is clicked', () => {
     renderContacts();
 
     const replied = screen.getByRole('button', { name: /^Respondidos/ });
@@ -59,6 +59,9 @@ describe('Contacts', () => {
     expect(names()).toEqual(['Luis']);
 
     fireEvent.click(replied);
+    expect(names()).toEqual(['Luis']);
+
+    fireEvent.click(screen.getByRole('button', { name: /^Total/ }));
     expect(names()).toEqual(['Ana', 'Luis']);
   });
 
@@ -327,9 +330,7 @@ describe('Contacts', () => {
     expect(within(confirmation).getByText('Eliminar contacto')).toBeTruthy();
     expect(collection.remove).not.toHaveBeenCalled();
 
-    fireEvent.click(
-      within(confirmation).getByRole('button', { name: 'Eliminar definitivamente' }),
-    );
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Eliminar definitivamente' }));
 
     await waitFor(() => expect(collection.remove).toHaveBeenCalledWith(1));
     expect(screen.queryByRole('dialog')).toBeNull();

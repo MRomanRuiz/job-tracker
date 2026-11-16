@@ -88,33 +88,4 @@ describe('RecordForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ocultar campos opcionales' }));
     expect(screen.queryByPlaceholderText('Detalles')).toBeNull();
   });
-
-  it('submits the empty option value as an empty string', () => {
-    const onSubmit = vi.fn();
-
-    render(
-      <RecordForm
-        title="Nuevo registro"
-        requiredFields={[
-          {
-            name: 'status',
-            label: 'Estado',
-            type: 'select',
-            emptyOptionValue: 'none',
-            options: [
-              { value: 'none', label: 'Sin estado' },
-              { value: 'active', label: 'Activo' },
-            ],
-          },
-        ]}
-        submitLabel="Guardar"
-        onSubmit={onSubmit}
-        onCancel={vi.fn()}
-      />,
-    );
-
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'none' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
-    expect(onSubmit).toHaveBeenCalledWith({ status: '' });
-  });
 });

@@ -1,8 +1,7 @@
-const API_URL = '/api';
+import sharedConstants from '../../../../shared/constants.json';
 
-const HTTP_STATUS = {
-  NO_CONTENT: 204,
-};
+const API_URL = '/api';
+const { HTTP_STATUS } = sharedConstants;
 
 export const apiRequest = async (path, { method = 'GET', body } = {}) => {
   const options = { method };

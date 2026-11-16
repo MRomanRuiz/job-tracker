@@ -55,7 +55,6 @@ const applicationProperties = {
   durationMonths: {
     type: ['integer', 'null'],
     minimum: 1,
-    nullable: true,
     example: 12,
   },
   status: {
@@ -119,7 +118,7 @@ const historyEvent = {
     field: { type: 'string', enum: ['status', 'notes'] },
     changedAt: dateTime,
   },
-  additionalProperties: true,
+  additionalProperties: false,
 };
 
 const application = {
@@ -137,7 +136,7 @@ const application = {
       items: historyEvent,
     },
   },
-  additionalProperties: true,
+  additionalProperties: false,
 };
 
 const contact = {
@@ -155,7 +154,7 @@ const contact = {
       items: historyEvent,
     },
   },
-  additionalProperties: true,
+  additionalProperties: false,
 };
 
 const applicationList = {

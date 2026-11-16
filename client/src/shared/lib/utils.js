@@ -1,4 +1,5 @@
 import { ALL_STATUSES } from './constants.js';
+import { LABELS } from './labels.js';
 
 export const isRejected = item => item.status === 'rejected' || item.status === 'suspended';
 
@@ -20,7 +21,8 @@ export const matchesText = (values, searchText) =>
 export const sortByDateDesc = (items, dateField) =>
   [...items].sort((a, b) => new Date(b[dateField]) - new Date(a[dateField]));
 
-export const formatDate = value => value.slice(0, 10);
+export const formatDate = value =>
+  typeof value === 'string' && value ? value.slice(0, 10) : LABELS.common.unknownDate;
 
 export const replaceById = (items, updatedItem) =>
   items.map(item => (item.id === updatedItem.id ? updatedItem : item));

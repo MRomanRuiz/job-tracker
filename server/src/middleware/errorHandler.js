@@ -1,4 +1,4 @@
-const { HTTP_STATUS } = require('../domain/httpError');
+const { HTTP_STATUS, serializeError } = require('../domain/httpError');
 
 // Express error middleware requires all four parameters.
 // eslint-disable-next-line no-unused-vars
@@ -26,25 +26,21 @@ const errorHandler = (err, _req, res, _next) => {
     err.statusCode >= HTTP_STATUS.BAD_REQUEST &&
     err.statusCode < HTTP_STATUS.INTERNAL_SERVER_ERROR
   ) {
-    res.status(err.statusCode).json({
-      message: err.message,
-      ...(err.description && {
-        description: err.description,
-      }),
-      ...(err.details?.length > 0 && {
-        details: err.details,
-      }),
-    });
+    res.status(err.statusCode).json(serializeError(err));
     return;
   }
 
   // Unexpected server errors
   console.info(err);
 
-  res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-    message: 'Internal server error',
-    description: 'An unexpected error occurred while processing the request.',
-  });
+  res
+    .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+    .json(
+      serializeError(
+        { message: 'Internal server error' },
+        'An unexpected error occurred while processing the request.',
+      ),
+    );
 };
 
 module.exports = errorHandler;

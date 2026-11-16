@@ -5,7 +5,6 @@ const errorHandler = require('./middleware/errorHandler');
 const addSecurityMiddleware = require('./middleware/security');
 const addApplicationRoutes = require('./routes/applications');
 const addContactRoutes = require('./routes/contacts');
-const { isOlderThanPendingLimit } = require('./domain/records');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 
@@ -53,4 +52,4 @@ const createApp = ({ storage: injectedStorage, allowedOrigins = DEFAULT_ALLOWED_
   return app;
 };
 
-module.exports = { createApp, isOlderThanPendingLimit };
+module.exports = { createApp };
