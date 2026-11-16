@@ -396,11 +396,13 @@ describe('applications', () => {
   });
 
   it('rejects an unsupported application status', async () => {
-    const { status } = await request('PATCH', '/api/applications/1', {
-      body: { status: 'bogus' },
-    });
+    for (const status of ['bogus', 'suspended']) {
+      const response = await request('PATCH', '/api/applications/1', {
+        body: { status },
+      });
 
-    assert.equal(status, 400);
+      assert.equal(response.status, 400);
+    }
   });
 
   it('updates application details and trims text fields', async () => {
@@ -540,6 +542,23 @@ describe('applications', () => {
     const recent = await request('PATCH', '/api/applications/2/suspend');
 
     assert.equal(recent.status, 400);
+  });
+
+  it('allows editing details while keeping a suspended application suspended', async () => {
+    const created = await request('POST', '/api/applications', {
+      body: validApplication({ appliedAt: '2020-01-01T00:00:00.000Z' }),
+    });
+    const suspended = await request('PATCH', `/api/applications/${created.body.id}/suspend`);
+
+    assert.equal(suspended.status, 200);
+
+    const updated = await request('PATCH', `/api/applications/${created.body.id}`, {
+      body: { company: 'Updated while suspended' },
+    });
+
+    assert.equal(updated.status, 200);
+    assert.equal(updated.body.company, 'Updated while suspended');
+    assert.equal(updated.body.status, 'suspended');
   });
 
   it('generates unique IDs for concurrent requests', async () => {

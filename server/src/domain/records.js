@@ -14,6 +14,11 @@ const VALIDATION_ERROR_CODES = {
 
 const ALLOWED_APPLICATION_STATUSES = new Set(['pending', 'interview', 'offer', 'rejected']);
 
+const ALLOWED_APPLICATION_RECORD_STATUSES = new Set([
+  ...ALLOWED_APPLICATION_STATUSES,
+  'suspended',
+]);
+
 const ALLOWED_CONTACT_STATUSES = new Set(['pending', 'replied', 'rejected']);
 
 const APPLICATION_TEXT_FIELDS = ['company', 'position', 'city', 'country', 'type', 'notes'];
@@ -381,7 +386,12 @@ const validateUpdatedApplication = application => {
         )
       : []),
     ...validateDateField('appliedAt', application.appliedAt),
-    ...validateEnumField('status', application.status, ALLOWED_APPLICATION_STATUSES, 'Status'),
+    ...validateEnumField(
+      'status',
+      application.status,
+      ALLOWED_APPLICATION_RECORD_STATUSES,
+      'Status',
+    ),
     ...validateApplicationDuration(application.durationType, application.durationMonths),
   ];
 
