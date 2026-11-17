@@ -72,4 +72,37 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(screen.queryByText('Nuevo contacto')).toBeNull();
   });
+
+  it('shows the server message when a collection fails to load', async () => {
+    mockApi({
+      'GET /api/applications': {
+        httpStatus: 500,
+        body: { message: 'No se pudieron cargar las candidaturas' },
+      },
+      'GET /api/applications/old': { applications: [] },
+      'GET /api/contacts': { contacts: [] },
+      'GET /api/contacts/old': { contacts: [] },
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText('No se pudieron cargar las candidaturas')).toBeTruthy();
+  });
+
+  it('shows one specific alert when both collections fail with a bad gateway', async () => {
+    mockApi({
+      'GET /api/applications': { httpStatus: 502, body: {} },
+      'GET /api/applications/old': { applications: [] },
+      'GET /api/contacts': { httpStatus: 502, body: {} },
+      'GET /api/contacts/old': { contacts: [] },
+    });
+
+    render(<App />);
+
+    const alerts = await screen.findAllByRole('alert');
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0].textContent).toBe(
+      'No se pudo conectar con el servidor. Comprueba que la API esté en ejecución e inténtalo de nuevo.',
+    );
+  });
 });

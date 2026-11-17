@@ -17,9 +17,17 @@ function App() {
     closeForm();
   };
 
+  const errors = [...new Set([applications.error, contacts.error].filter(Boolean))];
+
   return (
     <div className="app">
       <Header view={view} onSwitchView={changeView} onNew={() => setShowForm(true)} />
+
+      {errors.length > 0 && (
+        <p className="api-error" role="alert">
+          {errors.join(' ')}
+        </p>
+      )}
 
       <div hidden={view !== 'applications'}>
         <Applications
