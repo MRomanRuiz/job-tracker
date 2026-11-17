@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { mockApi } from '../../test/helpers/mockApi';
 import useCollection from './useCollection';
 
@@ -104,7 +104,6 @@ describe('useCollection', () => {
   });
 
   it('propagates detailed update errors and keeps the current items', async () => {
-    const consoleError = vi.spyOn(console, 'info').mockImplementation(() => {});
     const { result } = renderCollection({
       'PATCH /api/contacts/1': {
         httpStatus: 400,
@@ -124,10 +123,7 @@ describe('useCollection', () => {
     });
 
     expect(result.current.items).toEqual([pending]);
-    expect(consoleError).toHaveBeenCalledWith(
-      'Error en PATCH /api/contacts/1:',
-      expect.objectContaining({ message: 'email: Must be a string' }),
-    );
+    expect(result.current.error).toBe('email: Must be a string');
   });
 
   it('returns false when creating an item fails', async () => {
@@ -147,23 +143,18 @@ describe('useCollection', () => {
 
     expect(created).toBe(false);
     expect(result.current.items).toEqual([pending]);
+    expect(result.current.error).toBe('Unavailable');
   });
 
-  it('uses GET when logging failed default requests', async () => {
-    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {});
+  it('shows a server message when loading items fails', async () => {
     const { result } = renderCollection({
       'GET /api/contacts': {
         httpStatus: 500,
-        body: { error: 'Unavailable' },
+        body: { message: 'Database unavailable' },
       },
     });
 
-    await waitFor(() =>
-      expect(consoleInfo).toHaveBeenCalledWith(
-        'Error en GET /api/contacts:',
-        expect.objectContaining({ message: 'Unavailable' }),
-      ),
-    );
+    await waitFor(() => expect(result.current.error).toBe('Database unavailable'));
     expect(result.current.items).toEqual([]);
   });
 
@@ -218,8 +209,6 @@ describe('useCollection', () => {
   });
 
   it('keeps the item and does not reload stale items when deletion fails', async () => {
-    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {});
-
     const { result, fetchMock } = renderCollection({
       'DELETE /api/contacts/1': {
         httpStatus: 500,
@@ -237,10 +226,6 @@ describe('useCollection', () => {
     expect(deleted).toBe(false);
     expect(result.current.items).toEqual([pending]);
     expect(staleRequests(fetchMock)).toBe(1);
-
-    expect(consoleInfo).toHaveBeenCalledWith(
-      'Error en DELETE /api/contacts/1:',
-      expect.objectContaining({ message: 'Unavailable' }),
-    );
+    expect(result.current.error).toBe('Unavailable');
   });
 });

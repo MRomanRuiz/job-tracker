@@ -16,6 +16,10 @@ const translations = {
       notes: 'Notas',
       unknownDate: 'Fecha desconocida',
       contractType: 'Tipo de contrato',
+      requestError: 'Ha ocurrido un error al comunicarse con el servidor.',
+      badGatewayError:
+        'No se pudo conectar con el servidor. Comprueba que la API esté en ejecución e inténtalo de nuevo.',
+      httpError: 'El servidor respondió con un error (HTTP {status}).',
       optionalFields: 'campos opcionales',
       hideOptionalFields: 'Ocultar campos opcionales',
       showOptionalFields: 'Mostrar campos opcionales',
@@ -191,6 +195,10 @@ const translations = {
       notes: 'Notes',
       unknownDate: 'Unknown date',
       contractType: 'Contract type',
+      requestError: 'An error occurred while communicating with the server.',
+      badGatewayError:
+        'Could not connect to the server. Check that the API is running and try again.',
+      httpError: 'The server returned an error (HTTP {status}).',
       optionalFields: 'optional fields',
       hideOptionalFields: 'Hide optional fields',
       showOptionalFields: 'Show optional fields',

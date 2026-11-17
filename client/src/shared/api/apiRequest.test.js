@@ -81,7 +81,25 @@ describe('apiRequest', () => {
     await expect(apiRequest('/contacts')).rejects.toThrow(
       'email: Must be a valid email address; contact: Contact name is required',
     );
-    await expect(apiRequest('/contacts')).rejects.toThrow('Error 502');
+    await expect(apiRequest('/contacts')).rejects.toThrow(
+      'No se pudo conectar con el servidor. Comprueba que la API esté en ejecución e inténtalo de nuevo.',
+    );
+  });
+
+  it('uses the server message when no validation details are provided', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({
+          message: 'Could not load contacts',
+          error: 'Internal server error',
+        }),
+      }),
+    );
+
+    await expect(apiRequest('/contacts')).rejects.toThrow('Could not load contacts');
   });
 
   it('continues when an error response has no JSON body', async () => {
@@ -91,6 +109,8 @@ describe('apiRequest', () => {
       json: () => Promise.reject(new Error('Not JSON')),
     }));
 
-    await expect(apiRequest('/contacts')).rejects.toThrow('Error 503');
+    await expect(apiRequest('/contacts')).rejects.toThrow(
+      'El servidor respondió con un error (HTTP 503).',
+    );
   });
 });

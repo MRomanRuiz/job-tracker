@@ -27,6 +27,15 @@ button {
   min-height: 100vh;
 }
 
+.api-error {
+  padding: 12px 14px;
+  margin: 16px 40px 0;
+  border: 1px solid #f2caca;
+  border-radius: 8px;
+  background: #fff3f3;
+  color: #b42318;
+}
+
 /* Header */
 
 .header {
