@@ -105,6 +105,18 @@ const changedFiles = execFileSync(
 const packages = ['client', 'server'];
 let failed = false;
 
+const serverVersion = JSON.parse(readFileSync('server/package.json', 'utf8')).version;
+const swaggerVersion = require('../server/src/config/swagger').info.version;
+if (serverVersion === swaggerVersion) {
+  console.info(`server/ and Swagger versions match: ${serverVersion}.`);
+} else {
+  console.info(
+    `server/ and Swagger versions must match (${serverVersion ?? 'missing'} != ` +
+      `${swaggerVersion ?? 'missing'}).`,
+  );
+  failed = true;
+}
+
 for (const packageName of packages) {
   if (changedFiles.some(file => file.startsWith(`${packageName}/`))) {
     const basePackageJson = execFileSync(
