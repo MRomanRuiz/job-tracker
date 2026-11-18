@@ -271,6 +271,12 @@ Interactive API documentation is available at [http://localhost:3001/api-docs/](
 
 Invalid input, including malformed JSON, empty update payloads, and dates that do not exist (such as `2026-02-31`), returns `400`. Unknown record IDs return `404`. Attempts to suspend a record that is not pending or is not older than 30 days return `400`; a concurrent change during suspension can return `409`. Requests from origins other than `http://localhost:3000` and `http://localhost:5173` return `403`. JSON request bodies larger than the configured limit return `413`. API errors are returned as JSON objects containing a `message` field and optional `description` and `details` entries.
 
+### Health
+
+| Method | Endpoint   | Description                                      |
+| ------ | ---------- | ------------------------------------------------ |
+| `GET`  | `/health`  | Return `200` with `{ "status": "ok" }`.          |
+
 ### Applications
 
 | Method   | Endpoint                        | Description                                                                                                                                                                                                                                                                                                                                                                                                        |

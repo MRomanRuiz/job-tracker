@@ -8,7 +8,8 @@
     "NOT_FOUND": 404,
     "NO_CONTENT": 204,
     "CONFLICT": 409,
-    "PAYLOAD_TOO_LARGE": 413
+    "PAYLOAD_TOO_LARGE": 413,
+    "OK": 200
   },
   "RECORD_STATUSES": {
     "application": ["pending", "interview", "offer", "rejected"],
