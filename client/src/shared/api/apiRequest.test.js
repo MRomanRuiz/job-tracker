@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { apiRequest } from './apiRequest';
+import { LABELS } from '../lib/labels';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -82,7 +83,7 @@ describe('apiRequest', () => {
       'email: Must be a valid email address; contact: Contact name is required',
     );
     await expect(apiRequest('/contacts')).rejects.toThrow(
-      'No se pudo conectar con el servidor. Comprueba que la API esté en ejecución e inténtalo de nuevo.',
+      LABELS.common.badGatewayError,
     );
   });
 
@@ -110,7 +111,7 @@ describe('apiRequest', () => {
     }));
 
     await expect(apiRequest('/contacts')).rejects.toThrow(
-      'El servidor respondió con un error (HTTP 503).',
+      LABELS.common.httpError.replace('{status}', '503'),
     );
   });
 });

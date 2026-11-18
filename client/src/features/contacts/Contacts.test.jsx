@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import Contacts from './Contacts';
+import { LABELS } from '../../shared/lib/labels';
 
 const contacts = [
   {
@@ -53,7 +54,9 @@ describe('Contacts', () => {
   it('keeps the status filter selected until another stat card is clicked', () => {
     renderContacts();
 
-    const replied = screen.getByRole('button', { name: /^Respondidos/ });
+    const replied = screen.getByRole('button', {
+      name: new RegExp(`^${LABELS.contacts.stats.replied}`),
+    });
 
     fireEvent.click(replied);
     expect(names()).toEqual(['Luis']);
@@ -61,7 +64,9 @@ describe('Contacts', () => {
     fireEvent.click(replied);
     expect(names()).toEqual(['Luis']);
 
-    fireEvent.click(screen.getByRole('button', { name: /^Total/ }));
+    fireEvent.click(
+      screen.getByRole('button', { name: new RegExp(`^${LABELS.contacts.stats.total}`) }),
+    );
     expect(names()).toEqual(['Ana', 'Luis']);
   });
 
@@ -99,7 +104,7 @@ describe('Contacts', () => {
 
     fireEvent.click(rows[2]);
     expect(screen.getByRole('dialog')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Cerrar detalle' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.closeDetails }));
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
@@ -107,12 +112,16 @@ describe('Contacts', () => {
     renderContacts();
 
     fireEvent.change(
-      screen.getByPlaceholderText('Buscar contacto, institución, email o notas...'),
+      screen.getByPlaceholderText(LABELS.contacts.searchPlaceholder),
       { target: { value: 'lunes' } },
     );
 
     expect(names()).toEqual(['Luis']);
-    expect(screen.getByText('Mostrando 1 de 2 contactos')).toBeTruthy();
+    expect(
+      screen.getByText(
+        `${LABELS.contacts.showing} 1 ${LABELS.pagination.of} 2 ${LABELS.contacts.plural}`,
+      ),
+    ).toBeTruthy();
   });
 
   it('creates a contact with the current required and optional fields', async () => {
@@ -120,28 +129,28 @@ describe('Contacts', () => {
       showForm: true,
     });
 
-    fireEvent.change(screen.getByPlaceholderText('Nombre *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.name} *`), {
       target: { value: 'Eva' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Email o contacto *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.emailOrContact} *`), {
       target: { value: 'eva@initech.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Empresa o universidad *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.institution} *`), {
       target: { value: 'Initech' },
     });
-    fireEvent.change(screen.getByPlaceholderText('País *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.country} *`), {
       target: { value: 'España' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
-    fireEvent.change(screen.getByPlaceholderText('Departamento o laboratorio'), {
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.showOptionalFields }));
+    fireEvent.change(screen.getByPlaceholderText(LABELS.fields.department), {
       target: { value: 'Investigación' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Ciudad'), {
+    fireEvent.change(screen.getByPlaceholderText(LABELS.fields.city), {
       target: { value: 'Madrid' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar contacto' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.contacts.save }));
 
     await waitFor(() => expect(onCloseForm).toHaveBeenCalled());
 
@@ -164,23 +173,23 @@ describe('Contacts', () => {
     });
     collection.create.mockResolvedValue(false);
 
-    fireEvent.change(screen.getByPlaceholderText('Nombre *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.name} *`), {
       target: { value: 'Eva' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Email o contacto *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.emailOrContact} *`), {
       target: { value: 'eva@email.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Empresa o universidad *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.institution} *`), {
       target: { value: 'Initech' },
     });
-    fireEvent.change(screen.getByPlaceholderText('País *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.country} *`), {
       target: { value: 'España' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar contacto' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.contacts.save }));
 
     await waitFor(() => expect(collection.create).toHaveBeenCalled());
     expect(onCloseForm).not.toHaveBeenCalled();
-    expect(screen.getByText('Nuevo contacto')).toBeTruthy();
+    expect(screen.getByText(LABELS.contacts.newTitle)).toBeTruthy();
   });
 
   it('shows details for stale contacts with no notes and suspends them', async () => {
@@ -195,13 +204,15 @@ describe('Contacts', () => {
       ],
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Revisar' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.review }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.viewDetails }));
 
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByText('Marta — Acme')).toBeTruthy();
-    expect(within(dialog).getByText('Notas').parentElement.textContent).toBe('Notas—');
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Suspender' }));
+    expect(within(dialog).getByText(LABELS.fields.notes).parentElement.textContent).toBe(
+      `${LABELS.fields.notes}—`,
+    );
+    fireEvent.click(within(dialog).getByRole('button', { name: LABELS.alerts.suspend }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(collection.suspend).toHaveBeenCalledWith(3);
   });
@@ -214,13 +225,19 @@ describe('Contacts', () => {
       ],
     });
 
-    expect(screen.getByText('Hay 2 contactos pendientes de más de 30 días.')).toBeTruthy();
+    expect(
+      screen.getByText(
+        LABELS.alerts.staleMessage
+          .replace('{count}', '2')
+          .replace('{label}', LABELS.contacts.pendingPlural),
+      ),
+    ).toBeTruthy();
   });
 
   it('updates a contact status from the table', () => {
     const { collection } = renderContacts();
 
-    const statusSelect = screen.getByDisplayValue('En espera');
+    const statusSelect = screen.getByDisplayValue(LABELS.statuses.contact.pending);
     fireEvent.click(statusSelect);
     expect(screen.queryByRole('dialog')).toBeNull();
     fireEvent.keyDown(statusSelect, { key: 'Enter' });
@@ -238,15 +255,15 @@ describe('Contacts', () => {
   it('shows the new contact fields in the table and searches by email', () => {
     renderContacts();
 
-    expect(screen.getByText('Email / Contacto')).toBeTruthy();
-    expect(screen.getByText('Centro / Empresa')).toBeTruthy();
-    expect(screen.getByText('País')).toBeTruthy();
+    expect(screen.getByText(LABELS.contacts.table.email)).toBeTruthy();
+    expect(screen.getByText(LABELS.contacts.table.institution)).toBeTruthy();
+    expect(screen.getByText(LABELS.fields.country)).toBeTruthy();
     expect(screen.getByText('ana@acme.com')).toBeTruthy();
     expect(screen.getAllByText('España')).toHaveLength(2);
     expect(screen.getByText('ana@acme.com').closest('td').title).toBe('ana@acme.com');
 
     fireEvent.change(
-      screen.getByPlaceholderText('Buscar contacto, institución, email o notas...'),
+      screen.getByPlaceholderText(LABELS.contacts.searchPlaceholder),
       { target: { value: 'luis@globex.com' } },
     );
 
@@ -256,16 +273,16 @@ describe('Contacts', () => {
   it('edits a note and closes the dialog after saving', async () => {
     const { collection } = renderContacts();
 
-    expect(screen.getByRole('button', { name: 'Añadir nota' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Ver y editar nota' }));
+    expect(screen.getByRole('button', { name: LABELS.noteForm.add })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: LABELS.noteForm.viewAndEdit }));
 
     const dialog = screen.getByRole('dialog');
-    const textarea = within(dialog).getByPlaceholderText('Escribe una nota...');
+    const textarea = within(dialog).getByPlaceholderText(LABELS.noteForm.placeholder);
 
     expect(textarea.value).toBe('Llamar el lunes');
 
     fireEvent.change(textarea, { target: { value: 'Llamar el martes' } });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: LABELS.common.save }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(collection.update).toHaveBeenCalledWith(2, {
@@ -276,8 +293,8 @@ describe('Contacts', () => {
   it('closes the note dialog without saving on cancel', () => {
     const { collection } = renderContacts();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir nota' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.noteForm.add }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.cancel }));
 
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(collection.update).not.toHaveBeenCalled();
@@ -287,8 +304,8 @@ describe('Contacts', () => {
     const { collection } = renderContacts();
     collection.update.mockResolvedValue(false);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir nota' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.noteForm.add }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.save }));
 
     await waitFor(() => expect(collection.update).toHaveBeenCalled());
     expect(screen.getByRole('dialog')).toBeTruthy();
@@ -303,18 +320,24 @@ describe('Contacts', () => {
     }));
     renderContacts({ items: manyContacts });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Siguiente →' }));
-    expect(screen.getByText('Página 2 de 2')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '← Anterior' }));
-    expect(screen.getByText('Página 1 de 2')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: LABELS.pagination.next }));
+    expect(
+      screen.getByText(`${LABELS.pagination.page} 2 ${LABELS.pagination.of} 2`),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: LABELS.pagination.previous }));
+    expect(
+      screen.getByText(`${LABELS.pagination.page} 1 ${LABELS.pagination.of} 2`),
+    ).toBeTruthy();
   });
 
   it('restores contact details when closing the edit form without changes', () => {
     const { collection } = renderContacts();
 
     fireEvent.click(screen.getAllByRole('row')[1]);
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Editar' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: LABELS.common.edit }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.saveChanges }));
 
     expect(collection.update).not.toHaveBeenCalled();
     expect(screen.getByRole('dialog').textContent).toContain('Ana — Acme');
@@ -324,13 +347,17 @@ describe('Contacts', () => {
     const { collection } = renderContacts();
 
     fireEvent.click(screen.getAllByRole('row')[1]);
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Eliminar' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: LABELS.common.delete }),
+    );
 
     const confirmation = screen.getByRole('alertdialog');
-    expect(within(confirmation).getByText('Eliminar contacto')).toBeTruthy();
+    expect(within(confirmation).getByText(LABELS.contacts.deleteTitle)).toBeTruthy();
     expect(collection.remove).not.toHaveBeenCalled();
 
-    fireEvent.click(within(confirmation).getByRole('button', { name: 'Eliminar definitivamente' }));
+    fireEvent.click(
+      within(confirmation).getByRole('button', { name: LABELS.common.deletePermanently }),
+    );
 
     await waitFor(() => expect(collection.remove).toHaveBeenCalledWith(1));
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -342,10 +369,12 @@ describe('Contacts', () => {
     collection.remove.mockResolvedValue(false);
 
     fireEvent.click(screen.getAllByRole('row')[1]);
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Eliminar' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: LABELS.common.delete }),
+    );
     fireEvent.click(
       within(screen.getByRole('alertdialog')).getByRole('button', {
-        name: 'Eliminar definitivamente',
+        name: LABELS.common.deletePermanently,
       }),
     );
 

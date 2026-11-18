@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import App from './App';
 import { mockApi } from '../test/helpers/mockApi';
+import { LABELS } from '../shared/lib/labels';
 
 const renderApp = () => {
   mockApi({
@@ -44,13 +45,13 @@ describe('App', () => {
   it('loads both collections and switches between views', async () => {
     renderApp();
 
-    expect(screen.getByText('Control de tus candidaturas')).toBeTruthy();
+    expect(screen.getByText(LABELS.header.applicationsDescription)).toBeTruthy();
     expect((await screen.findByText('Acme')).closest('[hidden]')).toBeNull();
     expect((await screen.findByText('Ana')).closest('[hidden]')).not.toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Contactos' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.header.contacts }));
 
-    expect(screen.getByText('Control de tus contactos')).toBeTruthy();
+    expect(screen.getByText(LABELS.header.contactsDescription)).toBeTruthy();
     expect(screen.getByText('Acme').closest('[hidden]')).not.toBeNull();
     expect(screen.getByText('Ana').closest('[hidden]')).toBeNull();
   });
@@ -59,18 +60,18 @@ describe('App', () => {
     renderApp();
     await screen.findByText('Acme');
 
-    fireEvent.click(screen.getByRole('button', { name: '+ Nueva candidatura' }));
-    expect(screen.getByText('Nueva candidatura')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: LABELS.header.newApplication }));
+    expect(screen.getByText(LABELS.applications.newTitle)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Contactos' }));
-    expect(screen.queryByText('Nueva candidatura')).toBeNull();
-    expect(screen.queryByText('Nuevo contacto')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: LABELS.header.contacts }));
+    expect(screen.queryByText(LABELS.applications.newTitle)).toBeNull();
+    expect(screen.queryByText(LABELS.contacts.newTitle)).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: '+ Nuevo contacto' }));
-    expect(screen.getByText('Nuevo contacto')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: LABELS.header.newContact }));
+    expect(screen.getByText(LABELS.contacts.newTitle)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
-    expect(screen.queryByText('Nuevo contacto')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.cancel }));
+    expect(screen.queryByText(LABELS.contacts.newTitle)).toBeNull();
   });
 
   it('shows the server message when a collection fails to load', async () => {
@@ -102,7 +103,7 @@ describe('App', () => {
     const alerts = await screen.findAllByRole('alert');
     expect(alerts).toHaveLength(1);
     expect(alerts[0].textContent).toBe(
-      'No se pudo conectar con el servidor. Comprueba que la API esté en ejecución e inténtalo de nuevo.',
+      LABELS.common.badGatewayError,
     );
   });
 });

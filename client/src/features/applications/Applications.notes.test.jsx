@@ -1,11 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import Applications from './Applications';
+import { LABELS } from '../../shared/lib/labels';
 
 vi.mock('../../shared/components/RecordDetails', () => ({
   default: ({ item, onEditNotes }) => (
     <button type="button" onClick={() => onEditNotes(item)}>
-      Editar nota del detalle
+      {LABELS.noteForm.viewAndEdit}
     </button>
   ),
 }));
@@ -39,9 +40,9 @@ describe('Applications detail note callback', () => {
     );
 
     fireEvent.click(screen.getAllByRole('row')[1]);
-    fireEvent.click(screen.getByRole('button', { name: 'Editar nota del detalle' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.noteForm.viewAndEdit }));
 
     expect(screen.getByRole('dialog').textContent).toContain('Acme');
-    expect(screen.getByPlaceholderText('Escribe una nota...')).toBeTruthy();
+    expect(screen.getByPlaceholderText(LABELS.noteForm.placeholder)).toBeTruthy();
   });
 });

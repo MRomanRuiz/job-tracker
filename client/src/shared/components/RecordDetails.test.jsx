@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import RecordDetails from './RecordDetails';
+import { LABELS } from '../lib/labels';
 
 describe('RecordDetails', () => {
   it('renders nothing when no record is selected', () => {
@@ -19,8 +20,10 @@ describe('RecordDetails', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: 'Candidatura' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
+    expect(
+      screen.getByRole('heading', { name: LABELS.recordDetails.applicationFallback }),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.delete }));
   });
 
   it('uses the default contact title when contact and institution are missing', () => {
@@ -33,6 +36,8 @@ describe('RecordDetails', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: 'Contacto' })).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { name: LABELS.recordDetails.contactFallback }),
+    ).toBeTruthy();
   });
 });

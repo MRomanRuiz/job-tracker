@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import RecordTimeline from './RecordTimeline';
+import { LABELS } from '../lib/labels';
 
 describe('RecordTimeline', () => {
   it('renders nothing when the record has no timeline events', () => {
@@ -52,12 +53,16 @@ describe('RecordTimeline', () => {
       'record-timeline-event notes',
     ]);
 
-    expect(within(events[0]).getByRole('heading', { name: 'Registro creado' })).toBeTruthy();
-    expect(within(events[1]).getByRole('heading', { name: 'Estado actualizado' })).toBeTruthy();
-    expect(events[1].textContent).toContain('En espera');
-    expect(events[1].textContent).toContain('Respondido');
+    expect(
+      within(events[0]).getByRole('heading', { name: LABELS.timeline.created }),
+    ).toBeTruthy();
+    expect(
+      within(events[1]).getByRole('heading', { name: LABELS.timeline.statusUpdated }),
+    ).toBeTruthy();
+    expect(events[1].textContent).toContain(LABELS.statuses.contact.pending);
+    expect(events[1].textContent).toContain(LABELS.statuses.contact.replied);
     expect(within(events[2]).getByText('Enviar el informe')).toBeTruthy();
-    expect(within(events[3]).getByText('Notas eliminadas')).toBeTruthy();
+    expect(within(events[3]).getByText(LABELS.timeline.notesDeleted)).toBeTruthy();
     for (const event of events) {
       const marker = event.querySelector('.record-timeline-dot');
       expect(marker.textContent).toBe('');
@@ -83,10 +88,12 @@ describe('RecordTimeline', () => {
 
     const events = within(screen.getByRole('list')).getAllByRole('listitem');
     expect(events).toHaveLength(2);
-    expect(within(events[0]).getByText('Fecha desconocida')).toBeTruthy();
+    expect(within(events[0]).getByText(LABELS.common.unknownDate)).toBeTruthy();
     expect(events[0].textContent).toContain('legacy-status');
     expect(events[0].textContent).toContain('—');
-    expect(within(events[1]).getByRole('heading', { name: 'Registro creado' })).toBeTruthy();
+    expect(
+      within(events[1]).getByRole('heading', { name: LABELS.timeline.created }),
+    ).toBeTruthy();
     expect(events[1].querySelector('time').getAttribute('dateTime')).toBe('invalid-created-date');
   });
 
@@ -110,7 +117,7 @@ describe('RecordTimeline', () => {
 
     const events = within(screen.getByRole('list')).getAllByRole('listitem');
     expect(events).toHaveLength(2);
-    expect(within(events[0]).getByText('Fecha desconocida')).toBeTruthy();
+    expect(within(events[0]).getByText(LABELS.common.unknownDate)).toBeTruthy();
     expect(events[0].textContent).toContain('custom');
     expect(events[0].textContent).toContain('—');
     expect(events[1].querySelector('time').getAttribute('dateTime')).toBe(
