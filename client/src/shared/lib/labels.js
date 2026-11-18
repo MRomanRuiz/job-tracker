@@ -357,5 +357,12 @@ const translations = {
   },
 };
 
-export const LANGUAGE = 'es';
+export const LANGUAGE = import.meta.env.VITE_LANGUAGE ?? 'es';
+
+if (!Object.hasOwn(translations, LANGUAGE)) {
+  throw new Error(
+    `Unsupported VITE_LANGUAGE "${LANGUAGE}". Supported languages: ${Object.keys(translations).join(', ')}.`,
+  );
+}
+
 export const LABELS = translations[LANGUAGE];

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import RecordEditForm from './RecordEditForm';
+import { LABELS } from '../lib/labels';
 
 const application = {
   id: 1,
@@ -55,12 +56,16 @@ describe('RecordEditForm', () => {
     });
 
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByRole('heading', { name: 'Editar contacto' })).toBeTruthy();
-    expect(within(dialog).queryByLabelText('Fecha de contacto')).toBeNull();
     expect(
-      within(dialog).getByLabelText('Estado').querySelector('option[value="suspended"]')
+      within(dialog).getByRole('heading', { name: LABELS.recordEdit.contactTitle }),
+    ).toBeTruthy();
+    expect(within(dialog).queryByLabelText(LABELS.fields.contactedAt)).toBeNull();
+    expect(
+      within(dialog)
+        .getByLabelText(LABELS.fields.status)
+        .querySelector('option[value="suspended"]')
         .textContent,
-    ).toBe('Suspendido');
+    ).toBe(LABELS.recordEdit.suspended);
   });
 
   it('initializes nullable contact fields to empty values', () => {
@@ -70,9 +75,9 @@ describe('RecordEditForm', () => {
     });
 
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).queryByLabelText('Fecha de contacto')).toBeNull();
-    expect(within(dialog).getByLabelText('Notas').value).toBe('');
-    expect(within(dialog).getByLabelText('Ciudad').value).toBe('');
+    expect(within(dialog).queryByLabelText(LABELS.fields.contactedAt)).toBeNull();
+    expect(within(dialog).getByLabelText(LABELS.fields.notes).value).toBe('');
+    expect(within(dialog).getByLabelText(LABELS.fields.city).value).toBe('');
   });
 
   it('uses empty values for fields missing from the record', () => {
@@ -81,7 +86,7 @@ describe('RecordEditForm', () => {
       kind: 'application',
     });
 
-    expect(screen.getByLabelText('Empresa').value).toBe('');
+    expect(screen.getByLabelText(LABELS.fields.company).value).toBe('');
     fireEvent.submit(screen.getByRole('dialog').querySelector('form'));
 
     expect(onSave).not.toHaveBeenCalled();
@@ -92,13 +97,13 @@ describe('RecordEditForm', () => {
     const { onSave, onClose } = renderEditForm({ item: contact, kind: 'contact' });
     const dialog = screen.getByRole('dialog');
 
-    fireEvent.change(within(dialog).getByLabelText('Nombre'), {
+    fireEvent.change(within(dialog).getByLabelText(LABELS.fields.name), {
       target: { value: 'Eva' },
     });
-    fireEvent.change(within(dialog).getByLabelText('Notas'), {
+    fireEvent.change(within(dialog).getByLabelText(LABELS.fields.notes), {
       target: { value: 'Seguimiento' },
     });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: LABELS.common.saveChanges }));
 
     await waitFor(() =>
       expect(onSave).toHaveBeenCalledWith(2, {
@@ -131,10 +136,10 @@ describe('RecordEditForm', () => {
     const { onClose } = renderEditForm({ onSave });
     const dialog = screen.getByRole('dialog');
 
-    fireEvent.change(within(dialog).getByLabelText('Empresa'), {
+    fireEvent.change(within(dialog).getByLabelText(LABELS.fields.company), {
       target: { value: 'Globex' },
     });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: LABELS.common.saveChanges }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalledWith(savedRecord));
   });
@@ -142,7 +147,7 @@ describe('RecordEditForm', () => {
   it('closes without saving when submitted values have not changed', () => {
     const { onSave, onClose } = renderEditForm();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.saveChanges }));
 
     expect(onSave).not.toHaveBeenCalled();
     expect(onClose).toHaveBeenCalledWith();
@@ -152,22 +157,22 @@ describe('RecordEditForm', () => {
     const { onSave } = renderEditForm();
     const dialog = screen.getByRole('dialog');
 
-    fireEvent.change(within(dialog).getByLabelText('Tipo de contrato'), {
+    fireEvent.change(within(dialog).getByLabelText(LABELS.common.contractType), {
       target: { value: 'indefinite' },
     });
-    expect(within(dialog).getByLabelText('Duración (meses)').disabled).toBe(true);
+    expect(within(dialog).getByLabelText(LABELS.fields.durationMonths).disabled).toBe(true);
 
-    fireEvent.change(within(dialog).getByLabelText('Tipo de contrato'), {
+    fireEvent.change(within(dialog).getByLabelText(LABELS.common.contractType), {
       target: { value: 'fixed' },
     });
-    expect(within(dialog).getByLabelText('Duración (meses)').disabled).toBe(false);
-    fireEvent.change(within(dialog).getByLabelText('Duración (meses)'), {
+    expect(within(dialog).getByLabelText(LABELS.fields.durationMonths).disabled).toBe(false);
+    fireEvent.change(within(dialog).getByLabelText(LABELS.fields.durationMonths), {
       target: { value: '' },
     });
-    fireEvent.change(within(dialog).getByLabelText('Ciudad'), {
+    fireEvent.change(within(dialog).getByLabelText(LABELS.fields.city), {
       target: { value: 'Sevilla' },
     });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: LABELS.common.saveChanges }));
 
     await waitFor(() =>
       expect(onSave).toHaveBeenCalledWith(1, {
@@ -181,10 +186,10 @@ describe('RecordEditForm', () => {
     const { onSave } = renderEditForm();
     const dialog = screen.getByRole('dialog');
 
-    fireEvent.change(within(dialog).getByLabelText('Duración (meses)'), {
+    fireEvent.change(within(dialog).getByLabelText(LABELS.fields.durationMonths), {
       target: { value: '6' },
     });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: LABELS.common.saveChanges }));
 
     await waitFor(() => expect(onSave).toHaveBeenCalledWith(1, { durationMonths: 6 }));
   });
@@ -194,15 +199,15 @@ describe('RecordEditForm', () => {
     renderEditForm({ onSave });
     const dialog = screen.getByRole('dialog');
 
-    fireEvent.change(within(dialog).getByLabelText('Empresa'), {
+    fireEvent.change(within(dialog).getByLabelText(LABELS.fields.company), {
       target: { value: 'Globex' },
     });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: LABELS.common.saveChanges }));
 
     expect((await within(dialog).findByRole('alert')).textContent).toBe(
-      'No se pudieron guardar los cambios. Comprueba los datos e inténtalo de nuevo.',
+      LABELS.recordEdit.saveError,
     );
-    fireEvent.change(within(dialog).getByLabelText('Empresa'), {
+    fireEvent.change(within(dialog).getByLabelText(LABELS.fields.company), {
       target: { value: 'Initech' },
     });
     expect(within(dialog).queryByRole('alert')).toBeNull();
@@ -213,10 +218,10 @@ describe('RecordEditForm', () => {
     renderEditForm({ onSave });
     const dialog = screen.getByRole('dialog');
 
-    fireEvent.change(within(dialog).getByLabelText('Empresa'), {
+    fireEvent.change(within(dialog).getByLabelText(LABELS.fields.company), {
       target: { value: 'Globex' },
     });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: LABELS.common.saveChanges }));
 
     expect((await within(dialog).findByRole('alert')).textContent).toBe('Error de red');
   });
@@ -226,13 +231,13 @@ describe('RecordEditForm', () => {
     renderEditForm({ onSave });
     const dialog = screen.getByRole('dialog');
 
-    fireEvent.change(within(dialog).getByLabelText('Empresa'), {
+    fireEvent.change(within(dialog).getByLabelText(LABELS.fields.company), {
       target: { value: 'Globex' },
     });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: LABELS.common.saveChanges }));
 
     expect((await within(dialog).findByRole('alert')).textContent).toBe(
-      'Ha ocurrido un error al guardar.',
+      LABELS.recordEdit.genericError,
     );
   });
 
@@ -247,15 +252,15 @@ describe('RecordEditForm', () => {
     const { onClose } = renderEditForm({ onSave });
     const dialog = screen.getByRole('dialog');
 
-    fireEvent.change(within(dialog).getByLabelText('Empresa'), {
+    fireEvent.change(within(dialog).getByLabelText(LABELS.fields.company), {
       target: { value: 'Globex' },
     });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar cambios' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: LABELS.common.saveChanges }));
 
-    expect(within(dialog).getByRole('button', { name: 'Guardando…' }).disabled).toBe(true);
-    expect(within(dialog).getByLabelText('Empresa').disabled).toBe(true);
+    expect(within(dialog).getByRole('button', { name: LABELS.common.saving }).disabled).toBe(true);
+    expect(within(dialog).getByLabelText(LABELS.fields.company).disabled).toBe(true);
     fireEvent.mouseDown(dialog.parentElement);
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Cerrar formulario' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: LABELS.common.closeForm }));
     expect(onClose).not.toHaveBeenCalled();
 
     resolveSave(true);
@@ -272,7 +277,7 @@ describe('RecordEditForm', () => {
     fireEvent.mouseDown(dialog.parentElement);
     expect(onClose).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: LABELS.common.cancel }));
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 });

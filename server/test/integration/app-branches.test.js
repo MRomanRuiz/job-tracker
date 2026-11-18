@@ -90,6 +90,13 @@ const request = async (method, url, body) => {
 };
 
 describe('additional app branches', () => {
+  it('reports the server health', async () => {
+    const response = await request('GET', '/health');
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.body, { status: 'ok' });
+  });
+
   it('serves the Swagger UI documentation', async () => {
     const response = await fetch(`${baseUrl}/api-docs/`);
     const body = await response.text();

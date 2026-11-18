@@ -42,6 +42,29 @@ Install dependencies for the root project, backend, and frontend:
 npm run install:all
 ```
 
+## Environment variables
+
+Create a `.env` file in the project root. Vite and the API server read this shared file. For a default local setup, it can contain:
+
+```env
+VITE_LANGUAGE=es
+STORAGE_TYPE=json
+PORT=3001
+```
+
+| Variable              | Required         | Description                                                                                                                                         |
+| --------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_LANGUAGE`       | No               | Frontend language: `es` or `en`. Defaults to `es`. This `VITE_` variable is included in the client bundle; do not put secrets in `VITE_` variables. |
+| `STORAGE_TYPE`        | No               | Storage backend: `json` or `mongodb`. Defaults to `json`.                                                                                           |
+| `PORT`                | No               | API server port. Defaults to `3001`.                                                                                                                |
+| `JSON_DATA_DIR`       | No               | Directory for JSON data files. Defaults to `client/data`. Applies when using JSON storage.                                                          |
+| `MONGODB_URI`         | Only for MongoDB | MongoDB connection string.                                                                                                                          |
+| `MONGODB_DB`          | Only for MongoDB | MongoDB database name.                                                                                                                              |
+| `RENDER_EXTERNAL_URL` | No               | Public frontend URL to allow for cross-origin API requests when deployed.                                                                           |
+| `TEST_STORAGE_TYPE`   | Tests only       | Storage backend used by server tests; takes precedence over `STORAGE_TYPE`.                                                                         |
+
+Backend tests load test-specific values from `server/.env.test`. The root `.env` is ignored by Git, so do not commit it.
+
 Start the API and frontend together from the project root:
 
 ```sh
@@ -133,14 +156,12 @@ The CI currently reports coverage but does not enforce minimum coverage threshol
 
 The backend supports two storage implementations.
 
-- **JSON:** Stores applications and contacts in `jobs.json` and `contacts.json` under `client/data` by default. On first read, the server creates the directory and any missing files with empty collections, without replacing existing files. Set `JSON_DATA_DIR` to choose another directory.
-- **MongoDB:** Stores applications and contacts in separate collections and uses a counter collection to generate numeric record IDs. Configure the connection with `MONGODB_URI` and `MONGODB_DB`.
+- **JSON:** Stores applications and contacts in `jobs.json` and `contacts.json` under `client/data` by default. On first read, the server creates the directory and any missing files with empty collections, without replacing existing files.
+- **MongoDB:** Stores applications and contacts in separate collections and uses a counter collection to generate numeric record IDs.
 
-Select the storage implementation with `STORAGE_TYPE=json` or `STORAGE_TYPE=mongodb`. JSON storage is the default when no storage type is configured.
+JSON tests use temporary data files so they do not modify your regular application data.
 
-For backend tests, `TEST_STORAGE_TYPE` selects the implementation to test and takes precedence over `STORAGE_TYPE`. JSON tests use temporary data files so they do not modify your regular application data.
-
-MongoDB tests must use a dedicated test database, such as `job_tracker_test`. Configure `MONGODB_URI` to point to a local or otherwise isolated test instance. Never run the test suite against a database containing production or personal data.
+MongoDB tests must use a dedicated test database, such as `job_tracker_test`, and must never run against a database containing production or personal data.
 
 Back up JSON files or your MongoDB database before manually changing or replacing stored data.
 
@@ -250,16 +271,22 @@ Interactive API documentation is available at [http://localhost:3001/api-docs/](
 
 Invalid input, including malformed JSON, empty update payloads, and dates that do not exist (such as `2026-02-31`), returns `400`. Unknown record IDs return `404`. Attempts to suspend a record that is not pending or is not older than 30 days return `400`; a concurrent change during suspension can return `409`. Requests from origins other than `http://localhost:3000` and `http://localhost:5173` return `403`. JSON request bodies larger than the configured limit return `413`. API errors are returned as JSON objects containing a `message` field and optional `description` and `details` entries.
 
+### Health
+
+| Method | Endpoint   | Description                                      |
+| ------ | ---------- | ------------------------------------------------ |
+| `GET`  | `/health`  | Return `200` with `{ "status": "ok" }`.          |
+
 ### Applications
 
-| Method   | Endpoint                        | Description                                                                                                                                                                                                                                                                                                                                                                                                           |
-| -------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET`    | `/api/applications`             | Return `{ "applications": [...] }`.                                                                                                                                                                                                                                                                                                                                                                                   |
+| Method   | Endpoint                        | Description                                                                                                                                                                                                                                                                                                                                                                                                        |
+| -------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET`    | `/api/applications`             | Return `{ "applications": [...] }`.                                                                                                                                                                                                                                                                                                                                                                                |
 | `POST`   | `/api/applications`             | Create an application. Requires `company`, `position`, `type` (`industry` or `research`), `country`, and `appliedAt` as a UTC ISO 8601 timestamp. Other text fields are optional. `durationType` may be empty, `fixed`, or `indefinite`; for `fixed`, `durationMonths` may be omitted or `null`, or be a positive integer. Status may be `pending`, `interview`, `offer`, or `rejected` and defaults to `pending`. |
-| `PATCH`  | `/api/applications/:id`         | Partially update an application's details, status, or notes. Editable fields: `company`, `position`, `type`, `city`, `country`, `durationType`, `durationMonths`, `appliedAt`, `status`, and `notes`. Accepted statuses: `pending`, `interview`, `offer`, and `rejected`; use the suspend endpoint for eligible pending applications.                                                                                 |
-| `GET`    | `/api/applications/old`         | Return pending applications older than 30 days.                                                                                                                                                                                                                                                                                                                                                                       |
-| `PATCH`  | `/api/applications/:id/suspend` | Suspend an eligible pending application older than 30 days. The response has status `suspended`.                                                                                                                                                                                                                                                                                                                      |
-| `DELETE` | `/api/applications/:id`         | Delete an application; returns `204` on success.                                                                                                                                                                                                                                                                                                                                                                      |
+| `PATCH`  | `/api/applications/:id`         | Partially update an application's details, status, or notes. Editable fields: `company`, `position`, `type`, `city`, `country`, `durationType`, `durationMonths`, `appliedAt`, `status`, and `notes`. Accepted statuses: `pending`, `interview`, `offer`, and `rejected`; use the suspend endpoint for eligible pending applications.                                                                              |
+| `GET`    | `/api/applications/old`         | Return pending applications older than 30 days.                                                                                                                                                                                                                                                                                                                                                                    |
+| `PATCH`  | `/api/applications/:id/suspend` | Suspend an eligible pending application older than 30 days. The response has status `suspended`.                                                                                                                                                                                                                                                                                                                   |
+| `DELETE` | `/api/applications/:id`         | Delete an application; returns `204` on success.                                                                                                                                                                                                                                                                                                                                                                   |
 
 ### Contacts
 

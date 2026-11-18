@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_STATUSES } from './constants.js';
+import { LABELS } from './labels.js';
 import {
   countByStatus,
   formatDate,
@@ -41,7 +42,7 @@ describe('helpers', () => {
     expect(formatDate('2026-03-04T12:30:00.000Z')).toBe('2026-03-04');
 
     for (const value of [null, undefined, '', 42]) {
-      expect(formatDate(value)).toBe('Fecha desconocida');
+      expect(formatDate(value)).toBe(LABELS.common.unknownDate);
     }
   });
 

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import Applications from './Applications';
+import { LABELS } from '../../shared/lib/labels';
 
 const makeApplication = (id, overrides = {}) => ({
   id,
@@ -48,21 +49,27 @@ describe('Applications', () => {
       ],
     });
 
-    fireEvent.change(screen.getByPlaceholderText('Buscar empresa, puesto...'), {
+    fireEvent.change(screen.getByPlaceholderText(LABELS.applications.searchPlaceholder), {
       target: { value: '  GLOBEX ' },
     });
     expect(companies()).toEqual(['Globex']);
-    expect(screen.getByText('Mostrando 1 de 3 candidaturas')).toBeTruthy();
+    expect(
+      screen.getByText(
+        `${LABELS.applications.showing} 1 ${LABELS.pagination.of} 3 ${LABELS.applications.plural}`,
+      ),
+    ).toBeTruthy();
 
-    fireEvent.change(screen.getByPlaceholderText('Buscar empresa, puesto...'), {
+    fireEvent.change(screen.getByPlaceholderText(LABELS.applications.searchPlaceholder), {
       target: { value: 'biología' },
     });
     expect(companies()).toEqual(['Acme 3']);
 
-    fireEvent.change(screen.getByDisplayValue('Todos los tipos'), {
+    fireEvent.change(screen.getByDisplayValue(LABELS.applications.allTypes), {
       target: { value: 'industry' },
     });
-    expect(screen.getByText('No hay candidaturas que mostrar')).toBeTruthy();
+    expect(
+      screen.getByText(LABELS.emptyState.noRecords.replace('{label}', LABELS.applications.plural)),
+    ).toBeTruthy();
   });
 
   it('filters by stat card, counting suspended as rejected', () => {
@@ -74,7 +81,9 @@ describe('Applications', () => {
       ],
     });
 
-    const rejected = screen.getByRole('button', { name: /^Rechazadas/ });
+    const rejected = screen.getByRole('button', {
+      name: new RegExp(`^${LABELS.applications.stats.rejected}`),
+    });
     expect(within(rejected).getByText('2')).toBeTruthy();
 
     fireEvent.click(rejected);
@@ -83,7 +92,9 @@ describe('Applications', () => {
     fireEvent.click(rejected);
     expect(companies()).toEqual(['Acme 2', 'Acme 1']);
 
-    fireEvent.click(screen.getByRole('button', { name: /^Total/ }));
+    fireEvent.click(
+      screen.getByRole('button', { name: new RegExp(`^${LABELS.applications.stats.total}`) }),
+    );
     expect(companies()).toHaveLength(3);
   });
 
@@ -94,12 +105,14 @@ describe('Applications', () => {
 
     expect(companies()).toHaveLength(10);
     expect(companies()[0]).toBe('Acme 12');
-    expect(screen.getByText('Página 1 de 2')).toBeTruthy();
+    expect(
+      screen.getByText(`${LABELS.pagination.page} 1 ${LABELS.pagination.of} 2`),
+    ).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Siguiente →' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.pagination.next }));
     expect(companies()).toEqual(['Acme 2', 'Acme 1']);
 
-    fireEvent.change(screen.getByPlaceholderText('Buscar empresa, puesto...'), {
+    fireEvent.change(screen.getByPlaceholderText(LABELS.applications.searchPlaceholder), {
       target: { value: 'acme 1' },
     });
     expect(companies()).toEqual(['Acme 12', 'Acme 11', 'Acme 10', 'Acme 1']);
@@ -127,7 +140,11 @@ describe('Applications', () => {
   it('uses the singular label for a single application', () => {
     renderApplications({ items: [makeApplication(1)] });
 
-    expect(screen.getByText('Mostrando 1 de 1 candidatura')).toBeTruthy();
+    expect(
+      screen.getByText(
+        `${LABELS.applications.showing} 1 ${LABELS.pagination.of} 1 ${LABELS.applications.singular}`,
+      ),
+    ).toBeTruthy();
   });
 
   it('creates an application with current fields and closes only on success', async () => {
@@ -135,36 +152,36 @@ describe('Applications', () => {
       showForm: true,
     });
 
-    fireEvent.change(screen.getByPlaceholderText('Puesto *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.position} *`), {
       target: { value: 'Dev' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Empresa *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.company} *`), {
       target: { value: 'Acme' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Tipo *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.type} *`), {
       target: { value: 'research' },
     });
-    fireEvent.change(screen.getByPlaceholderText('País *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.country} *`), {
       target: { value: 'España' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
-    fireEvent.change(screen.getByPlaceholderText('Ciudad'), {
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.showOptionalFields }));
+    fireEvent.change(screen.getByPlaceholderText(LABELS.fields.city), {
       target: { value: 'Madrid' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Tipo de contrato'), {
+    fireEvent.change(screen.getByPlaceholderText(LABELS.common.contractType), {
       target: { value: 'indefinite' },
     });
 
     collection.create.mockResolvedValueOnce(false);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar candidatura' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.applications.save }));
 
     await waitFor(() => expect(collection.create).toHaveBeenCalledTimes(1));
 
     expect(onCloseForm).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar candidatura' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.applications.save }));
 
     await waitFor(() => expect(onCloseForm).toHaveBeenCalledTimes(1));
 
@@ -184,24 +201,24 @@ describe('Applications', () => {
   it('creates a fixed-term application without a duration', async () => {
     const { collection } = renderApplications({ showForm: true });
 
-    fireEvent.change(screen.getByPlaceholderText('Puesto *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.position} *`), {
       target: { value: 'Dev' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Empresa *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.company} *`), {
       target: { value: 'Acme' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Tipo *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.type} *`), {
       target: { value: 'research' },
     });
-    fireEvent.change(screen.getByPlaceholderText('País *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.country} *`), {
       target: { value: 'España' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
-    fireEvent.change(screen.getByPlaceholderText('Tipo de contrato'), {
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.showOptionalFields }));
+    fireEvent.change(screen.getByPlaceholderText(LABELS.common.contractType), {
       target: { value: 'fixed' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar candidatura' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.applications.save }));
 
     await waitFor(() =>
       expect(collection.create).toHaveBeenCalledWith(
@@ -216,10 +233,10 @@ describe('Applications', () => {
   it('clears duration when the contract type becomes indefinite or unknown', () => {
     renderApplications({ showForm: true });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.showOptionalFields }));
 
-    const contractType = screen.getByPlaceholderText('Tipo de contrato');
-    const duration = screen.getByPlaceholderText('Duración en meses (si es temporal)');
+    const contractType = screen.getByPlaceholderText(LABELS.common.contractType);
+    const duration = screen.getByPlaceholderText(LABELS.fields.conditionalDuration);
 
     fireEvent.change(contractType, { target: { value: 'fixed' } });
     fireEvent.change(duration, { target: { value: '12' } });
@@ -240,25 +257,25 @@ describe('Applications', () => {
   it('shows the contract type placeholder initially and submits unknown as empty', async () => {
     const { collection } = renderApplications({ showForm: true });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
-    const contractType = screen.getByPlaceholderText('Tipo de contrato');
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.showOptionalFields }));
+    const contractType = screen.getByPlaceholderText(LABELS.common.contractType);
 
-    expect(contractType.selectedOptions[0].textContent).toBe('Tipo de contrato');
+    expect(contractType.selectedOptions[0].textContent).toBe(LABELS.common.contractType);
 
     fireEvent.change(contractType, { target: { value: 'unknown' } });
-    fireEvent.change(screen.getByPlaceholderText('Puesto *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.position} *`), {
       target: { value: 'Dev' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Empresa *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.company} *`), {
       target: { value: 'Acme' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Tipo *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.type} *`), {
       target: { value: 'research' },
     });
-    fireEvent.change(screen.getByPlaceholderText('País *'), {
+    fireEvent.change(screen.getByPlaceholderText(`${LABELS.fields.country} *`), {
       target: { value: 'España' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar candidatura' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.applications.save }));
 
     await waitFor(() =>
       expect(collection.create).toHaveBeenCalledWith(
@@ -275,48 +292,52 @@ describe('Applications', () => {
       items: [makeApplication(1), makeApplication(2, { type: 'research' })],
     });
 
-    expect(screen.getByText('País')).toBeTruthy();
+    expect(screen.getByText(LABELS.fields.country)).toBeTruthy();
     expect(screen.getAllByText('España')).toHaveLength(2);
     const rows = screen.getAllByRole('row').slice(1);
-    expect(within(rows[0]).getAllByRole('cell')[3].textContent).toBe('Investigación');
-    expect(within(rows[1]).getAllByRole('cell')[3].textContent).toBe('Empresa');
-    expect(within(rows[0]).getAllByRole('cell')[3].title).toBe('Investigación');
+    expect(within(rows[0]).getAllByRole('cell')[3].textContent).toBe(
+      LABELS.applicationTypes.research,
+    );
+    expect(within(rows[1]).getAllByRole('cell')[3].textContent).toBe(
+      LABELS.applicationTypes.industry,
+    );
+    expect(within(rows[0]).getAllByRole('cell')[3].title).toBe(LABELS.applicationTypes.research);
   });
 
   it('uses the raw type for unknown types in the table and stale-items alert', () => {
     const unknownType = makeApplication(3, { type: 'legacy-type' });
     renderApplications({ items: [unknownType], staleItems: [unknownType] });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Revisar' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.review }));
     expect(screen.getAllByText('legacy-type')).toHaveLength(2);
   });
 
   it('disables duration months when the contract is indefinite', () => {
     renderApplications({ showForm: true });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
-    fireEvent.change(screen.getByPlaceholderText('Tipo de contrato'), {
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.showOptionalFields }));
+    fireEvent.change(screen.getByPlaceholderText(LABELS.common.contractType), {
       target: { value: 'indefinite' },
     });
 
-    expect(screen.getByPlaceholderText('Duración en meses (si es temporal)').disabled).toBe(true);
+    expect(screen.getByPlaceholderText(LABELS.fields.conditionalDuration).disabled).toBe(true);
   });
 
   it('keeps duration months enabled for a fixed-term contract', () => {
     renderApplications({ showForm: true });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Mostrar campos opcionales' }));
-    fireEvent.change(screen.getByPlaceholderText('Tipo de contrato'), {
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.showOptionalFields }));
+    fireEvent.change(screen.getByPlaceholderText(LABELS.common.contractType), {
       target: { value: 'fixed' },
     });
 
-    expect(screen.getByPlaceholderText('Duración en meses (si es temporal)').disabled).toBe(false);
+    expect(screen.getByPlaceholderText(LABELS.fields.conditionalDuration).disabled).toBe(false);
   });
 
   it('updates the status from the table', () => {
     const { collection } = renderApplications({ items: [makeApplication(7)] });
 
-    fireEvent.change(screen.getByDisplayValue('En espera'), {
+    fireEvent.change(screen.getByDisplayValue(LABELS.statuses.application.pending), {
       target: { value: 'interview' },
     });
 
@@ -334,7 +355,7 @@ describe('Applications', () => {
       ],
     });
 
-    const statusSelect = screen.getByDisplayValue('En espera');
+    const statusSelect = screen.getByDisplayValue(LABELS.statuses.application.pending);
     fireEvent.keyDown(statusSelect, { key: 'Enter' });
     expect(screen.queryByRole('dialog')).toBeNull();
 
@@ -348,8 +369,8 @@ describe('Applications', () => {
 
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByText('Desarrollador — Acme 1')).toBeTruthy();
-    expect(within(dialog).getByText('Tipo de contrato').parentElement.textContent).toBe(
-      'Tipo de contratoTemporal',
+    expect(within(dialog).getByText(LABELS.common.contractType).parentElement.textContent).toBe(
+      `${LABELS.common.contractType}${LABELS.fields.fixed}`,
     );
 
     fireEvent.keyDown(dialog, { key: 'Escape' });
@@ -362,14 +383,16 @@ describe('Applications', () => {
     });
 
     fireEvent.click(screen.getAllByRole('row')[1]);
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Editar' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: LABELS.common.edit }),
+    );
 
     const editDialog = screen.getByRole('dialog');
-    expect(within(editDialog).queryByLabelText('Fecha de candidatura')).toBeNull();
-    fireEvent.change(within(editDialog).getByLabelText('Empresa'), {
+    expect(within(editDialog).queryByLabelText(LABELS.fields.appliedAt)).toBeNull();
+    fireEvent.change(within(editDialog).getByLabelText(LABELS.fields.company), {
       target: { value: 'Globex' },
     });
-    fireEvent.click(within(editDialog).getByRole('button', { name: 'Guardar cambios' }));
+    fireEvent.click(within(editDialog).getByRole('button', { name: LABELS.common.saveChanges }));
 
     await waitFor(() =>
       expect(collection.update).toHaveBeenCalledWith(1, { company: 'Globex' }),
@@ -380,8 +403,10 @@ describe('Applications', () => {
     const { collection } = renderApplications({ items: [makeApplication(1)] });
 
     fireEvent.click(screen.getAllByRole('row')[1]);
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Editar' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: LABELS.common.edit }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.saveChanges }));
 
     expect(collection.update).not.toHaveBeenCalled();
     expect(screen.getByRole('dialog').textContent).toContain('Desarrollador — Acme 1');
@@ -405,13 +430,13 @@ describe('Applications', () => {
       items: [makeApplication(7, { notes: '' })],
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir nota' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.noteForm.add }));
     const dialog = screen.getByRole('dialog');
-    const textarea = within(dialog).getByPlaceholderText('Escribe una nota...');
+    const textarea = within(dialog).getByPlaceholderText(LABELS.noteForm.placeholder);
 
     expect(textarea.value).toBe('');
     fireEvent.change(textarea, { target: { value: 'Enviar seguimiento' } });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: LABELS.common.save }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(collection.update).toHaveBeenCalledWith(7, {
@@ -425,10 +450,10 @@ describe('Applications', () => {
     });
     collection.update.mockResolvedValue(false);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ver y editar nota' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.noteForm.viewAndEdit }));
     fireEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', {
-        name: 'Guardar',
+        name: LABELS.common.save,
       }),
     );
 
@@ -437,7 +462,7 @@ describe('Applications', () => {
 
     fireEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', {
-        name: 'Cancelar',
+        name: LABELS.common.cancel,
       }),
     );
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -448,7 +473,7 @@ describe('Applications', () => {
       items: [makeApplication(7, { company: '', position: 'Investigador' })],
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir nota' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.noteForm.add }));
 
     expect(screen.getByRole('dialog').textContent).toContain('Investigador');
   });
@@ -458,7 +483,7 @@ describe('Applications', () => {
       items: [makeApplication(1, { status: 'suspended' })],
     });
 
-    const options = within(screen.getByDisplayValue('Suspendido'))
+    const options = within(screen.getByDisplayValue(LABELS.recordEdit.suspended))
       .getAllByRole('option')
       .map(option => option.value);
 
@@ -470,10 +495,16 @@ describe('Applications', () => {
       staleItems: [makeApplication(4)],
     });
 
-    expect(screen.getByText('Hay 1 candidatura pendiente de más de 30 días.')).toBeTruthy();
+    expect(
+      screen.getByText(
+        LABELS.alerts.staleMessage
+          .replace('{count}', '1')
+          .replace('{label}', LABELS.applications.pendingSingular),
+      ),
+    ).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Revisar' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Suspender' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.review }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.suspend }));
 
     expect(collection.suspend).toHaveBeenCalledWith(4);
   });
@@ -483,13 +514,13 @@ describe('Applications', () => {
       staleItems: [makeApplication(4)],
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Revisar' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.review }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.viewDetails }));
 
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByText('Registro pendiente de más de 30 días')).toBeTruthy();
+    expect(within(dialog).getByText(LABELS.alerts.staleRecord)).toBeTruthy();
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Suspender' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: LABELS.alerts.suspend }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(collection.suspend).toHaveBeenCalledWith(4);
   });
@@ -498,14 +529,16 @@ describe('Applications', () => {
     const { collection } = renderApplications({ items: [makeApplication(7)] });
 
     fireEvent.click(screen.getAllByRole('row')[1]);
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Eliminar' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: LABELS.common.delete }),
+    );
 
     const confirmation = screen.getByRole('alertdialog');
-    expect(within(confirmation).getByText('Eliminar candidatura')).toBeTruthy();
+    expect(within(confirmation).getByText(LABELS.applications.deleteTitle)).toBeTruthy();
     expect(collection.remove).not.toHaveBeenCalled();
 
     fireEvent.click(
-      within(confirmation).getByRole('button', { name: 'Eliminar definitivamente' }),
+      within(confirmation).getByRole('button', { name: LABELS.common.deletePermanently }),
     );
 
     await waitFor(() => expect(collection.remove).toHaveBeenCalledWith(7));
@@ -518,10 +551,12 @@ describe('Applications', () => {
     collection.remove.mockResolvedValue(false);
 
     fireEvent.click(screen.getAllByRole('row')[1]);
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Eliminar' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: LABELS.common.delete }),
+    );
     fireEvent.click(
       within(screen.getByRole('alertdialog')).getByRole('button', {
-        name: 'Eliminar definitivamente',
+        name: LABELS.common.deletePermanently,
       }),
     );
 
@@ -529,7 +564,9 @@ describe('Applications', () => {
     expect(screen.getByRole('dialog')).toBeTruthy();
     expect(screen.getByRole('alertdialog')).toBeTruthy();
 
-    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Cancelar' }));
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: LABELS.common.cancel }),
+    );
     expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(screen.getByRole('dialog')).toBeTruthy();
   });
