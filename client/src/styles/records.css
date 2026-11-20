@@ -453,9 +453,10 @@
 
 .record-timeline-title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-  color: #4b5563;
+  color: inherit;
+  font-size: 0.85rem;
+  font-weight: 400;
+  opacity: 0.7;
   text-align: center;
 }
 
@@ -473,10 +474,6 @@
 
 .record-timeline[open] .record-timeline-arrow {
   transform: translateY(2px) rotate(225deg);
-}
-
-.record-timeline-toggle:hover .record-timeline-title {
-  color: #111827;
 }
 
 .record-timeline-scroll {
