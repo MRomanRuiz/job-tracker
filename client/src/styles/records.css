@@ -425,3 +425,59 @@
   font-size: 14px;
   color: #6b7280;
 }
+
+/* Desplegable de línea temporal */
+
+.record-timeline {
+  margin: 28px 0 24px;
+  padding: 12px 16px;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.record-timeline-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.record-timeline-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.record-timeline-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #4b5563;
+  text-align: center;
+}
+
+.record-timeline-arrow {
+  position: absolute;
+  right: 4px;
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid #9ca3af;
+  border-bottom: 1.5px solid #9ca3af;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.record-timeline[open] .record-timeline-arrow {
+  transform: translateY(2px) rotate(225deg);
+}
+
+.record-timeline-toggle:hover .record-timeline-title {
+  color: #111827;
+}
+
+.record-timeline-scroll {
+  margin-top: 16px;
+}
