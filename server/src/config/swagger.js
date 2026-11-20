@@ -76,7 +76,7 @@ const contactProperties = {
   contactedAt: dateTime,
   status: {
     type: 'string',
-    enum: ['pending', 'replied', 'rejected'],
+    enum: ['pending', 'in_conversation', 'follow_up', 'completed', 'rejected'],
     default: 'pending',
     example: 'pending',
   },

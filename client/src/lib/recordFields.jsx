@@ -135,7 +135,9 @@ export const CONTACT_FIELDS = [
     badge: true,
     options: [
       { value: 'pending', label: LABELS.statuses.contact.pending },
-      { value: 'replied', label: LABELS.statuses.contact.replied },
+      { value: 'in_conversation', label: LABELS.statuses.contact.in_conversation },
+      { value: 'follow_up', label: LABELS.statuses.contact.follow_up },
+      { value: 'completed', label: LABELS.statuses.contact.completed },
       { value: 'rejected', label: LABELS.statuses.contact.rejected },
     ],
     format: value => LABELS.statuses.contact[value] || value,

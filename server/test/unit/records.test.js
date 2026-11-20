@@ -37,10 +37,7 @@ describe('record validation helpers', () => {
     const now = new Date('2026-02-01T00:00:00.000Z');
 
     assert.equal(isOlderThanPendingLimit('2025-12-01', now), true);
-    assert.equal(
-      isStalePending({ status: 'pending', appliedAt: '2025-12-01' }, 'appliedAt'),
-      true,
-    );
+    assert.equal(isStalePending({ status: 'pending', appliedAt: '2025-12-01' }, 'appliedAt'), true);
     assert.equal(
       isStalePending({ status: 'interview', appliedAt: '2025-12-01' }, 'appliedAt'),
       false,
@@ -53,6 +50,18 @@ describe('record validation helpers', () => {
     }
 
     assert.throws(() => parseContact(null), HttpError);
+  });
+
+  it('accepts all valid contact statuses', () => {
+    const statuses = ['pending', 'in_conversation', 'follow_up', 'completed', 'rejected'];
+
+    for (const status of statuses) {
+      assert.equal(parseContactChanges({ status }).status, status);
+    }
+  });
+
+  it('rejects unknown contact statuses', () => {
+    assert.throws(() => parseContactChanges({ status: 'replied' }), HttpError);
   });
 
   it('reports missing and non-string date and enum fields', () => {
@@ -126,11 +135,10 @@ describe('record validation helpers', () => {
 
     assert.throws(
       () =>
-        suspendIfStale(
-          { status: 'rejected', appliedAt: '2025-01-01' },
-          'appliedAt',
-          { notPending: 'Not pending', tooRecent: 'Too recent' },
-        ),
+        suspendIfStale({ status: 'rejected', appliedAt: '2025-01-01' }, 'appliedAt', {
+          notPending: 'Not pending',
+          tooRecent: 'Too recent',
+        }),
       error => error instanceof HttpError && error.message === 'Not pending',
     );
 

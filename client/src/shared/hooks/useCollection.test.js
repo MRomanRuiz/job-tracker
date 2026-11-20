@@ -49,7 +49,7 @@ describe('useCollection', () => {
   });
 
   it('reloads the stale items only when the status changes', async () => {
-    const updated = { ...pending, status: 'replied' };
+    const updated = { ...pending, status: 'in_conversation' };
     const { result, fetchMock } = renderCollection({
       'PATCH /api/contacts/1': body => ({ ...pending, ...body, updatedAt: '2026-02-01' }),
     });
@@ -62,9 +62,9 @@ describe('useCollection', () => {
 
     let response;
     await act(async () => {
-      response = await result.current.update(1, { status: 'replied' });
+      response = await result.current.update(1, { status: 'in_conversation' });
     });
-    expect(result.current.items[0].status).toBe('replied');
+    expect(result.current.items[0].status).toBe('in_conversation');
     expect(staleRequests(fetchMock)).toBe(2);
     expect(response).toEqual({ ...updated, updatedAt: '2026-02-01' });
   });
@@ -117,7 +117,7 @@ describe('useCollection', () => {
     await waitFor(() => expect(result.current.items).toHaveLength(1));
 
     await act(async () => {
-      await expect(result.current.update(1, { status: 'replied' })).rejects.toThrow(
+      await expect(result.current.update(1, { status: 'in_conversation' })).rejects.toThrow(
         'email: Must be a string',
       );
     });

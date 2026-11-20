@@ -75,18 +75,26 @@
   color: #1d4ed8;
 }
 
-.status-select.replied,
+.status-select.in_conversation,
 .status-select.interview,
-.status-badge.replied,
+.status-badge.in_conversation,
 .status-badge.interview {
   background: #ede9fe;
   color: #7c3aed;
 }
 
 .status-select.offer,
-.status-badge.offer {
+.status-select.completed,
+.status-badge.offer,
+.status-badge.completed {
   background: #dcfce7;
   color: #15803d;
+}
+
+.status-select.follow_up,
+.status-badge.follow_up {
+  background: #fef9c3;
+  color: #a16207;
 }
 
 .status-select.rejected,
