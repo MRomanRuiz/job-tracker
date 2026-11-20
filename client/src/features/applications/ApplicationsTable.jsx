@@ -11,7 +11,7 @@ function ApplicationsTable({ applications, onStatusChange, onOpenNote, onOpenDet
   }
 
   return (
-    <table>
+    <table className="applications-table">
       <thead>
         <tr>
           <th>{LABELS.applications.table.company}</th>

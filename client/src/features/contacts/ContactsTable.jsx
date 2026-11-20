@@ -22,7 +22,7 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote, onOpenDetail }) {
   };
 
   return (
-    <table>
+    <table className="contacts-table">
       <thead>
         <tr>
           <th>{LABELS.contacts.table.name}</th>
