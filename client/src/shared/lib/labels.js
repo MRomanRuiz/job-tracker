@@ -58,6 +58,8 @@ const translations = {
         pending: 'En espera',
         interview: 'Entrevista',
         offer: 'Oferta',
+        accepted: 'Aceptado',
+        declined: 'Declinado',
         rejected: 'Rechazado',
         suspended: 'Suspendido',
       },
@@ -90,7 +92,7 @@ const translations = {
       stats: {
         total: 'Total',
         pending: 'En espera',
-        interviews: 'Entrevistas',
+        interviews: 'En entrevistas',
         rejected: 'Rechazadas',
       },
       table: {
@@ -239,6 +241,8 @@ const translations = {
         pending: 'Pending',
         interview: 'Interview',
         offer: 'Offer',
+        accepted: 'Accepted',
+        declined: 'Declined',
         rejected: 'Rejected',
         suspended: 'Suspended',
       },
@@ -271,7 +275,7 @@ const translations = {
       stats: {
         total: 'Total',
         pending: 'Pending',
-        interviews: 'Interviews',
+        interviews: 'In interviews',
         rejected: 'Rejected',
       },
       table: {

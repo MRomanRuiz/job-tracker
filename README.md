@@ -183,7 +183,7 @@ A record can contain the following fields:
 | `durationType`   | Contract type: `fixed` or `indefinite`. Optional.                                                     |
 | `durationMonths` | Positive integer for a `fixed` contract; otherwise `null`.                                            |
 | `notes`          | Free-text notes or follow-up comments. Optional.                                                      |
-| `status`         | `pending`, `interview`, `offer`, `rejected`, or `suspended`. New records default to `pending`.        |
+| `status`         | `pending`, `interview`, `offer`, `accepted`, `declined`, `rejected`, or `suspended`. New records default to `pending`. |
 | `updatedAt`      | Server-managed ISO 8601 timestamp for the most recent change.                                         |
 | `history`        | Server-managed list of status and notes changes, with the old value, new value, and change timestamp. |
 
@@ -269,7 +269,7 @@ The API runs at [http://localhost:3001](http://localhost:3001). The frontend acc
 
 Interactive API documentation is available at [http://localhost:3001/api-docs/](http://localhost:3001/api-docs/), and the OpenAPI specification is available at [http://localhost:3001/api-docs.json](http://localhost:3001/api-docs.json).
 
-Invalid input, including malformed JSON, empty update payloads, and dates that do not exist (such as `2026-02-31`), returns `400`. Unknown record IDs return `404`. Invalid contact status transitions return `409`. Attempts to suspend a record that is not pending or is not older than 30 days return `400`; a concurrent change during suspension can return `409`. Requests from origins other than `http://localhost:3000` and `http://localhost:5173` return `403`. JSON request bodies larger than the configured limit return `413`. API errors are returned as JSON objects containing a `message` field and optional `description` and `details` entries.
+Invalid input, including malformed JSON, empty update payloads, and dates that do not exist (such as `2026-02-31`), returns `400`. Unknown record IDs return `404`. Invalid application or contact status transitions return `409`. Attempts to suspend a record that is not pending or is not older than 30 days return `400`; a concurrent change during suspension can return `409`. Requests from origins other than `http://localhost:3000` and `http://localhost:5173` return `403`. JSON request bodies larger than the configured limit return `413`. API errors are returned as JSON objects containing a `message` field and optional `description` and `details` entries.
 
 ### Health
 
@@ -282,8 +282,8 @@ Invalid input, including malformed JSON, empty update payloads, and dates that d
 | Method   | Endpoint                        | Description                                                                                                                                                                                                                                                                                                                                                                                                        |
 | -------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `GET`    | `/api/applications`             | Return `{ "applications": [...] }`.                                                                                                                                                                                                                                                                                                                                                                                |
-| `POST`   | `/api/applications`             | Create an application. Requires `company`, `position`, `type` (`industry` or `research`), `country`, and `appliedAt` as a UTC ISO 8601 timestamp. Other text fields are optional. `durationType` may be empty, `fixed`, or `indefinite`; for `fixed`, `durationMonths` may be omitted or `null`, or be a positive integer. Status may be `pending`, `interview`, `offer`, or `rejected` and defaults to `pending`. |
-| `PATCH`  | `/api/applications/:id`         | Partially update an application's details, status, or notes. Editable fields: `company`, `position`, `type`, `city`, `country`, `durationType`, `durationMonths`, `appliedAt`, `status`, and `notes`. Accepted statuses: `pending`, `interview`, `offer`, and `rejected`; use the suspend endpoint for eligible pending applications.                                                                              |
+| `POST`   | `/api/applications`             | Create an application. Requires `company`, `position`, `type` (`industry` or `research`), `country`, and `appliedAt` as a UTC ISO 8601 timestamp. Other text fields are optional. `durationType` may be empty, `fixed`, or `indefinite`; for `fixed`, `durationMonths` may be omitted or `null`, or be a positive integer. Status may be `pending`, `interview`, `offer`, `accepted`, `declined`, or `rejected` and defaults to `pending`. |
+| `PATCH`  | `/api/applications/:id`         | Partially update an application's details, status, or notes. Editable fields: `company`, `position`, `type`, `city`, `country`, `durationType`, `durationMonths`, `appliedAt`, `status`, and `notes`. Status changes must follow the server-validated transition flow; use the suspend endpoint for eligible pending applications. |
 | `GET`    | `/api/applications/old`         | Return pending applications older than 30 days.                                                                                                                                                                                                                                                                                                                                                                    |
 | `PATCH`  | `/api/applications/:id/suspend` | Suspend an eligible pending application older than 30 days. The response has status `suspended`.                                                                                                                                                                                                                                                                                                                   |
 | `DELETE` | `/api/applications/:id`         | Delete an application; returns `204` on success.                                                                                                                                                                                                                                                                                                                                                                   |
@@ -317,6 +317,20 @@ Contact status transitions are:
 | `follow_up` | `pending` |
 | `suspended` | `in_conversation`, `follow_up`, `rejected` |
 | `completed` | None |
+| `rejected` | None |
+
+A status change outside this table returns `409 Conflict`.
+
+Application status transitions are:
+
+| Current status | Allowed next statuses |
+| -------------- | --------------------- |
+| `pending` | `interview`, `rejected`, `suspended` |
+| `interview` | `offer`, `declined`, `rejected` |
+| `offer` | `accepted`, `declined` |
+| `suspended` | `interview`, `rejected` |
+| `accepted` | None |
+| `declined` | None |
 | `rejected` | None |
 
 A status change outside this table returns `409 Conflict`.

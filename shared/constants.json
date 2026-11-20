@@ -12,8 +12,27 @@
     "OK": 200
   },
   "RECORD_STATUSES": {
-    "application": ["pending", "interview", "offer", "rejected"],
+    "application": ["pending", "interview", "offer", "accepted", "declined", "rejected"],
     "contact": ["pending", "in_conversation", "follow_up", "completed", "rejected"],
     "suspended": "suspended"
+  },
+  "RECORD_TRANSITIONS": {
+    "application": {
+      "pending": ["interview", "rejected", "suspended"],
+      "interview": ["offer", "declined", "rejected"],
+      "offer": ["accepted", "declined"],
+      "suspended": ["interview", "rejected"],
+      "accepted": [],
+      "declined": [],
+      "rejected": []
+    },
+    "contact": {
+      "pending": ["in_conversation", "follow_up", "rejected", "suspended"],
+      "in_conversation": ["follow_up", "completed", "rejected", "suspended"],
+      "follow_up": ["pending"],
+      "suspended": ["in_conversation", "follow_up", "rejected"],
+      "completed": [],
+      "rejected": []
+    }
   }
 }

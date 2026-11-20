@@ -144,6 +144,13 @@ describe('additional app branches', () => {
     assert.ok(!body.components.schemas.ContactInput.properties.status.enum.includes('suspended'));
     assert.ok(body.paths['/api/applications'].get.responses[403]);
     assert.ok(body.paths['/api/applications/{id}'].patch.responses[413]);
+    assert.ok(body.paths['/api/applications/{id}'].patch.responses[409]);
+    assert.ok(
+      body.components.schemas.ApplicationInput.properties.status.enum.includes('accepted'),
+    );
+    assert.ok(
+      body.components.schemas.ApplicationInput.properties.status.enum.includes('declined'),
+    );
     assert.ok(body.paths['/api/contacts'].get.responses[403]);
     assert.ok(body.paths['/api/contacts/{id}'].patch.responses[413]);
   });

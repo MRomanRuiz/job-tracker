@@ -57,6 +57,7 @@ function ApplicationsTable({ applications, onStatusChange, onOpenNote, onOpenDet
               <StatusSelect
                 value={job.status}
                 statuses={sharedConstants.RECORD_STATUSES.application}
+                transitions={sharedConstants.RECORD_TRANSITIONS.application}
                 labels={LABELS.statuses.application}
                 onChange={status => onStatusChange(job.id, status)}
               />

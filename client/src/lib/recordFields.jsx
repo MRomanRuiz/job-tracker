@@ -73,6 +73,8 @@ export const APPLICATION_FIELDS = [
       { value: 'pending', label: LABELS.statuses.application.pending },
       { value: 'interview', label: LABELS.statuses.application.interview },
       { value: 'offer', label: LABELS.statuses.application.offer },
+      { value: 'accepted', label: LABELS.statuses.application.accepted },
+      { value: 'declined', label: LABELS.statuses.application.declined },
       { value: 'rejected', label: LABELS.statuses.application.rejected },
     ],
     format: value => LABELS.statuses.application[value] || value,

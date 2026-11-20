@@ -68,6 +68,39 @@ describe('RecordEditForm', () => {
     ).toBe(LABELS.recordEdit.suspended);
   });
 
+  it('limits application edit status options to allowed transitions', () => {
+    renderEditForm();
+
+    const statusSelect = screen.getByLabelText(LABELS.fields.status);
+    const visibleOptions = Array.from(statusSelect.options)
+      .filter(option => !option.hidden)
+      .map(option => option.value);
+
+    expect(visibleOptions).toEqual(['interview', 'rejected']);
+  });
+
+  it('offers the added application outcome statuses from offer', () => {
+    renderEditForm({ item: { ...application, status: 'offer' } });
+
+    const statusSelect = screen.getByLabelText(LABELS.fields.status);
+    const visibleOptions = Array.from(statusSelect.options)
+      .filter(option => !option.hidden)
+      .map(option => option.value);
+
+    expect(visibleOptions).toEqual(['accepted', 'declined']);
+  });
+
+  it('limits contact edit status options to allowed transitions', () => {
+    renderEditForm({ item: contact, kind: 'contact' });
+
+    const statusSelect = screen.getByLabelText(LABELS.fields.status);
+    const visibleOptions = Array.from(statusSelect.options)
+      .filter(option => !option.hidden)
+      .map(option => option.value);
+
+    expect(visibleOptions).toEqual(['in_conversation', 'follow_up', 'rejected']);
+  });
+
   it('initializes nullable contact fields to empty values', () => {
     renderEditForm({
       item: { id: 3, contactedAt: '', durationMonths: null, durationType: null, notes: null },

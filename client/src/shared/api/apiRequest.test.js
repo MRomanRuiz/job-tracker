@@ -82,9 +82,7 @@ describe('apiRequest', () => {
     await expect(apiRequest('/contacts')).rejects.toThrow(
       'email: Must be a valid email address; contact: Contact name is required',
     );
-    await expect(apiRequest('/contacts')).rejects.toThrow(
-      LABELS.common.badGatewayError,
-    );
+    await expect(apiRequest('/contacts')).rejects.toThrow(LABELS.common.badGatewayError);
   });
 
   it('uses the server message when no validation details are provided', async () => {

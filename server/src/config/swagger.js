@@ -59,7 +59,7 @@ const applicationProperties = {
   },
   status: {
     type: 'string',
-    enum: ['pending', 'interview', 'offer', 'rejected'],
+    enum: ['pending', 'interview', 'offer', 'accepted', 'declined', 'rejected'],
     default: 'pending',
     example: 'pending',
   },
@@ -282,6 +282,7 @@ const spec = {
           403: errorResponse,
           413: errorResponse,
           404: errorResponse,
+          409: errorResponse,
           500: errorResponse,
         },
       },
@@ -397,6 +398,7 @@ const spec = {
           413: errorResponse,
           404: errorResponse,
           500: errorResponse,
+          409: errorResponse,
         },
       },
 

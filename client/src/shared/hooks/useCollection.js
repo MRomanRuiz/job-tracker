@@ -10,10 +10,10 @@ export default function useCollection(name) {
   const latestStaleRequest = useRef(0);
 
   const reportError = useCallback(
-    error => {
+    requestError => {
       setError(
-        typeof error?.message === 'string' && error.message
-          ? error.message
+        typeof requestError?.message === 'string' && requestError.message
+          ? requestError.message
           : LABELS.common.requestError,
       );
     },
@@ -56,11 +56,11 @@ export default function useCollection(name) {
 
     try {
       updated = await request(path, { method: 'PATCH', body });
-    } catch (error) {
-      reportError(error);
+    } catch (requestError) {
+      reportError(requestError);
 
       if (throwErrors) {
-        throw error;
+        throw requestError;
       }
 
       return false;
@@ -81,8 +81,8 @@ export default function useCollection(name) {
 
     try {
       created = await request('', { method: 'POST', body: values });
-    } catch (error) {
-      reportError(error);
+    } catch (requestError) {
+      reportError(requestError);
       return false;
     }
 
@@ -118,8 +118,8 @@ export default function useCollection(name) {
 
     try {
       deleted = await request(`/${id}`, { method: 'DELETE' });
-    } catch (error) {
-      reportError(error);
+    } catch (requestError) {
+      reportError(requestError);
       return false;
     }
 

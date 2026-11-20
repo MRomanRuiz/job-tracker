@@ -29,7 +29,10 @@ describe('record history', () => {
       prepareRecordUpdate({ notes: '', history: [previousEvent] }, changes, now).history[0],
       previousEvent,
     );
-    assert.equal(prepareRecordUpdate({ notes: null, history: null }, changes, now).history.length, 1);
+    assert.equal(
+      prepareRecordUpdate({ notes: null, history: null }, changes, now).history.length,
+      1,
+    );
     assert.equal(prepareRecordUpdate({ notes: null }, changes, now).history.length, 1);
   });
 

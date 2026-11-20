@@ -1,8 +1,10 @@
 import { ALL_STATUSES } from './constants.js';
 import { LABELS } from './labels.js';
 
-export const isRejected = item => item.status === 'rejected' || item.status === 'suspended';
+export const isRejected = item =>
+  item.status === 'rejected' || item.status === 'suspended' || item.status === 'declined';
 export const isPending = item => item.status === 'pending' || item.status === 'follow_up';
+export const isInInterviews = item => item.status === 'interview' || item.status === 'offer';
 
 export const matchesStatus = (item, statusFilter) => {
   if (statusFilter === ALL_STATUSES) {
@@ -15,6 +17,10 @@ export const matchesStatus = (item, statusFilter) => {
 
   if (statusFilter === 'rejected') {
     return isRejected(item);
+  }
+
+  if (statusFilter === 'interview') {
+    return isInInterviews(item);
   }
 
   return item.status === statusFilter;

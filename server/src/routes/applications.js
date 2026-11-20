@@ -5,6 +5,7 @@ const {
   parseApplicationChanges,
   suspendIfStale,
 } = require('../domain/records');
+const { validateApplicationTransition } = require('../domain/transitions');
 const handle = require('./handle');
 
 const NOT_FOUND_MESSAGE = 'Application not found';
@@ -65,19 +66,17 @@ const addApplicationRoutes = (app, storage) => {
         );
       }
 
-      const requiresCurrentApplication = Object.keys(requestedChanges).some(
-        field => !['status', 'notes'].includes(field),
-      );
+      const currentApplication = await storage.getById('applications', req.params.id);
 
-      const currentApplication = requiresCurrentApplication
-        ? await storage.getById('applications', req.params.id)
-        : {};
-
-      if (requiresCurrentApplication && !currentApplication) {
+      if (!currentApplication) {
         throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
       }
 
       const changes = parseApplicationChanges(requestedChanges, currentApplication);
+      if (changes.status !== undefined && changes.status !== currentApplication.status) {
+        validateApplicationTransition(currentApplication.status, changes.status);
+      }
+
       const application = await storage.update('applications', req.params.id, changes);
 
       if (!application) {
@@ -99,6 +98,7 @@ const addApplicationRoutes = (app, storage) => {
       }
 
       suspendIfStale(application, 'appliedAt');
+      validateApplicationTransition(application.status, 'suspended');
 
       const updated = await storage.updatePending(
         'applications',

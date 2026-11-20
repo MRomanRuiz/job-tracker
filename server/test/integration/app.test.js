@@ -405,6 +405,61 @@ describe('applications', () => {
     }
   });
 
+  it('enforces valid application status transitions', async () => {
+    const interview = await request('PATCH', '/api/applications/2', {
+      body: { status: 'interview' },
+    });
+
+    assert.equal(interview.status, 200);
+    assert.equal(interview.body.status, 'interview');
+
+    const offer = await request('PATCH', '/api/applications/2', {
+      body: { status: 'offer' },
+    });
+
+    assert.equal(offer.status, 200);
+    assert.equal(offer.body.status, 'offer');
+
+    const accepted = await request('PATCH', '/api/applications/2', {
+      body: { status: 'accepted' },
+    });
+
+    assert.equal(accepted.status, 200);
+    assert.equal(accepted.body.status, 'accepted');
+
+    const fromAccepted = await request('PATCH', '/api/applications/2', {
+      body: { status: 'pending' },
+    });
+
+    assert.equal(fromAccepted.status, 409);
+    assert.equal(fromAccepted.body.message, 'Invalid application status transition');
+  });
+
+  it('rejects application status transitions that skip stages', async () => {
+    const response = await request('PATCH', '/api/applications/2', {
+      body: { status: 'offer' },
+    });
+
+    assert.equal(response.status, 409);
+    assert.equal(response.body.message, 'Invalid application status transition');
+  });
+
+  it('allows declining an application with an offer', async () => {
+    await request('PATCH', '/api/applications/2', {
+      body: { status: 'interview' },
+    });
+    await request('PATCH', '/api/applications/2', {
+      body: { status: 'offer' },
+    });
+
+    const response = await request('PATCH', '/api/applications/2', {
+      body: { status: 'declined' },
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.status, 'declined');
+  });
+
   it('updates application details and trims text fields', async () => {
     const { status, body } = await request('PATCH', '/api/applications/2', {
       body: {

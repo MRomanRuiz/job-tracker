@@ -12,12 +12,7 @@ describe('RecordDetails', () => {
 
   it('uses the default application title and allows an omitted delete handler', () => {
     render(
-      <RecordDetails
-        item={{ id: 1 }}
-        kind="application"
-        onClose={vi.fn()}
-        onEdit={vi.fn()}
-      />,
+      <RecordDetails item={{ id: 1 }} kind="application" onClose={vi.fn()} onEdit={vi.fn()} />,
     );
 
     expect(
@@ -27,14 +22,7 @@ describe('RecordDetails', () => {
   });
 
   it('uses the default contact title when contact and institution are missing', () => {
-    render(
-      <RecordDetails
-        item={{ id: 2 }}
-        kind="contact"
-        onClose={vi.fn()}
-        onEdit={vi.fn()}
-      />,
-    );
+    render(<RecordDetails item={{ id: 2 }} kind="contact" onClose={vi.fn()} onEdit={vi.fn()} />);
 
     expect(
       screen.getByRole('heading', { name: LABELS.recordDetails.contactFallback }),

@@ -255,6 +255,12 @@ describe('Contacts', () => {
     const { collection } = renderContacts();
 
     const statusSelect = screen.getByDisplayValue(LABELS.statuses.contact.pending);
+    expect(
+      within(statusSelect)
+        .getAllByRole('option')
+        .map(option => option.value),
+    ).toEqual(['in_conversation', 'follow_up', 'rejected']);
+
     fireEvent.click(statusSelect);
     expect(screen.queryByRole('dialog')).toBeNull();
     fireEvent.keyDown(statusSelect, { key: 'Enter' });
