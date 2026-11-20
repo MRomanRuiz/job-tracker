@@ -101,6 +101,21 @@ describe('apiRequest', () => {
     await expect(apiRequest('/contacts')).rejects.toThrow('Could not load contacts');
   });
 
+  it('uses detail messages without field names and ignores malformed details', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 422,
+        json: async () => ({
+          details: [null, {}, { message: 'A name is required' }, { field: '', message: 'Invalid' }],
+        }),
+      }),
+    );
+
+    await expect(apiRequest('/contacts')).rejects.toThrow('A name is required; Invalid');
+  });
+
   it('continues when an error response has no JSON body', async () => {
     vi.stubGlobal('fetch', () => ({
       ok: false,

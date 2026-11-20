@@ -193,6 +193,14 @@ describe('additional app branches', () => {
     assert.equal(response.status, 400);
   });
 
+  it('returns not found when an update loses the record between lookup and write', async () => {
+    const application = await request('PATCH', '/api/applications/1', { notes: 'Follow up' });
+    const contact = await request('PATCH', '/api/contacts/1', { notes: 'Follow up' });
+
+    assert.equal(application.status, 404);
+    assert.equal(contact.status, 404);
+  });
+
   it('returns not found when suspending a missing contact', async () => {
     const response = await request('PATCH', '/api/contacts/99/suspend');
 

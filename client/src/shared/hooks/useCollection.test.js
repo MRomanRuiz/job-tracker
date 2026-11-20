@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { mockApi } from '../../test/helpers/mockApi';
+import { LABELS } from '../lib/labels';
 import useCollection from './useCollection';
 
 const pending = { id: 1, contact: 'Ana', status: 'pending' };
@@ -156,6 +157,74 @@ describe('useCollection', () => {
 
     await waitFor(() => expect(result.current.error).toBe('Database unavailable'));
     expect(result.current.items).toEqual([]);
+  });
+
+  it('uses the generic message when a failed request has no message', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async url => {
+        if (url === '/api/contacts') {
+          throw new Error('');
+        }
+
+        return {
+          status: 200,
+          ok: true,
+          json: async () => ({ contacts: [] }),
+        };
+      }),
+    );
+    const { result } = renderHook(() => useCollection('contacts'));
+
+    await waitFor(() => expect(result.current.error).toBe(LABELS.common.requestError));
+  });
+
+  it('keeps the item list empty when the initial response has no payload', async () => {
+    const fetchMock = vi.fn(async url => ({
+      status: 200,
+      ok: true,
+      json: async () => (url === '/api/contacts' ? null : { contacts: [] }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    const { result } = renderHook(() => useCollection('contacts'));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+    expect(result.current.items).toEqual([]);
+    expect(result.current.error).toBe('');
+  });
+
+  it('ignores empty successful responses from stale and mutation requests', async () => {
+    const fetchMock = vi.fn(async (url, { method = 'GET' } = {}) => {
+      const responses = {
+        'GET /api/contacts': { contacts: [pending] },
+        'GET /api/contacts/old': null,
+        'POST /api/contacts': null,
+        'PATCH /api/contacts/1': null,
+        'DELETE /api/contacts/1': null,
+      };
+
+      return {
+        status: 200,
+        ok: true,
+        json: async () => responses[`${method} ${url}`],
+      };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const { result } = renderHook(() => useCollection('contacts'));
+
+    await waitFor(() => expect(result.current.items).toEqual([pending]));
+    expect(result.current.staleItems).toEqual([]);
+
+    await act(async () => {
+      await expect(result.current.create({ contact: 'Eva' })).resolves.toBe(false);
+      await expect(result.current.update(1, { notes: 'Follow up' })).resolves.toBe(false);
+      await expect(result.current.remove(1)).resolves.toBe(false);
+    });
+
+    expect(result.current.items).toEqual([pending]);
+    expect(result.current.error).toBe('');
+    expect(fetchMock.mock.calls.filter(([url]) => url === '/api/contacts/old')).toHaveLength(1);
   });
 
   it('ignores stale responses that arrive after a newer one', async () => {

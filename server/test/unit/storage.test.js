@@ -78,6 +78,27 @@ describe('storage factory', () => {
 
       assert.equal(typeof createStorage().list, 'function');
     });
+
+    it('selects MongoDB storage through its factory without connecting', () => {
+      const mongoModulePath = require.resolve('../../src/storage/mongodb');
+      const originalMongoModule = require.cache[mongoModulePath];
+      const mongoStorage = { list() {} };
+
+      require.cache[mongoModulePath] = {
+        exports: { createMongoStorage: () => mongoStorage },
+        loaded: true,
+      };
+
+      try {
+        assert.equal(createStorage('mongodb'), mongoStorage);
+      } finally {
+        if (originalMongoModule) {
+          require.cache[mongoModulePath] = originalMongoModule;
+        } else {
+          delete require.cache[mongoModulePath];
+        }
+      }
+    });
   }
 
   it('rejects unsupported storage types', () => {
@@ -124,6 +145,68 @@ describe('JSON storage', () => {
         { contacts: [] },
       );
     } finally {
+      if (configuredDataDir === undefined) {
+        delete process.env.JSON_DATA_DIR;
+      } else {
+        process.env.JSON_DATA_DIR = configuredDataDir;
+      }
+
+      delete require.cache[jsonModulePath];
+      jsonStorage = require('../../src/storage/json').createJSONStorage();
+    }
+  });
+
+  it('preserves existing JSON files when initialization receives EEXIST', async () => {
+    const jsonModulePath = require.resolve('../../src/storage/json');
+    const configuredDataDir = process.env.JSON_DATA_DIR;
+    const existingDataDir = path.join(dataDir, 'existing-data');
+    await fs.mkdir(existingDataDir, { recursive: true });
+    await fs.writeFile(
+      path.join(existingDataDir, 'jobs.json'),
+      JSON.stringify({ applications: [{ id: 7 }] }),
+      'utf8',
+    );
+    process.env.JSON_DATA_DIR = existingDataDir;
+    delete require.cache[jsonModulePath];
+
+    try {
+      const existingStorage = require('../../src/storage/json').createJSONStorage();
+
+      assert.deepEqual(await existingStorage.list('applications'), [{ id: 7 }]);
+    } finally {
+      if (configuredDataDir === undefined) {
+        delete process.env.JSON_DATA_DIR;
+      } else {
+        process.env.JSON_DATA_DIR = configuredDataDir;
+      }
+
+      delete require.cache[jsonModulePath];
+      jsonStorage = require('../../src/storage/json').createJSONStorage();
+    }
+  });
+
+  it('retries file initialization after a non-EEXIST write error', async () => {
+    const jsonModulePath = require.resolve('../../src/storage/json');
+    const configuredDataDir = process.env.JSON_DATA_DIR;
+    const retryDataDir = path.join(dataDir, 'retry-data');
+    const originalWriteFile = fs.writeFile;
+    process.env.JSON_DATA_DIR = retryDataDir;
+    delete require.cache[jsonModulePath];
+
+    try {
+      const retryStorage = require('../../src/storage/json').createJSONStorage();
+      fs.writeFile = async () => {
+        const error = new Error('Disk unavailable');
+        error.code = 'EACCES';
+        throw error;
+      };
+
+      await assert.rejects(retryStorage.list('applications'), /Disk unavailable/);
+
+      fs.writeFile = originalWriteFile;
+      assert.deepEqual(await retryStorage.list('applications'), []);
+    } finally {
+      fs.writeFile = originalWriteFile;
       if (configuredDataDir === undefined) {
         delete process.env.JSON_DATA_DIR;
       } else {

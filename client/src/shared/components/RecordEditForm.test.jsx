@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { describe, expect, it, vi } from 'vitest';
 import RecordEditForm from './RecordEditForm';
 import { LABELS } from '../lib/labels';
+import { APPLICATION_FIELDS } from '../../lib/recordFields';
 
 const application = {
   id: 1,
@@ -149,6 +150,37 @@ describe('RecordEditForm', () => {
       contact: 'Eva',
       notes: 'Seguimiento',
     });
+  });
+
+  it('converts editable date values to ISO timestamps, including an empty date', async () => {
+    const dateField = APPLICATION_FIELDS.find(field => field.name === 'appliedAt');
+    const originalEditable = dateField.editable;
+    dateField.editable = true;
+
+    try {
+      const { onSave } = renderEditForm();
+      const dateInput = screen.getByLabelText(LABELS.fields.appliedAt);
+
+      fireEvent.change(dateInput, { target: { value: '2026-02-01' } });
+      fireEvent.click(screen.getByRole('button', { name: LABELS.common.saveChanges }));
+
+      await waitFor(() =>
+        expect(onSave).toHaveBeenNthCalledWith(1, 1, {
+          appliedAt: '2026-02-01T00:00:00.000Z',
+        }),
+      );
+
+      fireEvent.change(dateInput, { target: { value: '' } });
+      fireEvent.click(screen.getByRole('button', { name: LABELS.common.saveChanges }));
+
+      await waitFor(() =>
+        expect(onSave).toHaveBeenNthCalledWith(2, 1, {
+          appliedAt: '',
+        }),
+      );
+    } finally {
+      dateField.editable = originalEditable;
+    }
   });
 
   it('uses the saved record returned by the server when closing', async () => {
