@@ -229,7 +229,7 @@ A record can contain the following fields:
 | `city`        | City. Optional.                                                                                       |
 | `country`     | Country. Required.                                                                                    |
 | `contactedAt` | First-contact timestamp in ISO 8601 format; the table displays only `YYYY-MM-DD`.                     |
-| `status`      | `pending`, `replied`, `rejected`, or `suspended`. New records default to `pending`.                   |
+| `status`      | `pending`, `in_conversation`, `follow_up`, `completed`, `rejected`, or `suspended`. New records default to `pending`. |
 | `notes`       | Free-text notes or follow-up comments. Optional.                                                      |
 | `updatedAt`   | Server-managed ISO 8601 timestamp for the most recent change.                                         |
 | `history`     | Server-managed list of status and notes changes, with the old value, new value, and change timestamp. |
@@ -269,7 +269,7 @@ The API runs at [http://localhost:3001](http://localhost:3001). The frontend acc
 
 Interactive API documentation is available at [http://localhost:3001/api-docs/](http://localhost:3001/api-docs/), and the OpenAPI specification is available at [http://localhost:3001/api-docs.json](http://localhost:3001/api-docs.json).
 
-Invalid input, including malformed JSON, empty update payloads, and dates that do not exist (such as `2026-02-31`), returns `400`. Unknown record IDs return `404`. Attempts to suspend a record that is not pending or is not older than 30 days return `400`; a concurrent change during suspension can return `409`. Requests from origins other than `http://localhost:3000` and `http://localhost:5173` return `403`. JSON request bodies larger than the configured limit return `413`. API errors are returned as JSON objects containing a `message` field and optional `description` and `details` entries.
+Invalid input, including malformed JSON, empty update payloads, and dates that do not exist (such as `2026-02-31`), returns `400`. Unknown record IDs return `404`. Invalid contact status transitions return `409`. Attempts to suspend a record that is not pending or is not older than 30 days return `400`; a concurrent change during suspension can return `409`. Requests from origins other than `http://localhost:3000` and `http://localhost:5173` return `403`. JSON request bodies larger than the configured limit return `413`. API errors are returned as JSON objects containing a `message` field and optional `description` and `details` entries.
 
 ### Health
 
@@ -293,8 +293,8 @@ Invalid input, including malformed JSON, empty update payloads, and dates that d
 | Method   | Endpoint                    | Description                                                                                                                                                                                                                                                                                         |
 | -------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GET`    | `/api/contacts`             | Return `{ "contacts": [...] }`.                                                                                                                                                                                                                                                                     |
-| `POST`   | `/api/contacts`             | Create a contact. Requires `contact`, `email`, `institution`, `country`, and `contactedAt` as a UTC ISO 8601 timestamp. Status defaults to `pending`; accepted statuses are `pending`, `replied`, and `rejected`.                                                                                   |
-| `PATCH`  | `/api/contacts/:id`         | Partially update a contact's details, status, or notes. Editable fields: `contact`, `email`, `institution`, `department`, `city`, `country`, `contactedAt`, `status`, and `notes`. Accepted statuses: `pending`, `replied`, and `rejected`; use the suspend endpoint for eligible pending contacts. |
+| `POST`   | `/api/contacts`             | Create a contact. Requires `contact`, `email`, `institution`, `country`, and `contactedAt` as a UTC ISO 8601 timestamp. Status defaults to `pending`; accepted statuses are `pending`, `in_conversation`, `follow_up`, `completed`, and `rejected`.                                                      |
+| `PATCH`  | `/api/contacts/:id`         | Partially update a contact's details, status, or notes. Editable fields: `contact`, `email`, `institution`, `department`, `city`, `country`, `contactedAt`, `status`, and `notes`. Status changes must follow the server-validated transition flow; use the suspend endpoint for eligible pending contacts. |
 | `GET`    | `/api/contacts/old`         | Return pending contacts older than 30 days.                                                                                                                                                                                                                                                         |
 | `PATCH`  | `/api/contacts/:id/suspend` | Suspend an eligible pending contact older than 30 days. The response has status `suspended`.                                                                                                                                                                                                        |
 | `DELETE` | `/api/contacts/:id`         | Delete a contact; returns `204` on success.                                                                                                                                                                                                                                                         |
@@ -303,10 +303,23 @@ Example contact update request:
 
 ```json
 {
-  "status": "replied",
+  "status": "in_conversation",
   "notes": "Followed up"
 }
 ```
+
+Contact status transitions are:
+
+| Current status | Allowed next statuses |
+| -------------- | --------------------- |
+| `pending` | `in_conversation`, `follow_up`, `rejected`, `suspended` |
+| `in_conversation` | `follow_up`, `completed`, `rejected`, `suspended` |
+| `follow_up` | `pending` |
+| `suspended` | `in_conversation`, `follow_up`, `rejected` |
+| `completed` | None |
+| `rejected` | None |
+
+A status change outside this table returns `409 Conflict`.
 
 The API allows browser requests from `http://localhost:3000` and `http://localhost:5173`. Requests from other origins receive `403`.
 
