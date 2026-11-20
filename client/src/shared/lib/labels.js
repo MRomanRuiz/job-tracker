@@ -119,7 +119,6 @@ const translations = {
         total: 'Total',
         pending: 'En espera',
         in_conversation: 'En contacto',
-        follow_up: 'Recontacto pendiente',
         rejected: 'Rechazados',
       },
       table: {
@@ -301,7 +300,6 @@ const translations = {
         total: 'Total',
         pending: 'Pending',
         in_conversation: 'In touch',
-        follow_up: 'Follow up',
         rejected: 'Rejected',
       },
       table: {

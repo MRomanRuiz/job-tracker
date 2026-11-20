@@ -51,6 +51,24 @@ const names = () =>
     .map(row => within(row).getAllByRole('cell')[0].textContent);
 
 describe('Contacts', () => {
+  it('filters by pending stat card, counting follow_up as pending', () => {
+    renderContacts({
+      items: [
+        { ...contacts[0], status: 'pending' },
+        { ...contacts[1], status: 'follow_up' },
+        { ...contacts[0], id: 3, contact: 'Sara', status: 'in_conversation' },
+      ],
+    });
+
+    const pending = screen.getByRole('button', {
+      name: new RegExp(`^${LABELS.contacts.stats.pending}`),
+    });
+    expect(within(pending).getByText('2')).toBeTruthy();
+
+    fireEvent.click(pending);
+    expect(names()).toEqual(['Ana', 'Luis']);
+  });
+
   it('keeps the status filter selected until another stat card is clicked', () => {
     renderContacts();
 

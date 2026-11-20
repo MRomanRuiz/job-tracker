@@ -17,11 +17,22 @@ describe('matchesStatus', () => {
     expect(matchesStatus({ status: 'pending' }, ALL_STATUSES)).toBe(true);
   });
 
+  it('treats follow_up as pending', () => {
+    expect(matchesStatus({ status: 'follow_up' }, 'pending')).toBe(true);
+    expect(matchesStatus({ status: 'in_conversation' }, 'pending')).toBe(false);
+  });
+
   it('counts items by status', () => {
-    const items = [{ status: 'rejected' }, { status: 'suspended' }, { status: 'pending' }];
+    const items = [
+      { status: 'rejected' },
+      { status: 'suspended' },
+      { status: 'pending' },
+      { status: 'follow_up' },
+    ];
 
     expect(countByStatus(items, 'rejected')).toBe(2);
-    expect(countByStatus(items, ALL_STATUSES)).toBe(3);
+    expect(countByStatus(items, 'pending')).toBe(2);
+    expect(countByStatus(items, ALL_STATUSES)).toBe(4);
   });
 });
 

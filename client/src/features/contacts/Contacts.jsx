@@ -29,7 +29,6 @@ const STAT_ITEMS = [
   { status: ALL_STATUSES, label: LABELS.contacts.stats.total },
   { status: 'pending', label: LABELS.contacts.stats.pending },
   { status: 'in_conversation', label: LABELS.contacts.stats.in_conversation },
-  { status: 'follow_up', label: LABELS.contacts.stats.follow_up },
   { status: 'rejected', label: LABELS.contacts.stats.rejected },
 ];
 
