@@ -14,8 +14,8 @@ A small full-stack application for tracking job applications and professional co
 - Open full record details in a dedicated modal to review status, notes, dates, and contact information without leaving the list view.
 - Edit application and contact details from the record view.
 - Delete applications and contacts from the record view, with a confirmation dialog to prevent accidental deletion.
-- Review a timeline of record creation and status changes; notes are not timeline events.
-- Review applications/contacts statuses with no relevant changes in more than 30 days; records without status history use their application/contact date.
+- Review a timeline of record creation and status changes.
+- Review pending or interview applications, and pending or in-conversation contacts, that have had no relevant changes in more than 30 days; records without status history use their application/contact date.
 - Add and edit notes for applications and contacts through dedicated modal windows.
 - Persist data using either local JSON files or MongoDB.
 - Run backend tests against both storage implementations.
@@ -106,6 +106,7 @@ npm run dev
 | `npm test`             | Run backend tests with JSON and MongoDB storage, followed by frontend tests. All suites run even if one fails, and the command exits with an error if any suite fails. |
 | `npm run test:json`    | Run backend tests using JSON storage.                                                                                                                                  |
 | `npm run test:mongodb` | Run backend tests using MongoDB storage.                                                                                                                               |
+| `npm run test:server`  | Run backend tests using both JSON and MongoDB storage.                                                                                                                 |
 | `npm run test:client`  | Run frontend tests with Vitest and coverage.                                                                                                                           |
 | `npm run build`        | Build the frontend for production in `client/dist`.                                                                                                                    |
 
@@ -262,7 +263,7 @@ When creating a contact through the frontend, the current timestamp is assigned 
 
 Omit `id` when creating records through the API; the server generates it. The `notes` field may be an empty string.
 
-New records start with an empty `history`. The API updates `updatedAt` whenever a record changes and appends history entries only for changes to `status`. The timeline displays the creation event and status history. The detail view builds the creation event from `appliedAt` or `contactedAt`; older records without history remain readable.
+New records start with an empty `history`. The API updates `updatedAt` whenever a record changes and appends history entries only for changes to `status`. The detail view builds the creation event from `appliedAt` or `contactedAt`; older records without history remain readable.
 
 ## API
 
@@ -285,8 +286,8 @@ Invalid input, including malformed JSON, empty update payloads, and dates that d
 | `GET`    | `/api/applications`             | Return `{ "applications": [...] }`.                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `POST`   | `/api/applications`             | Create an application. Requires `company`, `position`, `type` (`industry` or `research`), `country`, and `appliedAt` as a UTC ISO 8601 timestamp. Other text fields are optional. `durationType` may be empty, `fixed`, or `indefinite`; for `fixed`, `durationMonths` may be omitted or `null`, or be a positive integer. Status may be `pending`, `interview`, `offer`, `accepted`, `declined`, or `rejected` and defaults to `pending`. |
 | `PATCH`  | `/api/applications/:id`         | Partially update an application's details, status, or notes. Editable fields: `company`, `position`, `type`, `city`, `country`, `durationType`, `durationMonths`, `appliedAt`, `status`, and `notes`. Status changes must follow the server-validated transition flow; use the suspend endpoint for eligible stale applications.                                                                                                           |
-| `GET`    | `/api/applications/old`         | Return configured applications older than 30 days since their last relevant change (or application date if there is no status history).                                                                                                                                                                                                                                                                                                    |
-| `PATCH`  | `/api/applications/:id/suspend` | Suspend an eligible stale application older than 30 days. The response has status `suspended`.                                                                                                                                                                                                                                                                                                                                             |
+| `GET`    | `/api/applications/old`         | Return `pending` or `interview` applications older than 30 days since their last relevant change (or application date if there is no status history).                                                                                                                                                                                                                                                                                      |
+| `PATCH`  | `/api/applications/:id/suspend` | Suspend an eligible stale `pending` or `interview` application older than 30 days. The response has status `suspended`.                                                                                                                                                                                                                                                                                                                    |
 | `DELETE` | `/api/applications/:id`         | Delete an application; returns `204` on success.                                                                                                                                                                                                                                                                                                                                                                                           |
 
 ### Contacts
@@ -296,8 +297,8 @@ Invalid input, including malformed JSON, empty update payloads, and dates that d
 | `GET`    | `/api/contacts`             | Return `{ "contacts": [...] }`.                                                                                                                                                                                                                                                                           |
 | `POST`   | `/api/contacts`             | Create a contact. Requires `contact`, `email`, `institution`, `country`, and `contactedAt` as a UTC ISO 8601 timestamp. Status defaults to `pending`; accepted statuses are `pending`, `in_conversation`, `follow_up`, `completed`, and `rejected`.                                                       |
 | `PATCH`  | `/api/contacts/:id`         | Partially update a contact's details, status, or notes. Editable fields: `contact`, `email`, `institution`, `department`, `city`, `country`, `contactedAt`, `status`, and `notes`. Status changes must follow the server-validated transition flow; use the suspend endpoint for eligible stale contacts. |
-| `GET`    | `/api/contacts/old`         | Return contacts older than 30 days since their last relevant change (or contact date if there is no status history).                                                                                                                                                                                      |
-| `PATCH`  | `/api/contacts/:id/suspend` | Suspend an eligible stale contact older than 30 days. The response has status `suspended`.                                                                                                                                                                                                                |
+| `GET`    | `/api/contacts/old`         | Return `pending` or `in_conversation` contacts older than 30 days since their last relevant change (or contact date if there is no status history).                                                                                                                                                       |
+| `PATCH`  | `/api/contacts/:id/suspend` | Suspend an eligible stale `pending` or `in_conversation` contact older than 30 days. The response has status `suspended`.                                                                                                                                                                                 |
 | `DELETE` | `/api/contacts/:id`         | Delete a contact; returns `204` on success.                                                                                                                                                                                                                                                               |
 
 Example contact update request:
@@ -324,19 +325,19 @@ A status change outside this table returns `409 Conflict`.
 
 Application status transitions are:
 
-| Current status | Allowed next statuses                |
-| -------------- | ------------------------------------ |
-| `pending`      | `interview`, `rejected`, `suspended` |
-| `interview`    | `offer`, `declined`, `rejected`      |
-| `offer`        | `accepted`, `declined`               |
-| `suspended`    | `interview`, `rejected`              |
-| `accepted`     | None                                 |
-| `declined`     | None                                 |
-| `rejected`     | None                                 |
+| Current status | Allowed next statuses                        |
+| -------------- | -------------------------------------------- |
+| `pending`      | `interview`, `rejected`, `suspended`         |
+| `interview`    | `offer`, `declined`, `rejected`, `suspended` |
+| `offer`        | `accepted`, `declined`                       |
+| `suspended`    | `interview`, `rejected`                      |
+| `accepted`     | None                                         |
+| `declined`     | None                                         |
+| `rejected`     | None                                         |
 
 A status change outside this table returns `409 Conflict`.
 
-The table status controls and the record edit dialog expose only the allowed next statuses for the current record. A record with no allowed next statuses is shown with its status field disabled.
+The table status controls and the record edit dialog expose only the allowed next statuses for the current record. A record with no allowed next statuses is shown with its status field disabled. `suspended` is never offered in these selectors; a record is suspended from the stale-items alert instead.
 
 The API allows browser requests from `http://localhost:3000` and `http://localhost:5173`. Requests from other origins receive `403`.
 
