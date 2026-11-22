@@ -31,7 +31,7 @@ describe('recordFields', () => {
   it('formats known and unknown contact statuses', () => {
     const status = CONTACT_FIELDS.find(field => field.name === 'status');
 
-    expect(status.format('replied')).toBe(LABELS.statuses.contact.replied);
+    expect(status.format('in_conversation')).toBe(LABELS.statuses.contact.in_conversation);
     expect(status.format('legacy-status')).toBe('legacy-status');
   });
 });

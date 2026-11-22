@@ -29,7 +29,7 @@ describe('RecordTimeline', () => {
         {
           field: 'status',
           oldValue: 'pending',
-          newValue: 'replied',
+          newValue: 'in_conversation',
           changedAt: '2026-01-02T12:00:00.000Z',
         },
         {
@@ -53,14 +53,12 @@ describe('RecordTimeline', () => {
       'record-timeline-event notes',
     ]);
 
-    expect(
-      within(events[0]).getByRole('heading', { name: LABELS.timeline.created }),
-    ).toBeTruthy();
+    expect(within(events[0]).getByRole('heading', { name: LABELS.timeline.created })).toBeTruthy();
     expect(
       within(events[1]).getByRole('heading', { name: LABELS.timeline.statusUpdated }),
     ).toBeTruthy();
     expect(events[1].textContent).toContain(LABELS.statuses.contact.pending);
-    expect(events[1].textContent).toContain(LABELS.statuses.contact.replied);
+    expect(events[1].textContent).toContain(LABELS.statuses.contact.in_conversation);
     expect(within(events[2]).getByText('Enviar el informe')).toBeTruthy();
     expect(within(events[3]).getByText(LABELS.timeline.notesDeleted)).toBeTruthy();
     for (const event of events) {
@@ -91,9 +89,7 @@ describe('RecordTimeline', () => {
     expect(within(events[0]).getByText(LABELS.common.unknownDate)).toBeTruthy();
     expect(events[0].textContent).toContain('legacy-status');
     expect(events[0].textContent).toContain('—');
-    expect(
-      within(events[1]).getByRole('heading', { name: LABELS.timeline.created }),
-    ).toBeTruthy();
+    expect(within(events[1]).getByRole('heading', { name: LABELS.timeline.created })).toBeTruthy();
     expect(events[1].querySelector('time').getAttribute('dateTime')).toBe('invalid-created-date');
   });
 

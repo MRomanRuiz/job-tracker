@@ -164,6 +164,9 @@ if (STORAGE_TYPE === 'mongodb') {
         assert.equal(unchanged._storageRevision, undefined);
         assert.equal(replaceCalls, 0);
 
+        current = null;
+        assert.equal(await storage.update('applications', 1, { notes: 'Missing' }), null);
+
         const created = await storage.create('contacts', { contact: 'Eva' });
         assert.equal(created.id, 1);
         assert.equal(created._storageRevision, undefined);

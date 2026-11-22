@@ -102,8 +102,6 @@ describe('App', () => {
 
     const alerts = await screen.findAllByRole('alert');
     expect(alerts).toHaveLength(1);
-    expect(alerts[0].textContent).toBe(
-      LABELS.common.badGatewayError,
-    );
+    expect(alerts[0].textContent).toBe(LABELS.common.badGatewayError);
   });
 });

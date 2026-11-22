@@ -59,7 +59,7 @@ const applicationProperties = {
   },
   status: {
     type: 'string',
-    enum: ['pending', 'interview', 'offer', 'rejected'],
+    enum: ['pending', 'interview', 'offer', 'accepted', 'declined', 'rejected'],
     default: 'pending',
     example: 'pending',
   },
@@ -76,7 +76,7 @@ const contactProperties = {
   contactedAt: dateTime,
   status: {
     type: 'string',
-    enum: ['pending', 'replied', 'rejected'],
+    enum: ['pending', 'in_conversation', 'follow_up', 'completed', 'rejected'],
     default: 'pending',
     example: 'pending',
   },
@@ -189,7 +189,7 @@ const spec = {
 
   info: {
     title: 'Job Tracker API',
-    version: '2.0.0',
+    version: '2.0.1',
     description: 'REST API for managing job applications and professional contacts.',
   },
 
@@ -282,6 +282,7 @@ const spec = {
           403: errorResponse,
           413: errorResponse,
           404: errorResponse,
+          409: errorResponse,
           500: errorResponse,
         },
       },
@@ -397,6 +398,7 @@ const spec = {
           413: errorResponse,
           404: errorResponse,
           500: errorResponse,
+          409: errorResponse,
         },
       },
 

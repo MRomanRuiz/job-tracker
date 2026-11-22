@@ -58,12 +58,16 @@ const translations = {
         pending: 'En espera',
         interview: 'Entrevista',
         offer: 'Oferta',
+        accepted: 'Aceptado',
+        declined: 'Declinado',
         rejected: 'Rechazado',
         suspended: 'Suspendido',
       },
       contact: {
         pending: 'En espera',
-        replied: 'Respondido',
+        in_conversation: 'En contacto',
+        follow_up: 'Recontactar',
+        completed: 'Completado',
         rejected: 'Rechazado',
         suspended: 'Suspendido',
       },
@@ -88,7 +92,7 @@ const translations = {
       stats: {
         total: 'Total',
         pending: 'En espera',
-        interviews: 'Entrevistas',
+        interviews: 'En entrevistas',
         rejected: 'Rechazadas',
       },
       table: {
@@ -116,7 +120,7 @@ const translations = {
       stats: {
         total: 'Total',
         pending: 'En espera',
-        replied: 'Respondidos',
+        in_conversation: 'En contacto',
         rejected: 'Rechazados',
       },
       table: {
@@ -237,12 +241,16 @@ const translations = {
         pending: 'Pending',
         interview: 'Interview',
         offer: 'Offer',
+        accepted: 'Accepted',
+        declined: 'Declined',
         rejected: 'Rejected',
         suspended: 'Suspended',
       },
       contact: {
         pending: 'Pending',
-        replied: 'Replied',
+        in_conversation: 'In touch',
+        follow_up: 'Follow up',
+        completed: 'Completed',
         rejected: 'Rejected',
         suspended: 'Suspended',
       },
@@ -259,14 +267,15 @@ const translations = {
       newTitle: 'New application',
       save: 'Save application',
       deleteTitle: 'Delete application',
-      deleteMessage: 'Are you sure you want to permanently delete this application? This cannot be undone.',
+      deleteMessage:
+        'Are you sure you want to permanently delete this application? This cannot be undone.',
       searchPlaceholder: 'Search company, position...',
       allTypes: 'All types',
       showing: 'Showing',
       stats: {
         total: 'Total',
         pending: 'Pending',
-        interviews: 'Interviews',
+        interviews: 'In interviews',
         rejected: 'Rejected',
       },
       table: {
@@ -287,13 +296,14 @@ const translations = {
       newTitle: 'New contact',
       save: 'Save contact',
       deleteTitle: 'Delete contact',
-      deleteMessage: 'Are you sure you want to permanently delete this contact? This cannot be undone.',
+      deleteMessage:
+        'Are you sure you want to permanently delete this contact? This cannot be undone.',
       searchPlaceholder: 'Search contact, institution, email, or notes...',
       showing: 'Showing',
       stats: {
         total: 'Total',
         pending: 'Pending',
-        replied: 'Replied',
+        in_conversation: 'In touch',
         rejected: 'Rejected',
       },
       table: {

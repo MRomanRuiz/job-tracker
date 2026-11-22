@@ -28,7 +28,7 @@ const OPTIONAL_FORM_FIELDS = CONTACT_CREATE_FIELDS.filter(field => !field.requir
 const STAT_ITEMS = [
   { status: ALL_STATUSES, label: LABELS.contacts.stats.total },
   { status: 'pending', label: LABELS.contacts.stats.pending },
-  { status: 'replied', label: LABELS.contacts.stats.replied },
+  { status: 'in_conversation', label: LABELS.contacts.stats.in_conversation },
   { status: 'rejected', label: LABELS.contacts.stats.rejected },
 ];
 

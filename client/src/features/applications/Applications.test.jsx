@@ -478,7 +478,7 @@ describe('Applications', () => {
     expect(screen.getByRole('dialog').textContent).toContain('Investigador');
   });
 
-  it('only offers suspended for suspended applications', () => {
+  it('only offers allowed next statuses for suspended applications', () => {
     renderApplications({
       items: [makeApplication(1, { status: 'suspended' })],
     });
@@ -487,7 +487,41 @@ describe('Applications', () => {
       .getAllByRole('option')
       .map(option => option.value);
 
-    expect(options).toEqual(['interview', 'offer', 'rejected', 'suspended']);
+    expect(options).toEqual(['interview', 'rejected']);
+  });
+
+  it('only offers allowed next statuses for pending applications', () => {
+    renderApplications({ items: [makeApplication(1)] });
+
+    const options = within(
+      screen.getByDisplayValue(LABELS.statuses.application.pending),
+    )
+      .getAllByRole('option')
+      .map(option => option.value);
+
+    expect(options).toEqual(['interview', 'rejected']);
+  });
+
+  it('offers the added outcome statuses when an application has an offer', () => {
+    renderApplications({
+      items: [makeApplication(1, { status: 'offer' })],
+    });
+
+    const options = within(screen.getByDisplayValue(LABELS.statuses.application.offer))
+      .getAllByRole('option')
+      .map(option => option.value);
+
+    expect(options).toEqual(['accepted', 'declined']);
+  });
+
+  it('disables the status selector for terminal applications', () => {
+    renderApplications({
+      items: [makeApplication(1, { status: 'accepted' })],
+    });
+
+    expect(
+      screen.getByDisplayValue(LABELS.statuses.application.accepted).disabled,
+    ).toBe(true);
   });
 
   it('lists stale applications and suspends them', () => {

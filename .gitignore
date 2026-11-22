@@ -28,6 +28,7 @@ dist-ssr
 client/data/*
 .env
 .env.test
+todo.md
 
 # Coverage directory used by tools like istanbul
 coverage/

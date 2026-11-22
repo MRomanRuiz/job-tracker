@@ -164,9 +164,8 @@ function Applications({ collection, showForm, onCloseForm }) {
 
         <p>
           {LABELS.applications.showing} {filteredApplications.length} {LABELS.pagination.of}{' '}
-          {applications.length} {applications.length === 1
-            ? LABELS.applications.singular
-            : LABELS.applications.plural}
+          {applications.length}{' '}
+          {applications.length === 1 ? LABELS.applications.singular : LABELS.applications.plural}
         </p>
 
         <section className="table-container">

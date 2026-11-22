@@ -6,6 +6,7 @@ const {
   suspendIfStale,
 } = require('../domain/records');
 const handle = require('./handle');
+const { validateContactTransition } = require('../domain/transitions');
 
 const NOT_FOUND_MESSAGE = 'Contact not found';
 
@@ -65,14 +66,25 @@ const addContactRoutes = (app, storage) => {
         );
       }
 
-      const changes = parseContactChanges(requestedChanges);
-      const contact = await storage.update('contacts', req.params.id, changes);
+      const currentContact = await storage.getById('contacts', req.params.id);
 
-      if (!contact) {
+      if (!currentContact) {
         throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
       }
 
-      res.json(contact);
+      const changes = parseContactChanges(requestedChanges);
+
+      if (changes.status !== undefined && changes.status !== currentContact.status) {
+        validateContactTransition(currentContact.status, changes.status);
+      }
+
+      const updated = await storage.update('contacts', req.params.id, changes);
+
+      if (!updated) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
+      }
+
+      res.json(updated);
     }),
   );
 
@@ -87,6 +99,7 @@ const addContactRoutes = (app, storage) => {
       }
 
       suspendIfStale(contact, 'contactedAt');
+      validateContactTransition(contact.status, 'suspended');
 
       const updated = await storage.updatePending(
         'contacts',

@@ -22,7 +22,7 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote, onOpenDetail }) {
   };
 
   return (
-    <table>
+    <table className="contacts-table">
       <thead>
         <tr>
           <th>{LABELS.contacts.table.name}</th>
@@ -58,6 +58,7 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote, onOpenDetail }) {
               <StatusSelect
                 value={contact.status}
                 statuses={sharedConstants.RECORD_STATUSES.contact}
+                transitions={sharedConstants.RECORD_TRANSITIONS.contact}
                 labels={LABELS.statuses.contact}
                 onChange={status => onStatusChange(contact.id, status)}
               />

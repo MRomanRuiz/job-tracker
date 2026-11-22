@@ -21,7 +21,7 @@ const contacts = [
     institution: 'Globex',
     country: 'España',
     contactedAt: '2026-01-01',
-    status: 'replied',
+    status: 'in_conversation',
     notes: 'Llamar el lunes',
   },
 ];
@@ -51,17 +51,35 @@ const names = () =>
     .map(row => within(row).getAllByRole('cell')[0].textContent);
 
 describe('Contacts', () => {
+  it('filters by pending stat card, counting follow_up as pending', () => {
+    renderContacts({
+      items: [
+        { ...contacts[0], status: 'pending' },
+        { ...contacts[1], status: 'follow_up' },
+        { ...contacts[0], id: 3, contact: 'Sara', status: 'in_conversation' },
+      ],
+    });
+
+    const pending = screen.getByRole('button', {
+      name: new RegExp(`^${LABELS.contacts.stats.pending}`),
+    });
+    expect(within(pending).getByText('2')).toBeTruthy();
+
+    fireEvent.click(pending);
+    expect(names()).toEqual(['Ana', 'Luis']);
+  });
+
   it('keeps the status filter selected until another stat card is clicked', () => {
     renderContacts();
 
-    const replied = screen.getByRole('button', {
-      name: new RegExp(`^${LABELS.contacts.stats.replied}`),
+    const inConversation = screen.getByRole('button', {
+      name: new RegExp(`^${LABELS.contacts.stats.in_conversation}`),
     });
 
-    fireEvent.click(replied);
+    fireEvent.click(inConversation);
     expect(names()).toEqual(['Luis']);
 
-    fireEvent.click(replied);
+    fireEvent.click(inConversation);
     expect(names()).toEqual(['Luis']);
 
     fireEvent.click(
@@ -111,10 +129,9 @@ describe('Contacts', () => {
   it('searches in the notes too', () => {
     renderContacts();
 
-    fireEvent.change(
-      screen.getByPlaceholderText(LABELS.contacts.searchPlaceholder),
-      { target: { value: 'lunes' } },
-    );
+    fireEvent.change(screen.getByPlaceholderText(LABELS.contacts.searchPlaceholder), {
+      target: { value: 'lunes' },
+    });
 
     expect(names()).toEqual(['Luis']);
     expect(
@@ -238,17 +255,23 @@ describe('Contacts', () => {
     const { collection } = renderContacts();
 
     const statusSelect = screen.getByDisplayValue(LABELS.statuses.contact.pending);
+    expect(
+      within(statusSelect)
+        .getAllByRole('option')
+        .map(option => option.value),
+    ).toEqual(['in_conversation', 'follow_up', 'rejected']);
+
     fireEvent.click(statusSelect);
     expect(screen.queryByRole('dialog')).toBeNull();
     fireEvent.keyDown(statusSelect, { key: 'Enter' });
     expect(screen.queryByRole('dialog')).toBeNull();
 
     fireEvent.change(statusSelect, {
-      target: { value: 'replied' },
+      target: { value: 'in_conversation' },
     });
 
     expect(collection.update).toHaveBeenCalledWith(1, {
-      status: 'replied',
+      status: 'in_conversation',
     });
   });
 
@@ -262,10 +285,9 @@ describe('Contacts', () => {
     expect(screen.getAllByText('España')).toHaveLength(2);
     expect(screen.getByText('ana@acme.com').closest('td').title).toBe('ana@acme.com');
 
-    fireEvent.change(
-      screen.getByPlaceholderText(LABELS.contacts.searchPlaceholder),
-      { target: { value: 'luis@globex.com' } },
-    );
+    fireEvent.change(screen.getByPlaceholderText(LABELS.contacts.searchPlaceholder), {
+      target: { value: 'luis@globex.com' },
+    });
 
     expect(names()).toEqual(['Luis']);
   });
@@ -321,13 +343,9 @@ describe('Contacts', () => {
     renderContacts({ items: manyContacts });
 
     fireEvent.click(screen.getByRole('button', { name: LABELS.pagination.next }));
-    expect(
-      screen.getByText(`${LABELS.pagination.page} 2 ${LABELS.pagination.of} 2`),
-    ).toBeTruthy();
+    expect(screen.getByText(`${LABELS.pagination.page} 2 ${LABELS.pagination.of} 2`)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: LABELS.pagination.previous }));
-    expect(
-      screen.getByText(`${LABELS.pagination.page} 1 ${LABELS.pagination.of} 2`),
-    ).toBeTruthy();
+    expect(screen.getByText(`${LABELS.pagination.page} 1 ${LABELS.pagination.of} 2`)).toBeTruthy();
   });
 
   it('restores contact details when closing the edit form without changes', () => {

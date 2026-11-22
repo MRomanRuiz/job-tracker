@@ -144,6 +144,13 @@ describe('additional app branches', () => {
     assert.ok(!body.components.schemas.ContactInput.properties.status.enum.includes('suspended'));
     assert.ok(body.paths['/api/applications'].get.responses[403]);
     assert.ok(body.paths['/api/applications/{id}'].patch.responses[413]);
+    assert.ok(body.paths['/api/applications/{id}'].patch.responses[409]);
+    assert.ok(
+      body.components.schemas.ApplicationInput.properties.status.enum.includes('accepted'),
+    );
+    assert.ok(
+      body.components.schemas.ApplicationInput.properties.status.enum.includes('declined'),
+    );
     assert.ok(body.paths['/api/contacts'].get.responses[403]);
     assert.ok(body.paths['/api/contacts/{id}'].patch.responses[413]);
   });
@@ -184,6 +191,14 @@ describe('additional app branches', () => {
     const response = await request('PATCH', '/api/applications/1', {});
 
     assert.equal(response.status, 400);
+  });
+
+  it('returns not found when an update loses the record between lookup and write', async () => {
+    const application = await request('PATCH', '/api/applications/1', { notes: 'Follow up' });
+    const contact = await request('PATCH', '/api/contacts/1', { notes: 'Follow up' });
+
+    assert.equal(application.status, 404);
+    assert.equal(contact.status, 404);
   });
 
   it('returns not found when suspending a missing contact', async () => {

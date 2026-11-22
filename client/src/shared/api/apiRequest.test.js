@@ -82,9 +82,7 @@ describe('apiRequest', () => {
     await expect(apiRequest('/contacts')).rejects.toThrow(
       'email: Must be a valid email address; contact: Contact name is required',
     );
-    await expect(apiRequest('/contacts')).rejects.toThrow(
-      LABELS.common.badGatewayError,
-    );
+    await expect(apiRequest('/contacts')).rejects.toThrow(LABELS.common.badGatewayError);
   });
 
   it('uses the server message when no validation details are provided', async () => {
@@ -101,6 +99,21 @@ describe('apiRequest', () => {
     );
 
     await expect(apiRequest('/contacts')).rejects.toThrow('Could not load contacts');
+  });
+
+  it('uses detail messages without field names and ignores malformed details', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 422,
+        json: async () => ({
+          details: [null, {}, { message: 'A name is required' }, { field: '', message: 'Invalid' }],
+        }),
+      }),
+    );
+
+    await expect(apiRequest('/contacts')).rejects.toThrow('A name is required; Invalid');
   });
 
   it('continues when an error response has no JSON body', async () => {

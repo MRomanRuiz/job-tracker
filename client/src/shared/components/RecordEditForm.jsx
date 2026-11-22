@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { getRecordFields } from '../../lib/recordFields';
 import { LABELS } from '../lib/labels';
+import sharedConstants from '../../../../shared/constants.json';
 
 const getInitialValues = item =>
   item
@@ -39,6 +40,119 @@ const getChanges = (fields, form, item) => {
   return changes;
 };
 
+const getStatusOptions = (field, item, kind) => {
+  if (field.name !== 'status' || !Object.hasOwn(sharedConstants.RECORD_TRANSITIONS, kind)) {
+    return field.options;
+  }
+
+  const transitions = sharedConstants.RECORD_TRANSITIONS[kind];
+  const allowedStatuses = transitions[item.status] ?? [];
+
+  return field.options.filter(option => allowedStatuses.includes(option.value));
+};
+
+const getStatusLabel = (field, item) =>
+  field.options.find(option => option.value === item.status)?.label ?? LABELS.recordEdit.suspended;
+
+function SelectField({ field, options, value, item, hasStatusTransitions, isSaving, onChange }) {
+  const isStatusField = field.name === 'status';
+  const showCurrentStatus = hasStatusTransitions && isStatusField;
+
+  return (
+    <select
+      id={`edit-${field.name}`}
+      className="record-details-input"
+      value={value}
+      required={field.required}
+      disabled={isSaving || (showCurrentStatus && options.length === 0)}
+      onChange={event => onChange(field.name, event.target.value)}
+    >
+      {showCurrentStatus && (
+        <option value={item.status} hidden={options.length > 0} disabled>
+          {getStatusLabel(field, item)}
+        </option>
+      )}
+
+      {options.map(option => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function TextareaField({ field, value, isSaving, onChange }) {
+  return (
+    <textarea
+      id={`edit-${field.name}`}
+      className="record-details-input"
+      rows={4}
+      value={value}
+      disabled={isSaving}
+      onChange={event => onChange(field.name, event.target.value)}
+    />
+  );
+}
+
+function InputField({ field, value, isSaving, form, onChange }) {
+  const isDurationMonths = field.name === 'durationMonths';
+
+  return (
+    <input
+      id={`edit-${field.name}`}
+      className="record-details-input"
+      type={field.type || 'text'}
+      min={field.min}
+      required={field.required}
+      disabled={isSaving || (isDurationMonths && form.durationType !== 'fixed')}
+      value={value}
+      onChange={event => onChange(field.name, event.target.value)}
+    />
+  );
+}
+
+function RecordField({ field, options, form, item, hasStatusTransitions, isSaving, onChange }) {
+  const value = form[field.name] ?? '';
+  const commonProps = {
+    field,
+    value,
+    isSaving,
+    onChange,
+  };
+
+  let input;
+
+  if (field.type === 'select') {
+    input = (
+      <SelectField
+        {...commonProps}
+        options={options}
+        item={item}
+        hasStatusTransitions={hasStatusTransitions}
+      />
+    );
+  } else if (field.type === 'textarea') {
+    input = <TextareaField {...commonProps} />;
+  } else {
+    input = <InputField {...commonProps} form={form} />;
+  }
+
+  return (
+    <div
+      className={`record-details-field${
+        field.type === 'textarea' ? ' record-details-field-wide' : ''
+      }`}
+    >
+      <label className="record-details-label" htmlFor={`edit-${field.name}`}>
+        {field.label}
+      </label>
+
+      {input}
+    </div>
+  );
+}
+
 function RecordEditForm({ item, kind, onSave, onClose }) {
   const [form, setForm] = useState(() => getInitialValues(item));
   const [isSaving, setIsSaving] = useState(false);
@@ -50,10 +164,15 @@ function RecordEditForm({ item, kind, onSave, onClose }) {
 
   const fields = getRecordFields(kind).filter(field => field.editable !== false);
 
+  const fieldsWithOptions = fields.map(field => ({
+    field,
+    options: getStatusOptions(field, item, kind),
+  }));
+
+  const hasStatusTransitions = Object.hasOwn(sharedConstants.RECORD_TRANSITIONS, kind);
+
   const title =
-    kind === 'application'
-      ? LABELS.recordEdit.applicationTitle
-      : LABELS.recordEdit.contactTitle;
+    kind === 'application' ? LABELS.recordEdit.applicationTitle : LABELS.recordEdit.contactTitle;
 
   const handleChange = (name, value) => {
     setForm(current => {
@@ -90,9 +209,7 @@ function RecordEditForm({ item, kind, onSave, onClose }) {
         return;
       }
 
-      onClose(
-        typeof result === 'object' && result !== null ? result : { ...item, ...changes },
-      );
+      onClose(typeof result === 'object' && result !== null ? result : { ...item, ...changes });
     } catch (err) {
       setError(err?.message || LABELS.recordEdit.genericError);
     } finally {
@@ -100,15 +217,14 @@ function RecordEditForm({ item, kind, onSave, onClose }) {
     }
   };
 
+  const handleBackdropMouseDown = event => {
+    if (event.target === event.currentTarget && !isSaving) {
+      onClose();
+    }
+  };
+
   return (
-    <div
-      className="record-details-backdrop"
-      onMouseDown={event => {
-        if (event.target === event.currentTarget && !isSaving) {
-          onClose();
-        }
-      }}
-    >
+    <div className="record-details-backdrop" onMouseDown={handleBackdropMouseDown}>
       <section
         className="record-details record-edit-form"
         role="dialog"
@@ -137,60 +253,17 @@ function RecordEditForm({ item, kind, onSave, onClose }) {
           )}
 
           <div className="record-details-grid">
-            {fields.map(field => (
-              <div
+            {fieldsWithOptions.map(({ field, options }) => (
+              <RecordField
                 key={field.name}
-                className={`record-details-field${
-                  field.type === 'textarea' ? ' record-details-field-wide' : ''
-                }`}
-              >
-                <label className="record-details-label" htmlFor={`edit-${field.name}`}>
-                  {field.label}
-                </label>
-
-                {field.type === 'select' ? (
-                  <select
-                    id={`edit-${field.name}`}
-                    className="record-details-input"
-                    value={form[field.name] ?? ''}
-                    required={field.required}
-                    disabled={isSaving}
-                    onChange={event => handleChange(field.name, event.target.value)}
-                  >
-                    {field.options.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-
-                    {field.name === 'status' && item.status === 'suspended' && (
-                      <option value="suspended">{LABELS.recordEdit.suspended}</option>
-                    )}
-                  </select>
-                ) : field.type === 'textarea' ? (
-                  <textarea
-                    id={`edit-${field.name}`}
-                    className="record-details-input"
-                    rows={4}
-                    value={form[field.name] ?? ''}
-                    disabled={isSaving}
-                    onChange={event => handleChange(field.name, event.target.value)}
-                  />
-                ) : (
-                  <input
-                    id={`edit-${field.name}`}
-                    className="record-details-input"
-                    type={field.type || 'text'}
-                    min={field.min}
-                    required={field.required}
-                    disabled={
-                      isSaving || (field.name === 'durationMonths' && form.durationType !== 'fixed')
-                    }
-                    value={form[field.name] ?? ''}
-                    onChange={event => handleChange(field.name, event.target.value)}
-                  />
-                )}
-              </div>
+                field={field}
+                options={options}
+                form={form}
+                item={item}
+                hasStatusTransitions={hasStatusTransitions}
+                isSaving={isSaving}
+                onChange={handleChange}
+              />
             ))}
           </div>
 

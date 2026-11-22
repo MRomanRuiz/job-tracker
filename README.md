@@ -9,6 +9,7 @@ A small full-stack application for tracking job applications and professional co
 - Manage contacts with a name, contact details, institution, and country; department and city are optional. The frontend assigns the contact date automatically.
 - Search applications or contacts by different fields.
 - Filter applications by type or status and contacts by status, with summary counts for both.
+- Change record statuses from the table or edit dialog; the available next states are restricted by the status transition rules below.
 - Browse results in pages of 10, sorted by application or contact date (newest first).
 - Open full record details in a dedicated modal to review status, notes, dates, and contact information without leaving the list view.
 - Edit application and contact details from the record view.
@@ -171,21 +172,21 @@ Application records are stored in the `applications` collection when using Mongo
 
 A record can contain the following fields:
 
-| Field            | Description                                                                                           |
-| ---------------- | ----------------------------------------------------------------------------------------------------- |
-| `id`             | Numeric record identifier.                                                                            |
-| `company`        | Company or organization. Required.                                                                    |
-| `position`       | Job title. Required.                                                                                  |
-| `type`           | Application type: `industry` or `research`. Required.                                                 |
-| `country`        | Country. Required.                                                                                    |
-| `city`           | City. Optional.                                                                                       |
-| `appliedAt`      | Application timestamp in ISO 8601 format; the table displays only `YYYY-MM-DD`.                       |
-| `durationType`   | Contract type: `fixed` or `indefinite`. Optional.                                                     |
-| `durationMonths` | Positive integer for a `fixed` contract; otherwise `null`.                                            |
-| `notes`          | Free-text notes or follow-up comments. Optional.                                                      |
-| `status`         | `pending`, `interview`, `offer`, `rejected`, or `suspended`. New records default to `pending`.        |
-| `updatedAt`      | Server-managed ISO 8601 timestamp for the most recent change.                                         |
-| `history`        | Server-managed list of status and notes changes, with the old value, new value, and change timestamp. |
+| Field            | Description                                                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `id`             | Numeric record identifier.                                                                                             |
+| `company`        | Company or organization. Required.                                                                                     |
+| `position`       | Job title. Required.                                                                                                   |
+| `type`           | Application type: `industry` or `research`. Required.                                                                  |
+| `country`        | Country. Required.                                                                                                     |
+| `city`           | City. Optional.                                                                                                        |
+| `appliedAt`      | Application timestamp in ISO 8601 format; the table displays only `YYYY-MM-DD`.                                        |
+| `durationType`   | Contract type: `fixed` or `indefinite`. Optional.                                                                      |
+| `durationMonths` | Positive integer for a `fixed` contract; otherwise `null`.                                                             |
+| `notes`          | Free-text notes or follow-up comments. Optional.                                                                       |
+| `status`         | `pending`, `interview`, `offer`, `accepted`, `declined`, `rejected`, or `suspended`. New records default to `pending`. |
+| `updatedAt`      | Server-managed ISO 8601 timestamp for the most recent change.                                                          |
+| `history`        | Server-managed list of status and notes changes, with the old value, new value, and change timestamp.                  |
 
 Example `jobs.json`:
 
@@ -219,20 +220,20 @@ Contact records are stored in the `contacts` collection when using MongoDB, or i
 
 A record can contain the following fields:
 
-| Field         | Description                                                                                           |
-| ------------- | ----------------------------------------------------------------------------------------------------- |
-| `id`          | Numeric record identifier.                                                                            |
-| `contact`     | Contact person's name. Required.                                                                      |
-| `email`       | Email address or other contact detail. Required.                                                      |
-| `institution` | Company, university, or institution. Required.                                                        |
-| `department`  | Department or laboratory. Optional.                                                                   |
-| `city`        | City. Optional.                                                                                       |
-| `country`     | Country. Required.                                                                                    |
-| `contactedAt` | First-contact timestamp in ISO 8601 format; the table displays only `YYYY-MM-DD`.                     |
-| `status`      | `pending`, `replied`, `rejected`, or `suspended`. New records default to `pending`.                   |
-| `notes`       | Free-text notes or follow-up comments. Optional.                                                      |
-| `updatedAt`   | Server-managed ISO 8601 timestamp for the most recent change.                                         |
-| `history`     | Server-managed list of status and notes changes, with the old value, new value, and change timestamp. |
+| Field         | Description                                                                                                           |
+| ------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `id`          | Numeric record identifier.                                                                                            |
+| `contact`     | Contact person's name. Required.                                                                                      |
+| `email`       | Email address or other contact detail. Required.                                                                      |
+| `institution` | Company, university, or institution. Required.                                                                        |
+| `department`  | Department or laboratory. Optional.                                                                                   |
+| `city`        | City. Optional.                                                                                                       |
+| `country`     | Country. Required.                                                                                                    |
+| `contactedAt` | First-contact timestamp in ISO 8601 format; the table displays only `YYYY-MM-DD`.                                     |
+| `status`      | `pending`, `in_conversation`, `follow_up`, `completed`, `rejected`, or `suspended`. New records default to `pending`. |
+| `notes`       | Free-text notes or follow-up comments. Optional.                                                                      |
+| `updatedAt`   | Server-managed ISO 8601 timestamp for the most recent change.                                                         |
+| `history`     | Server-managed list of status and notes changes, with the old value, new value, and change timestamp.                 |
 
 Example `contacts.json`:
 
@@ -269,44 +270,73 @@ The API runs at [http://localhost:3001](http://localhost:3001). The frontend acc
 
 Interactive API documentation is available at [http://localhost:3001/api-docs/](http://localhost:3001/api-docs/), and the OpenAPI specification is available at [http://localhost:3001/api-docs.json](http://localhost:3001/api-docs.json).
 
-Invalid input, including malformed JSON, empty update payloads, and dates that do not exist (such as `2026-02-31`), returns `400`. Unknown record IDs return `404`. Attempts to suspend a record that is not pending or is not older than 30 days return `400`; a concurrent change during suspension can return `409`. Requests from origins other than `http://localhost:3000` and `http://localhost:5173` return `403`. JSON request bodies larger than the configured limit return `413`. API errors are returned as JSON objects containing a `message` field and optional `description` and `details` entries.
+Invalid input, including malformed JSON, empty update payloads, and dates that do not exist (such as `2026-02-31`), returns `400`. Unknown record IDs return `404`. Invalid application or contact status transitions return `409`. Attempts to suspend a record that is not pending or is not older than 30 days return `400`; a concurrent change during suspension can return `409`. Requests from origins other than `http://localhost:3000` and `http://localhost:5173` return `403`. JSON request bodies larger than the configured limit return `413`. API errors are returned as JSON objects containing a `message` field and optional `description` and `details` entries.
 
 ### Health
 
-| Method | Endpoint   | Description                                      |
-| ------ | ---------- | ------------------------------------------------ |
-| `GET`  | `/health`  | Return `200` with `{ "status": "ok" }`.          |
+| Method | Endpoint  | Description                             |
+| ------ | --------- | --------------------------------------- |
+| `GET`  | `/health` | Return `200` with `{ "status": "ok" }`. |
 
 ### Applications
 
-| Method   | Endpoint                        | Description                                                                                                                                                                                                                                                                                                                                                                                                        |
-| -------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GET`    | `/api/applications`             | Return `{ "applications": [...] }`.                                                                                                                                                                                                                                                                                                                                                                                |
-| `POST`   | `/api/applications`             | Create an application. Requires `company`, `position`, `type` (`industry` or `research`), `country`, and `appliedAt` as a UTC ISO 8601 timestamp. Other text fields are optional. `durationType` may be empty, `fixed`, or `indefinite`; for `fixed`, `durationMonths` may be omitted or `null`, or be a positive integer. Status may be `pending`, `interview`, `offer`, or `rejected` and defaults to `pending`. |
-| `PATCH`  | `/api/applications/:id`         | Partially update an application's details, status, or notes. Editable fields: `company`, `position`, `type`, `city`, `country`, `durationType`, `durationMonths`, `appliedAt`, `status`, and `notes`. Accepted statuses: `pending`, `interview`, `offer`, and `rejected`; use the suspend endpoint for eligible pending applications.                                                                              |
-| `GET`    | `/api/applications/old`         | Return pending applications older than 30 days.                                                                                                                                                                                                                                                                                                                                                                    |
-| `PATCH`  | `/api/applications/:id/suspend` | Suspend an eligible pending application older than 30 days. The response has status `suspended`.                                                                                                                                                                                                                                                                                                                   |
-| `DELETE` | `/api/applications/:id`         | Delete an application; returns `204` on success.                                                                                                                                                                                                                                                                                                                                                                   |
+| Method   | Endpoint                        | Description                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| -------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET`    | `/api/applications`             | Return `{ "applications": [...] }`.                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `POST`   | `/api/applications`             | Create an application. Requires `company`, `position`, `type` (`industry` or `research`), `country`, and `appliedAt` as a UTC ISO 8601 timestamp. Other text fields are optional. `durationType` may be empty, `fixed`, or `indefinite`; for `fixed`, `durationMonths` may be omitted or `null`, or be a positive integer. Status may be `pending`, `interview`, `offer`, `accepted`, `declined`, or `rejected` and defaults to `pending`. |
+| `PATCH`  | `/api/applications/:id`         | Partially update an application's details, status, or notes. Editable fields: `company`, `position`, `type`, `city`, `country`, `durationType`, `durationMonths`, `appliedAt`, `status`, and `notes`. Status changes must follow the server-validated transition flow; use the suspend endpoint for eligible pending applications.                                                                                                         |
+| `GET`    | `/api/applications/old`         | Return pending applications older than 30 days.                                                                                                                                                                                                                                                                                                                                                                                            |
+| `PATCH`  | `/api/applications/:id/suspend` | Suspend an eligible pending application older than 30 days. The response has status `suspended`.                                                                                                                                                                                                                                                                                                                                           |
+| `DELETE` | `/api/applications/:id`         | Delete an application; returns `204` on success.                                                                                                                                                                                                                                                                                                                                                                                           |
 
 ### Contacts
 
-| Method   | Endpoint                    | Description                                                                                                                                                                                                                                                                                         |
-| -------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET`    | `/api/contacts`             | Return `{ "contacts": [...] }`.                                                                                                                                                                                                                                                                     |
-| `POST`   | `/api/contacts`             | Create a contact. Requires `contact`, `email`, `institution`, `country`, and `contactedAt` as a UTC ISO 8601 timestamp. Status defaults to `pending`; accepted statuses are `pending`, `replied`, and `rejected`.                                                                                   |
-| `PATCH`  | `/api/contacts/:id`         | Partially update a contact's details, status, or notes. Editable fields: `contact`, `email`, `institution`, `department`, `city`, `country`, `contactedAt`, `status`, and `notes`. Accepted statuses: `pending`, `replied`, and `rejected`; use the suspend endpoint for eligible pending contacts. |
-| `GET`    | `/api/contacts/old`         | Return pending contacts older than 30 days.                                                                                                                                                                                                                                                         |
-| `PATCH`  | `/api/contacts/:id/suspend` | Suspend an eligible pending contact older than 30 days. The response has status `suspended`.                                                                                                                                                                                                        |
-| `DELETE` | `/api/contacts/:id`         | Delete a contact; returns `204` on success.                                                                                                                                                                                                                                                         |
+| Method   | Endpoint                    | Description                                                                                                                                                                                                                                                                                                 |
+| -------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/contacts`             | Return `{ "contacts": [...] }`.                                                                                                                                                                                                                                                                             |
+| `POST`   | `/api/contacts`             | Create a contact. Requires `contact`, `email`, `institution`, `country`, and `contactedAt` as a UTC ISO 8601 timestamp. Status defaults to `pending`; accepted statuses are `pending`, `in_conversation`, `follow_up`, `completed`, and `rejected`.                                                         |
+| `PATCH`  | `/api/contacts/:id`         | Partially update a contact's details, status, or notes. Editable fields: `contact`, `email`, `institution`, `department`, `city`, `country`, `contactedAt`, `status`, and `notes`. Status changes must follow the server-validated transition flow; use the suspend endpoint for eligible pending contacts. |
+| `GET`    | `/api/contacts/old`         | Return pending contacts older than 30 days.                                                                                                                                                                                                                                                                 |
+| `PATCH`  | `/api/contacts/:id/suspend` | Suspend an eligible pending contact older than 30 days. The response has status `suspended`.                                                                                                                                                                                                                |
+| `DELETE` | `/api/contacts/:id`         | Delete a contact; returns `204` on success.                                                                                                                                                                                                                                                                 |
 
 Example contact update request:
 
 ```json
 {
-  "status": "replied",
+  "status": "in_conversation",
   "notes": "Followed up"
 }
 ```
+
+Contact status transitions are:
+
+| Current status    | Allowed next statuses                                   |
+| ----------------- | ------------------------------------------------------- |
+| `pending`         | `in_conversation`, `follow_up`, `rejected`, `suspended` |
+| `in_conversation` | `follow_up`, `completed`, `rejected`, `suspended`       |
+| `follow_up`       | `pending`                                               |
+| `suspended`       | `in_conversation`, `follow_up`, `rejected`              |
+| `completed`       | None                                                    |
+| `rejected`        | None                                                    |
+
+A status change outside this table returns `409 Conflict`.
+
+Application status transitions are:
+
+| Current status | Allowed next statuses                |
+| -------------- | ------------------------------------ |
+| `pending`      | `interview`, `rejected`, `suspended` |
+| `interview`    | `offer`, `declined`, `rejected`      |
+| `offer`        | `accepted`, `declined`               |
+| `suspended`    | `interview`, `rejected`              |
+| `accepted`     | None                                 |
+| `declined`     | None                                 |
+| `rejected`     | None                                 |
+
+A status change outside this table returns `409 Conflict`.
+
+The table status controls and the record edit dialog expose only the allowed next statuses for the current record. A record with no allowed next statuses is shown with its status field disabled.
 
 The API allows browser requests from `http://localhost:3000` and `http://localhost:5173`. Requests from other origins receive `403`.
 
@@ -327,7 +357,7 @@ Writes are serialized and atomic in JSON storage. MongoDB storage uses database 
 │       ├── lib/                     Shared record field
 │       ├── shared/
 │       │   ├── api/                 API request helper and tests
-│       │   ├── components/          UI components shared across features
+│       │   ├── components/          UI components shared across features, including status selectors and timelines
 │       │   ├── hooks/               Collection and pagination hooks with tests
 │       │   └── lib/                 Shared constants, utilities and tests
 │       ├── test/                    Vitest setup and reusable test helpers
@@ -337,7 +367,7 @@ Writes are serialized and atomic in JSON storage. MongoDB storage uses database 
     ├── server.js                    Process startup and shutdown
     ├── src/
     │   ├── app.js                   Express app composition
-    │   ├── domain/                  Validation, record rules and HTTP errors
+    │   ├── domain/                  Validation, status transitions, record rules and HTTP errors
     │   ├── middleware/              Security and error handling
     │   ├── routes/                  Application and contact endpoints
     │   ├── storage/                 Storage factory and JSON/MongoDB adapters

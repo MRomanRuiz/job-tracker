@@ -92,7 +92,7 @@ const initialContacts = [
     city: 'Málaga',
     country: 'España',
     contactedAt: RECENT_DATE,
-    status: 'replied',
+    status: 'in_conversation',
     notes: '',
   },
 ];
@@ -405,6 +405,61 @@ describe('applications', () => {
     }
   });
 
+  it('enforces valid application status transitions', async () => {
+    const interview = await request('PATCH', '/api/applications/2', {
+      body: { status: 'interview' },
+    });
+
+    assert.equal(interview.status, 200);
+    assert.equal(interview.body.status, 'interview');
+
+    const offer = await request('PATCH', '/api/applications/2', {
+      body: { status: 'offer' },
+    });
+
+    assert.equal(offer.status, 200);
+    assert.equal(offer.body.status, 'offer');
+
+    const accepted = await request('PATCH', '/api/applications/2', {
+      body: { status: 'accepted' },
+    });
+
+    assert.equal(accepted.status, 200);
+    assert.equal(accepted.body.status, 'accepted');
+
+    const fromAccepted = await request('PATCH', '/api/applications/2', {
+      body: { status: 'pending' },
+    });
+
+    assert.equal(fromAccepted.status, 409);
+    assert.equal(fromAccepted.body.message, 'Invalid application status transition');
+  });
+
+  it('rejects application status transitions that skip stages', async () => {
+    const response = await request('PATCH', '/api/applications/2', {
+      body: { status: 'offer' },
+    });
+
+    assert.equal(response.status, 409);
+    assert.equal(response.body.message, 'Invalid application status transition');
+  });
+
+  it('allows declining an application with an offer', async () => {
+    await request('PATCH', '/api/applications/2', {
+      body: { status: 'interview' },
+    });
+    await request('PATCH', '/api/applications/2', {
+      body: { status: 'offer' },
+    });
+
+    const response = await request('PATCH', '/api/applications/2', {
+      body: { status: 'declined' },
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.status, 'declined');
+  });
+
   it('updates application details and trims text fields', async () => {
     const { status, body } = await request('PATCH', '/api/applications/2', {
       body: {
@@ -672,7 +727,7 @@ describe('contacts', () => {
 
     assert.equal(status, 200);
     assert.equal(body.notes, 'Contactar mañana');
-    assert.equal(body.status, 'replied');
+    assert.equal(body.status, 'in_conversation');
   });
 
   it('rejects an unsupported contact status', async () => {
@@ -681,6 +736,88 @@ describe('contacts', () => {
     });
 
     assert.equal(status, 400);
+  });
+
+  it('allows configured contact status transitions', async () => {
+    const followUp = await request('PATCH', '/api/contacts/2', {
+      body: { status: 'follow_up' },
+    });
+
+    assert.equal(followUp.status, 200);
+    assert.equal(followUp.body.status, 'follow_up');
+
+    const backToPending = await request('PATCH', '/api/contacts/2', {
+      body: { status: 'pending' },
+    });
+
+    assert.equal(backToPending.status, 200);
+    assert.equal(backToPending.body.status, 'pending');
+
+    const completed = await request('PATCH', '/api/contacts/2', {
+      body: { status: 'in_conversation' },
+    });
+
+    assert.equal(completed.status, 200);
+
+    const complete = await request('PATCH', '/api/contacts/2', {
+      body: { status: 'completed' },
+    });
+
+    assert.equal(complete.status, 200);
+    assert.equal(complete.body.status, 'completed');
+  });
+
+  it('rejects invalid contact status transitions', async () => {
+    for (const status of ['pending', 'bogus']) {
+      const response = await request('PATCH', '/api/contacts/2', {
+        body: { status },
+      });
+
+      assert.equal(response.status, status === 'bogus' ? 400 : 409);
+      assert.equal(
+        response.body.message,
+        status === 'bogus'
+          ? 'Invalid contact data'
+          : 'Invalid contact status transition',
+      );
+    }
+
+    const completed = await request('PATCH', '/api/contacts/2', {
+      body: { status: 'completed' },
+    });
+
+    assert.equal(completed.status, 200);
+
+    const fromCompleted = await request('PATCH', '/api/contacts/2', {
+      body: { status: 'pending' },
+    });
+
+    assert.equal(fromCompleted.status, 409);
+    assert.equal(fromCompleted.body.message, 'Invalid contact status transition');
+  });
+
+  it('does not allow transitions out of terminal statuses', async () => {
+    await request('PATCH', '/api/contacts/2', {
+      body: { status: 'rejected' },
+    });
+
+    const response = await request('PATCH', '/api/contacts/2', {
+      body: { status: 'pending' },
+    });
+
+    assert.equal(response.status, 409);
+    assert.equal(response.body.message, 'Invalid contact status transition');
+  });
+
+  it('allows a suspended contact to resume', async () => {
+    await request('PATCH', '/api/contacts/1/suspend');
+
+    const response = await request('PATCH', '/api/contacts/1', {
+      body: { status: 'in_conversation' },
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.status, 'in_conversation');
   });
 
   it('updates contact details and trims text fields', async () => {
@@ -694,7 +831,7 @@ describe('contacts', () => {
         country: ' España ',
         notes: '  Contactar en noviembre  ',
         contactedAt: '2026-10-20T12:30:00.000Z',
-        status: 'pending',
+        status: 'follow_up',
       },
     });
 
@@ -707,7 +844,7 @@ describe('contacts', () => {
     assert.equal(body.country, 'España');
     assert.equal(body.notes, 'Contactar en noviembre');
     assert.equal(body.contactedAt, '2026-10-20T12:30:00.000Z');
-    assert.equal(body.status, 'pending');
+    assert.equal(body.status, 'follow_up');
   });
 
   it('allows partial contact updates and preserves omitted fields', async () => {
@@ -719,7 +856,7 @@ describe('contacts', () => {
     assert.equal(body.department, 'Ciencias');
     assert.equal(body.contact, 'Luis');
     assert.equal(body.email, 'luis@example.com');
-    assert.equal(body.status, 'replied');
+    assert.equal(body.status, 'in_conversation');
   });
 
   it('rejects invalid contact details', async () => {

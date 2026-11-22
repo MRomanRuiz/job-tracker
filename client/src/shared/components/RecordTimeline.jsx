@@ -98,6 +98,7 @@ function TimelineEvent({ event, labels }) {
 function RecordTimeline({ record, recordType }) {
   const labels =
     recordType === 'application' ? LABELS.statuses.application : LABELS.statuses.contact;
+
   const events = buildTimelineEvents(record, recordType);
 
   if (events.length === 0) {
@@ -105,8 +106,11 @@ function RecordTimeline({ record, recordType }) {
   }
 
   return (
-    <section className="record-timeline">
-      <h3 className="record-timeline-title">{LABELS.timeline.title}</h3>
+    <details className="record-timeline">
+      <summary className="record-timeline-toggle">
+        <h3 className="record-timeline-title">{LABELS.timeline.title}</h3>
+        <span className="record-timeline-arrow" aria-hidden="true" />
+      </summary>
 
       <div className="record-timeline-scroll">
         <ol className="record-timeline-track">
@@ -115,7 +119,7 @@ function RecordTimeline({ record, recordType }) {
           ))}
         </ol>
       </div>
-    </section>
+    </details>
   );
 }
 
