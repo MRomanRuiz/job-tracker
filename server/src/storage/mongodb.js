@@ -118,10 +118,31 @@ function createMongoStorage() {
       return updateWithHistory(name, id, changes);
     },
 
-    async updatePending(name, id, dateField, date, changes) {
+    async updateIfAlertable(
+      name,
+      id,
+      dateField,
+      date,
+      expectedHistory,
+      alertableStatuses,
+      changes,
+    ) {
+      const history = expectedHistory ?? [];
+      const historyCondition =
+        history.length === 0
+          ? {
+              $or: [
+                { history: [] },
+                { history: null },
+                { history: { $exists: false } },
+              ],
+            }
+          : { history };
+
       return updateWithHistory(name, id, changes, {
-        status: 'pending',
+        status: { $in: alertableStatuses },
         [dateField]: date,
+        ...historyCondition,
       });
     },
 

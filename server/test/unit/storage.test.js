@@ -222,9 +222,15 @@ describe('JSON storage', () => {
     assert.equal(await jsonStorage.getById('applications', 99), null);
     assert.equal(await jsonStorage.update('applications', 99, { notes: 'Missing' }), null);
     assert.equal(
-      await jsonStorage.updatePending('applications', 1, 'appliedAt', 'wrong-date', {
-        status: 'suspended',
-      }),
+      await jsonStorage.updateIfAlertable(
+        'applications',
+        1,
+        'appliedAt',
+        '2026-01-01',
+        [{ field: 'status', changedAt: 'wrong' }],
+        ['pending'],
+        { status: 'suspended' },
+      ),
       null,
     );
     assert.equal(await jsonStorage.delete('applications', 99), false);
@@ -232,9 +238,15 @@ describe('JSON storage', () => {
 
   it('does not rewrite records when an update has no effective changes', async () => {
     const application = await jsonStorage.update('applications', 1, { notes: '' });
-    const pending = await jsonStorage.updatePending('applications', 1, 'appliedAt', '2026-01-01', {
-      status: 'pending',
-    });
+    const pending = await jsonStorage.updateIfAlertable(
+      'applications',
+      1,
+      'appliedAt',
+      '2026-01-01',
+      [],
+      ['pending'],
+      { status: 'pending' },
+    );
 
     assert.equal(application.notes, '');
     assert.equal(pending.status, 'pending');
@@ -250,9 +262,15 @@ describe('JSON storage', () => {
     assert.equal(application.notes, 'Follow up');
     assert.deepEqual(application.history, []);
 
-    const updated = await jsonStorage.updatePending('applications', 1, 'appliedAt', '2026-01-01', {
-      status: 'suspended',
-    });
+    const updated = await jsonStorage.updateIfAlertable(
+      'applications',
+      1,
+      'appliedAt',
+      '2026-01-01',
+      [],
+      ['pending'],
+      { status: 'suspended' },
+    );
     assert.equal(updated.status, 'suspended');
     assert.deepEqual(
       updated.history.map(event => event.field),

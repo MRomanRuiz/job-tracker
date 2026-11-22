@@ -248,7 +248,9 @@ const spec = {
       get: {
         tags: ['Applications'],
         summary: 'List old applications',
-        description: 'Returns pending applications older than 30 days.',
+        description:
+          'Returns applications with no relevant changes in more than 30 days; records without history ' +
+          'use their application date.',
         operationId: 'listOldApplications',
         responses: {
           200: jsonResponse('Old applications retrieved', {
@@ -305,7 +307,7 @@ const spec = {
       patch: {
         tags: ['Applications'],
         summary: 'Suspend stale application',
-        description: 'Suspends an application only if it is pending and older than 30 days.',
+        description: 'Suspends an eligible stale application if it is older than 30 days.',
         operationId: 'suspendApplication',
         parameters: [idParameter()],
         responses: {
@@ -363,7 +365,8 @@ const spec = {
       get: {
         tags: ['Contacts'],
         summary: 'List old contacts',
-        description: 'Returns pending contacts older than 30 days.',
+        description:
+          'Returns contacts with no relevant changes in more than 30 days; records without status history use their contact date.',
         operationId: 'listOldContacts',
         responses: {
           200: jsonResponse('Old contacts retrieved', {
@@ -420,7 +423,7 @@ const spec = {
       patch: {
         tags: ['Contacts'],
         summary: 'Suspend stale contact',
-        description: 'Suspends a contact only if it is pending and older than 30 days.',
+        description: 'Suspends an eligible stale contact if it is older than 30 days.',
         operationId: 'suspendContact',
         parameters: [idParameter()],
         responses: {

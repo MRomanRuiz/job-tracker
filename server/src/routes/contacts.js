@@ -1,14 +1,31 @@
 const { HTTP_STATUS, HttpError } = require('../domain/httpError');
 const {
-  isStalePending,
+  isStaleRecord,
   parseContact,
   parseContactChanges,
   suspendIfStale,
 } = require('../domain/records');
 const handle = require('./handle');
-const { validateContactTransition } = require('../domain/transitions');
+const {
+  CONTACT_TRANSITIONS,
+  validateContactTransition,
+} = require('../domain/transitions');
+const { RECORD_STATUSES } = require('../../../shared/constants.json');
 
 const NOT_FOUND_MESSAGE = 'Contact not found';
+const CONTACT_ALERT_STATUSES = ['pending', 'in_conversation'];
+const FINAL_CONTACT_STATUSES = new Set(
+  Object.entries(CONTACT_TRANSITIONS)
+    .filter(([, nextStatuses]) => nextStatuses.length === 0)
+    .map(([status]) => status),
+);
+const CONTACT_ALERTABLE_STATUSES = CONTACT_ALERT_STATUSES.filter(
+  status =>
+    Object.hasOwn(CONTACT_TRANSITIONS, status) &&
+    status !== RECORD_STATUSES.suspended &&
+    status !== 'follow_up' &&
+    !FINAL_CONTACT_STATUSES.has(status),
+);
 
 const addContactRoutes = (app, storage) => {
   app.get(
@@ -36,7 +53,7 @@ const addContactRoutes = (app, storage) => {
       const contacts = await storage.list('contacts');
 
       res.json({
-        contacts: contacts.filter(item => isStalePending(item, 'contactedAt')),
+        contacts: contacts.filter(item => isStaleRecord(item, CONTACT_ALERTABLE_STATUSES)),
       });
     }),
   );
@@ -98,14 +115,16 @@ const addContactRoutes = (app, storage) => {
         throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
       }
 
-      suspendIfStale(contact, 'contactedAt');
+      suspendIfStale(contact, CONTACT_ALERTABLE_STATUSES);
       validateContactTransition(contact.status, 'suspended');
 
-      const updated = await storage.updatePending(
+      const updated = await storage.updateIfAlertable(
         'contacts',
         id,
         'contactedAt',
         contact.contactedAt,
+        contact.history ?? [],
+        CONTACT_ALERTABLE_STATUSES,
         { status: 'suspended' },
       );
 

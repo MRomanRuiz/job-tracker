@@ -1,7 +1,7 @@
 const { HTTP_STATUS, HttpError } = require('./httpError');
 const { RECORD_STATUSES } = require('../../../shared/constants.json');
 
-const MAX_PENDING_DAYS = 30;
+const MAX_STALE_DAYS = 30;
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
@@ -181,20 +181,42 @@ const validateTextField = (field, value, required = false) => {
   return [];
 };
 
-// Date and pending validation
+// Date and stale-record validation
 
-const isOlderThanPendingLimit = (date, now = new Date()) => {
+const isOlderThanStaleLimit = (date, now = new Date()) => {
   const parsedDate = new Date(date);
 
   if (Number.isNaN(parsedDate.getTime())) {
     return false;
   }
 
-  return (now - parsedDate) / MS_PER_DAY > MAX_PENDING_DAYS;
+  return (now - parsedDate) / MS_PER_DAY > MAX_STALE_DAYS;
 };
 
-const isStalePending = (record, dateField) =>
-  record.status === 'pending' && isOlderThanPendingLimit(record[dateField]);
+const getStaleActivityDate = record => {
+  const latestStatusChange = (record.history ?? [])
+    .filter(event => event.field === 'status' && typeof event.changedAt === 'string')
+    .reduce((latest, event) => {
+      const eventTime = new Date(event.changedAt).getTime();
+      const latestTime = latest ? new Date(latest).getTime() : Number.NEGATIVE_INFINITY;
+
+      return !Number.isNaN(eventTime) && eventTime > latestTime ? event.changedAt : latest;
+    }, null);
+
+  if (latestStatusChange) {
+    return { date: latestStatusChange, field: 'history' };
+  }
+
+  if (record.appliedAt !== undefined) {
+    return { date: record.appliedAt, field: 'appliedAt' };
+  }
+
+  return { date: record.contactedAt, field: 'contactedAt' };
+};
+
+const isStaleRecord = (record, alertableStatuses, now = new Date()) =>
+  alertableStatuses.includes(record.status) &&
+  isOlderThanStaleLimit(getStaleActivityDate(record).date, now);
 
 const isValidDate = value => {
   if (typeof value !== 'string' || !TIMESTAMP_PATTERN.test(value)) {
@@ -211,36 +233,43 @@ const isValidDate = value => {
 };
 
 const DEFAULT_SUSPEND_IF_STALE_MESSAGES = {
-  notPending: 'Only pending records can be suspended',
-  tooRecent: 'The record has not exceeded the pending limit',
+  notAlertable: 'The record status is not eligible for stale alerts',
+  tooRecent: 'The record has not exceeded the stale limit',
 };
 
-const suspendIfStale = (record, dateField, messages = DEFAULT_SUSPEND_IF_STALE_MESSAGES) => {
-  if (record.status !== 'pending') {
+const suspendIfStale = (
+  record,
+  alertableStatuses,
+  messages = DEFAULT_SUSPEND_IF_STALE_MESSAGES,
+  now = new Date(),
+) => {
+  if (!alertableStatuses.includes(record.status)) {
     throwValidationError(
-      messages.notPending,
+      messages.notAlertable,
       [
         createDetail(
           'status',
           VALIDATION_ERROR_CODES.INVALID_VALUE,
-          'Record must have pending status',
+          'Record status must allow stale alerts',
         ),
       ],
-      'Only pending records can be suspended.',
+      'Only records eligible for stale alerts can be suspended.',
     );
   }
 
-  if (!isOlderThanPendingLimit(record[dateField])) {
+  const activity = getStaleActivityDate(record);
+
+  if (!isOlderThanStaleLimit(activity.date, now)) {
     throwValidationError(
       messages.tooRecent,
       [
         createDetail(
-          dateField,
+          activity.field,
           VALIDATION_ERROR_CODES.INVALID_VALUE,
-          `Record must be older than ${MAX_PENDING_DAYS} days`,
+          `Record must be older than ${MAX_STALE_DAYS} days`,
         ),
       ],
-      `The record must exceed the ${MAX_PENDING_DAYS}-day pending limit.`,
+      `The record must exceed the ${MAX_STALE_DAYS}-day stale limit.`,
     );
   }
 };
@@ -634,8 +663,8 @@ module.exports = {
   ALLOWED_CONTACT_STATUSES,
   ALLOWED_APPLICATION_TYPES,
   APPLICATION_DURATION_TYPES,
-  isOlderThanPendingLimit,
-  isStalePending,
+  isOlderThanStaleLimit,
+  isStaleRecord,
   isValidDate,
   suspendIfStale,
   parseApplication,
