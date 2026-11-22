@@ -387,7 +387,7 @@ describe('applications', () => {
     assert.equal(application.status, 'interview');
     assert.equal(application.notes, 'Seguimiento concurrente');
     assert.equal(Object.hasOwn(application, '_storageRevision'), false);
-    assert.deepEqual(application.history.map(event => event.field).sort(), ['notes', 'status']);
+    assert.deepEqual(application.history.map(event => event.field).sort(), ['status']);
 
     if (STORAGE_TYPE === 'mongodb') {
       const stored = await db.collection('applications').findOne({ id: 2 });
@@ -776,9 +776,7 @@ describe('contacts', () => {
       assert.equal(response.status, status === 'bogus' ? 400 : 409);
       assert.equal(
         response.body.message,
-        status === 'bogus'
-          ? 'Invalid contact data'
-          : 'Invalid contact status transition',
+        status === 'bogus' ? 'Invalid contact data' : 'Invalid contact status transition',
       );
     }
 

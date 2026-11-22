@@ -232,13 +232,9 @@ describe('JSON storage', () => {
 
   it('does not rewrite records when an update has no effective changes', async () => {
     const application = await jsonStorage.update('applications', 1, { notes: '' });
-    const pending = await jsonStorage.updatePending(
-      'applications',
-      1,
-      'appliedAt',
-      '2026-01-01',
-      { status: 'pending' },
-    );
+    const pending = await jsonStorage.updatePending('applications', 1, 'appliedAt', '2026-01-01', {
+      status: 'pending',
+    });
 
     assert.equal(application.notes, '');
     assert.equal(pending.status, 'pending');
@@ -252,19 +248,15 @@ describe('JSON storage', () => {
 
     const application = await jsonStorage.update('applications', 1, { notes: 'Follow up' });
     assert.equal(application.notes, 'Follow up');
-    assert.equal(application.history[0].field, 'notes');
+    assert.deepEqual(application.history, []);
 
-    const updated = await jsonStorage.updatePending(
-      'applications',
-      1,
-      'appliedAt',
-      '2026-01-01',
-      { status: 'suspended' },
-    );
+    const updated = await jsonStorage.updatePending('applications', 1, 'appliedAt', '2026-01-01', {
+      status: 'suspended',
+    });
     assert.equal(updated.status, 'suspended');
     assert.deepEqual(
       updated.history.map(event => event.field),
-      ['notes', 'status'],
+      ['status'],
     );
     assert.equal(await jsonStorage.delete('contacts', created.id), true);
   });
@@ -276,7 +268,11 @@ describe('JSON storage', () => {
     await fs.writeFile(path.join(dataDir, 'jobs.json'), '{invalid', 'utf8');
     await assert.rejects(jsonStorage.list('applications'), SyntaxError);
 
-    await fs.writeFile(path.join(dataDir, 'jobs.json'), JSON.stringify({ applications: {} }), 'utf8');
+    await fs.writeFile(
+      path.join(dataDir, 'jobs.json'),
+      JSON.stringify({ applications: {} }),
+      'utf8',
+    );
     await assert.rejects(jsonStorage.list('applications'), /does not contain "applications"/);
   });
 

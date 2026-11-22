@@ -13,27 +13,29 @@ describe('record history', () => {
         { status: 'interview', notes: '', company: 'Other' },
         changedAt,
       ),
-      [
-        { field: 'status', oldValue: 'pending', newValue: 'interview', changedAt },
-        { field: 'notes', oldValue: null, newValue: '', changedAt },
-      ],
+      [{ field: 'status', oldValue: 'pending', newValue: 'interview', changedAt }],
     );
   });
 
   it('preserves existing history or initializes it when absent', () => {
     const previousEvent = { field: 'status', oldValue: 'pending', newValue: 'interview' };
-    const changes = { notes: 'Follow up' };
+    const changes = { status: 'follow_up' };
     const now = new Date('2026-11-10T00:00:00.000Z');
 
     assert.deepEqual(
-      prepareRecordUpdate({ notes: '', history: [previousEvent] }, changes, now).history[0],
+      prepareRecordUpdate({ status: 'pending', notes: '', history: [previousEvent] }, changes, now)
+        .history[0],
       previousEvent,
     );
     assert.equal(
-      prepareRecordUpdate({ notes: null, history: null }, changes, now).history.length,
+      prepareRecordUpdate({ status: 'pending', notes: null, history: null }, changes, now).history
+        .length,
       1,
     );
-    assert.equal(prepareRecordUpdate({ notes: null }, changes, now).history.length, 1);
+    assert.equal(
+      prepareRecordUpdate({ status: 'pending', notes: null }, changes, now).history.length,
+      1,
+    );
   });
 
   it('returns the original record when no values change', () => {

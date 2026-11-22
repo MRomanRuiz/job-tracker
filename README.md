@@ -14,7 +14,7 @@ A small full-stack application for tracking job applications and professional co
 - Open full record details in a dedicated modal to review status, notes, dates, and contact information without leaving the list view.
 - Edit application and contact details from the record view.
 - Delete applications and contacts from the record view, with a confirmation dialog to prevent accidental deletion.
-- Review a timeline of record creation and status or notes changes.
+- Review a timeline of record creation and status changes.
 - Review pending applications/contacts that have been open for more than 30 days with a stale-items alert panel and suspend them directly from there.
 - Add and edit notes for applications and contacts through dedicated modal windows.
 - Persist data using either local JSON files or MongoDB.
@@ -186,7 +186,7 @@ A record can contain the following fields:
 | `notes`          | Free-text notes or follow-up comments. Optional.                                                                       |
 | `status`         | `pending`, `interview`, `offer`, `accepted`, `declined`, `rejected`, or `suspended`. New records default to `pending`. |
 | `updatedAt`      | Server-managed ISO 8601 timestamp for the most recent change.                                                          |
-| `history`        | Server-managed list of status and notes changes, with the old value, new value, and change timestamp.                  |
+| `history`        | Server-managed list of status changes, with the old value, new value, and change timestamp.                            |
 
 Example `jobs.json`:
 
@@ -233,7 +233,7 @@ A record can contain the following fields:
 | `status`      | `pending`, `in_conversation`, `follow_up`, `completed`, `rejected`, or `suspended`. New records default to `pending`. |
 | `notes`       | Free-text notes or follow-up comments. Optional.                                                                      |
 | `updatedAt`   | Server-managed ISO 8601 timestamp for the most recent change.                                                         |
-| `history`     | Server-managed list of status and notes changes, with the old value, new value, and change timestamp.                 |
+| `history`     | Server-managed list of status changes, with the old value, new value, and change timestamp.                           |
 
 Example `contacts.json`:
 
@@ -262,7 +262,7 @@ When creating a contact through the frontend, the current timestamp is assigned 
 
 Omit `id` when creating records through the API; the server generates it. The `notes` field may be an empty string.
 
-New records start with an empty `history`. The API updates `updatedAt` whenever a record changes and appends history entries for changes to `status` or `notes`. The detail view builds the creation event from `appliedAt` or `contactedAt`; older records without history remain readable.
+New records start with an empty `history`. The API updates `updatedAt` whenever a record changes and appends history entries only for changes to `status`. The detail view builds the creation event from `appliedAt` or `contactedAt`; older records without history remain readable.
 
 ## API
 

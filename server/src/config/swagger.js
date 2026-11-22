@@ -115,7 +115,7 @@ const historyEvent = {
   properties: {
     oldValue: { type: ['string', 'null'] },
     newValue: { type: 'string' },
-    field: { type: 'string', enum: ['status', 'notes'] },
+    field: { type: 'string', enum: ['status'] },
     changedAt: dateTime,
   },
   additionalProperties: false,
