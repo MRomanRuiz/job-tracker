@@ -9,6 +9,7 @@ const contacts = [
     contact: 'Ana',
     email: 'ana@acme.com',
     institution: 'Acme',
+    city: 'Madrid',
     country: 'España',
     contactedAt: '2026-01-02',
     status: 'pending',
@@ -19,6 +20,7 @@ const contacts = [
     contact: 'Luis',
     email: 'luis@globex.com',
     institution: 'Globex',
+    city: '',
     country: 'España',
     contactedAt: '2026-01-01',
     status: 'in_conversation',
@@ -280,9 +282,10 @@ describe('Contacts', () => {
 
     expect(screen.getByText(LABELS.contacts.table.email)).toBeTruthy();
     expect(screen.getByText(LABELS.contacts.table.institution)).toBeTruthy();
-    expect(screen.getByText(LABELS.fields.country)).toBeTruthy();
+    expect(screen.getByText(LABELS.contacts.table.place)).toBeTruthy();
+    expect(screen.getByText('Madrid')).toBeTruthy();
     expect(screen.getByText('ana@acme.com')).toBeTruthy();
-    expect(screen.getAllByText('España')).toHaveLength(2);
+    expect(screen.getAllByText('España')).toHaveLength(1);
     expect(screen.getByText('ana@acme.com').closest('td').title).toBe('ana@acme.com');
 
     fireEvent.change(screen.getByPlaceholderText(LABELS.contacts.searchPlaceholder), {
@@ -290,6 +293,16 @@ describe('Contacts', () => {
     });
 
     expect(names()).toEqual(['Luis']);
+  });
+
+  it('uses the country when a stored city is not a string', () => {
+    renderContacts({
+      items: [{ ...contacts[0], city: 42, country: 'Portugal' }],
+    });
+
+    const place = within(screen.getAllByRole('row')[1]).getAllByRole('cell')[3];
+    expect(place.textContent).toBe('Portugal');
+    expect(place.title).toBe('Portugal');
   });
 
   it('edits a note and closes the dialog after saving', async () => {

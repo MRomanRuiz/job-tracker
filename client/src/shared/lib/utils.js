@@ -6,6 +6,12 @@ export const isRejected = item =>
 export const isPending = item => item.status === 'pending' || item.status === 'follow_up';
 export const isInInterviews = item => item.status === 'interview' || item.status === 'offer';
 
+export const getCityOrCountry = record => {
+  const city = typeof record.city === 'string' ? record.city.trim() : '';
+
+  return city || record.country;
+};
+
 export const matchesStatus = (item, statusFilter) => {
   if (statusFilter === ALL_STATUSES) {
     return true;

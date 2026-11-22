@@ -38,7 +38,7 @@ const storage = {
   async update() {
     return null;
   },
-  async updatePending() {
+  async updateIfAlertable() {
     return null;
   },
   async delete(name, id) {

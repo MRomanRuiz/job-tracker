@@ -245,14 +245,14 @@ after(async () => {
   }
 });
 
-describe('isOlderThanPendingLimit', () => {
+describe('isOlderThanStaleLimit', () => {
   it('detects dates older than 30 days', () => {
-    const { isOlderThanPendingLimit } = require('../../src/domain/records');
+    const { isOlderThanStaleLimit } = require('../../src/domain/records');
     const now = new Date('2026-02-01');
 
-    assert.equal(isOlderThanPendingLimit('2025-12-01', now), true);
-    assert.equal(isOlderThanPendingLimit('2026-01-15', now), false);
-    assert.equal(isOlderThanPendingLimit('not-a-date', now), false);
+    assert.equal(isOlderThanStaleLimit('2025-12-01', now), true);
+    assert.equal(isOlderThanStaleLimit('2026-01-15', now), false);
+    assert.equal(isOlderThanStaleLimit('not-a-date', now), false);
   });
 });
 
@@ -387,7 +387,7 @@ describe('applications', () => {
     assert.equal(application.status, 'interview');
     assert.equal(application.notes, 'Seguimiento concurrente');
     assert.equal(Object.hasOwn(application, '_storageRevision'), false);
-    assert.deepEqual(application.history.map(event => event.field).sort(), ['notes', 'status']);
+    assert.deepEqual(application.history.map(event => event.field).sort(), ['status']);
 
     if (STORAGE_TYPE === 'mongodb') {
       const stored = await db.collection('applications').findOne({ id: 2 });
@@ -599,6 +599,85 @@ describe('applications', () => {
     assert.equal(recent.status, 400);
   });
 
+  it('alerts and suspends stale interview applications', async () => {
+    const created = await request('POST', '/api/applications', {
+      body: validApplication({
+        appliedAt: '2020-01-01T00:00:00.000Z',
+        status: 'interview',
+      }),
+    });
+    assert.equal(created.status, 201);
+
+    const old = await request('GET', '/api/applications/old');
+
+    assert.equal(
+      old.body.applications.some(item => item.id === created.body.id),
+      true,
+    );
+
+    const suspended = await request('PATCH', `/api/applications/${created.body.id}/suspend`);
+
+    assert.equal(suspended.status, 200);
+    assert.equal(suspended.body.status, 'suspended');
+    const oldAfterSuspension = await request('GET', '/api/applications/old');
+    assert.equal(
+      oldAfterSuspension.body.applications.some(item => item.id === created.body.id),
+      false,
+    );
+  });
+
+  it('does not alert an interview application whose status changed recently', async () => {
+    const created = await request('POST', '/api/applications', {
+      body: validApplication({ appliedAt: '2020-01-01T00:00:00.000Z' }),
+    });
+    const updated = await request('PATCH', `/api/applications/${created.body.id}`, {
+      body: { status: 'interview' },
+    });
+    assert.equal(updated.status, 200);
+
+    const old = await request('GET', '/api/applications/old');
+
+    assert.equal(
+      old.body.applications.some(item => item.id === created.body.id),
+      false,
+    );
+
+    const suspended = await request('PATCH', `/api/applications/${created.body.id}/suspend`);
+
+    assert.equal(suspended.status, 400);
+  });
+
+  it('excludes offer and final application statuses from stale alerts', async () => {
+    for (const status of ['offer', 'accepted', 'declined', 'rejected']) {
+      await request('POST', '/api/applications', {
+        body: validApplication({
+          appliedAt: '2020-01-01T00:00:00.000Z',
+          status,
+        }),
+      });
+    }
+
+    const old = await request('GET', '/api/applications/old');
+
+    assert.deepEqual(
+      old.body.applications.map(item => item.id),
+      [1],
+    );
+  });
+
+  it('does not reset application expiration when only notes change', async () => {
+    await request('PATCH', '/api/applications/1', {
+      body: { notes: 'New follow-up detail' },
+    });
+
+    const old = await request('GET', '/api/applications/old');
+
+    assert.deepEqual(
+      old.body.applications.map(item => item.id),
+      [1],
+    );
+  });
+
   it('allows editing details while keeping a suspended application suspended', async () => {
     const created = await request('POST', '/api/applications', {
       body: validApplication({ appliedAt: '2020-01-01T00:00:00.000Z' }),
@@ -776,9 +855,7 @@ describe('contacts', () => {
       assert.equal(response.status, status === 'bogus' ? 400 : 409);
       assert.equal(
         response.body.message,
-        status === 'bogus'
-          ? 'Invalid contact data'
-          : 'Invalid contact status transition',
+        status === 'bogus' ? 'Invalid contact data' : 'Invalid contact status transition',
       );
     }
 
@@ -946,6 +1023,68 @@ describe('contacts', () => {
     const notPending = await request('PATCH', '/api/contacts/2/suspend');
 
     assert.equal(notPending.status, 400);
+  });
+
+  it('alerts and suspends stale in-conversation contacts', async () => {
+    const created = await request('POST', '/api/contacts', {
+      body: validContact({
+        contactedAt: '2020-01-01T00:00:00.000Z',
+        status: 'in_conversation',
+      }),
+    });
+    assert.equal(created.status, 201);
+
+    const old = await request('GET', '/api/contacts/old');
+
+    assert.equal(
+      old.body.contacts.some(item => item.id === created.body.id),
+      true,
+    );
+
+    const suspended = await request('PATCH', `/api/contacts/${created.body.id}/suspend`);
+
+    assert.equal(suspended.status, 200);
+    assert.equal(suspended.body.status, 'suspended');
+    const oldAfterSuspension = await request('GET', '/api/contacts/old');
+    assert.equal(
+      oldAfterSuspension.body.contacts.some(item => item.id === created.body.id),
+      false,
+    );
+  });
+
+  it('excludes final and follow-up contact statuses from stale alerts', async () => {
+    for (const status of ['completed', 'rejected', 'follow_up']) {
+      await request('POST', '/api/contacts', {
+        body: validContact({
+          contactedAt: '2020-01-01T00:00:00.000Z',
+          status,
+        }),
+      });
+    }
+
+    const old = await request('GET', '/api/contacts/old');
+
+    assert.deepEqual(
+      old.body.contacts.map(item => item.id),
+      [1],
+    );
+  });
+
+  it('resets contact expiration when it returns to pending after a status change', async () => {
+    await request('PATCH', '/api/contacts/1', {
+      body: { status: 'follow_up' },
+    });
+    const returnedToPending = await request('PATCH', '/api/contacts/1', {
+      body: { status: 'pending' },
+    });
+    const old = await request('GET', '/api/contacts/old');
+
+    assert.equal(returnedToPending.status, 200);
+    assert.equal(returnedToPending.body.history.length, 2);
+    assert.deepEqual(
+      old.body.contacts.map(item => item.id),
+      [],
+    );
   });
 });
 

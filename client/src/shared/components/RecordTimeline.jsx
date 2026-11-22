@@ -22,7 +22,7 @@ function formatTimelineDateTime(date) {
 
 function buildTimelineEvents(record, recordType) {
   const events = (record.history ?? [])
-    .filter(event => ['status', 'notes'].includes(event.field))
+    .filter(event => ['status'].includes(event.field))
     .map((event, index) => ({
       ...event,
       type: event.field,
@@ -63,13 +63,6 @@ function TimelineEventDetails({ event, labels }) {
             <span aria-hidden="true"> → </span>
             <strong>{labels[event.newValue] ?? event.newValue ?? '—'}</strong>
           </p>
-        </>
-      );
-    case 'notes':
-      return (
-        <>
-          <h4>{LABELS.timeline.noteAdded}</h4>
-          <p className="record-timeline-note">{event.newValue || LABELS.timeline.notesDeleted}</p>
         </>
       );
     default:

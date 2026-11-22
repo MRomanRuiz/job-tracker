@@ -98,7 +98,7 @@ const translations = {
       table: {
         company: 'Empresa',
         position: 'Puesto',
-        country: 'País',
+        place: 'Lugar',
         type: 'Tipo',
         date: 'Fecha',
         status: 'Estado',
@@ -127,7 +127,7 @@ const translations = {
         name: 'Nombre',
         email: 'Email / Contacto',
         institution: 'Centro / Empresa',
-        country: 'País',
+        place: 'Lugar',
         date: 'Fecha',
         status: 'Estado',
         note: 'Nota',
@@ -163,8 +163,6 @@ const translations = {
     timeline: {
       created: 'Registro creado',
       statusUpdated: 'Estado actualizado',
-      noteAdded: 'Nota añadida',
-      notesDeleted: 'Notas eliminadas',
       title: 'Línea temporal',
     },
     deleteConfirm: {
@@ -281,7 +279,7 @@ const translations = {
       table: {
         company: 'Company',
         position: 'Position',
-        country: 'Country',
+        place: 'Location',
         type: 'Type',
         date: 'Date',
         status: 'Status',
@@ -310,7 +308,7 @@ const translations = {
         name: 'Name',
         email: 'Email / Contact',
         institution: 'Organization / Company',
-        country: 'Country',
+        place: 'Location',
         date: 'Date',
         status: 'Status',
         note: 'Note',
@@ -346,8 +344,6 @@ const translations = {
     timeline: {
       created: 'Record created',
       statusUpdated: 'Status updated',
-      noteAdded: 'Note added',
-      notesDeleted: 'Notes deleted',
       title: 'Timeline',
     },
     deleteConfirm: {

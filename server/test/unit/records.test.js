@@ -2,8 +2,8 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
-  isOlderThanPendingLimit,
-  isStalePending,
+  isOlderThanStaleLimit,
+  isStaleRecord,
   isValidDate,
   parseApplication,
   parseApplicationChanges,
@@ -26,6 +26,8 @@ const validApplication = overrides => ({
 });
 
 describe('record validation helpers', () => {
+  const ALERTABLE_STATUSES = ['pending', 'interview', 'offer', 'in_conversation'];
+
   it('accepts valid UTC timestamps and rejects malformed timestamps', () => {
     assert.equal(isValidDate('2024-02-29T00:00:00.000Z'), true);
     assert.equal(isValidDate('2023-02-29T00:00:00.000Z'), false);
@@ -33,14 +35,53 @@ describe('record validation helpers', () => {
     assert.equal(isValidDate(null), false);
   });
 
-  it('treats only old pending records as stale', () => {
+  it('treats old records in alertable statuses as stale', () => {
     const now = new Date('2026-02-01T00:00:00.000Z');
 
-    assert.equal(isOlderThanPendingLimit('2025-12-01', now), true);
-    assert.equal(isStalePending({ status: 'pending', appliedAt: '2025-12-01' }, 'appliedAt'), true);
+    assert.equal(isOlderThanStaleLimit('2025-12-01', now), true);
     assert.equal(
-      isStalePending({ status: 'interview', appliedAt: '2025-12-01' }, 'appliedAt'),
+      isStaleRecord({ status: 'pending', appliedAt: '2025-12-01' }, ALERTABLE_STATUSES, now),
+      true,
+    );
+    assert.equal(
+      isStaleRecord({ status: 'interview', appliedAt: '2025-12-01' }, ALERTABLE_STATUSES, now),
+      true,
+    );
+    assert.equal(
+      isStaleRecord({ status: 'accepted', appliedAt: '2025-12-01' }, ALERTABLE_STATUSES, now),
       false,
+    );
+  });
+
+  it('uses the latest status history date and falls back to the creation date', () => {
+    const now = new Date('2026-02-01T00:00:00.000Z');
+
+    assert.equal(
+      isStaleRecord(
+        {
+          status: 'pending',
+          appliedAt: '2025-01-01T00:00:00.000Z',
+          history: [
+            { field: 'status', changedAt: '2025-12-15T00:00:00.000Z' },
+            { field: 'status', changedAt: '2026-01-15T00:00:00.000Z' },
+          ],
+        },
+        ALERTABLE_STATUSES,
+        now,
+      ),
+      false,
+    );
+    assert.equal(
+      isStaleRecord(
+        {
+          status: 'pending',
+          appliedAt: '2025-12-01T00:00:00.000Z',
+          history: [{ field: 'notes', changedAt: '2026-01-15T00:00:00.000Z' }],
+        },
+        ALERTABLE_STATUSES,
+        now,
+      ),
+      true,
     );
   });
 
@@ -135,20 +176,41 @@ describe('record validation helpers', () => {
 
     assert.throws(
       () =>
-        suspendIfStale({ status: 'rejected', appliedAt: '2025-01-01' }, 'appliedAt', {
-          notPending: 'Not pending',
-          tooRecent: 'Too recent',
-        }),
-      error => error instanceof HttpError && error.message === 'Not pending',
+        suspendIfStale(
+          { status: 'rejected', appliedAt: '2025-01-01' },
+          ALERTABLE_STATUSES,
+          {
+            notAlertable: 'Not alertable',
+            tooRecent: 'Too recent',
+          },
+        ),
+      error => error instanceof HttpError && error.message === 'Not alertable',
     );
 
     assert.throws(
       () =>
-        suspendIfStale({ status: 'pending', appliedAt: recentDate }, 'appliedAt', {
-          notPending: 'Not pending',
-          tooRecent: 'Too recent',
-        }),
+        suspendIfStale(
+          { status: 'pending', appliedAt: recentDate },
+          ALERTABLE_STATUSES,
+          {
+            notAlertable: 'Not alertable',
+            tooRecent: 'Too recent',
+          },
+        ),
       error => error instanceof HttpError && error.message === 'Too recent',
+    );
+
+    assert.throws(
+      () =>
+        suspendIfStale(
+          {
+            status: 'pending',
+            appliedAt: '2025-01-01T00:00:00.000Z',
+            history: [{ field: 'status', changedAt: recentDate }],
+          },
+          ALERTABLE_STATUSES,
+        ),
+      error => error instanceof HttpError && error.details[0].field === 'status',
     );
   });
 });

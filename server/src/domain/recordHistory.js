@@ -1,4 +1,4 @@
-const TRACKED_FIELDS = ['status', 'notes'];
+const TRACKED_FIELDS = ['status'];
 
 const createHistoryEvents = (current, changes, changedAt) =>
   TRACKED_FIELDS.filter(

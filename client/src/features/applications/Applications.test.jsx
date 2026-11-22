@@ -287,13 +287,17 @@ describe('Applications', () => {
     );
   });
 
-  it('shows the current country and translated application types in the table', () => {
+  it('shows the place and translated application types in the table', () => {
     renderApplications({
-      items: [makeApplication(1), makeApplication(2, { type: 'research' })],
+      items: [
+        makeApplication(1),
+        makeApplication(2, { city: '', type: 'research' }),
+      ],
     });
 
-    expect(screen.getByText(LABELS.fields.country)).toBeTruthy();
-    expect(screen.getAllByText('España')).toHaveLength(2);
+    expect(screen.getByText(LABELS.applications.table.place)).toBeTruthy();
+    expect(screen.getByText('Madrid')).toBeTruthy();
+    expect(screen.getByText('España')).toBeTruthy();
     const rows = screen.getAllByRole('row').slice(1);
     expect(within(rows[0]).getAllByRole('cell')[3].textContent).toBe(
       LABELS.applicationTypes.research,
@@ -397,6 +401,16 @@ describe('Applications', () => {
     await waitFor(() =>
       expect(collection.update).toHaveBeenCalledWith(1, { company: 'Globex' }),
     );
+  });
+
+  it('uses the country when a stored city is not a string', () => {
+    renderApplications({
+      items: [makeApplication(1, { city: 42, country: 'Portugal' })],
+    });
+
+    const place = within(screen.getAllByRole('row')[1]).getAllByRole('cell')[2];
+    expect(place.textContent).toBe('Portugal');
+    expect(place.title).toBe('Portugal');
   });
 
   it('restores application details when closing the edit form without changes', () => {

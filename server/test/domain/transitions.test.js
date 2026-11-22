@@ -25,6 +25,10 @@ describe('application status transitions', () => {
     }
   });
 
+  it('allows suspending an application that is in interview', () => {
+    assert.equal(canTransitionApplication('interview', 'suspended'), true);
+  });
+
   it('rejects transitions not explicitly configured and unknown statuses', () => {
     for (const [currentStatus, nextStatus] of [
       ['pending', 'offer'],

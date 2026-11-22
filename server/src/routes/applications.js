@@ -1,14 +1,27 @@
 const { HTTP_STATUS, HttpError } = require('../domain/httpError');
 const {
-  isStalePending,
+  isStaleRecord,
   parseApplication,
   parseApplicationChanges,
   suspendIfStale,
 } = require('../domain/records');
-const { validateApplicationTransition } = require('../domain/transitions');
+const { APPLICATION_TRANSITIONS, validateApplicationTransition } = require('../domain/transitions');
+const { RECORD_STATUSES } = require('../../../shared/constants.json');
 const handle = require('./handle');
 
 const NOT_FOUND_MESSAGE = 'Application not found';
+const APPLICATION_ALERT_STATUSES = ['pending', 'interview'];
+const FINAL_APPLICATION_STATUSES = new Set(
+  Object.entries(APPLICATION_TRANSITIONS)
+    .filter(([, nextStatuses]) => nextStatuses.length === 0)
+    .map(([status]) => status),
+);
+const APPLICATION_ALERTABLE_STATUSES = APPLICATION_ALERT_STATUSES.filter(
+  status =>
+    Object.hasOwn(APPLICATION_TRANSITIONS, status) &&
+    status !== RECORD_STATUSES.suspended &&
+    !FINAL_APPLICATION_STATUSES.has(status),
+);
 
 const addApplicationRoutes = (app, storage) => {
   app.get(
@@ -36,7 +49,9 @@ const addApplicationRoutes = (app, storage) => {
       const applications = await storage.list('applications');
 
       res.json({
-        applications: applications.filter(item => isStalePending(item, 'appliedAt')),
+        applications: applications.filter(item =>
+          isStaleRecord(item, APPLICATION_ALERTABLE_STATUSES),
+        ),
       });
     }),
   );
@@ -97,14 +112,16 @@ const addApplicationRoutes = (app, storage) => {
         throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
       }
 
-      suspendIfStale(application, 'appliedAt');
+      suspendIfStale(application, APPLICATION_ALERTABLE_STATUSES);
       validateApplicationTransition(application.status, 'suspended');
 
-      const updated = await storage.updatePending(
+      const updated = await storage.updateIfAlertable(
         'applications',
         id,
         'appliedAt',
         application.appliedAt,
+        application.history ?? [],
+        APPLICATION_ALERTABLE_STATUSES,
         { status: 'suspended' },
       );
 

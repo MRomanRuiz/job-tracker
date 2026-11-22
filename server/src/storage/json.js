@@ -144,13 +144,26 @@ function createJSONStorage() {
       });
     },
 
-    async updatePending(name, id, dateField, date, changes) {
+    async updateIfAlertable(
+      name,
+      id,
+      dateField,
+      date,
+      expectedHistory,
+      alertableStatuses,
+      changes,
+    ) {
       return serialize(name, async () => {
         const data = await readData(name);
         const records = data[collectionKey(name)];
+        const expectedHistoryJSON = JSON.stringify(expectedHistory ?? []);
 
         const index = records.findIndex(
-          item => item.id === Number(id) && item.status === 'pending' && item[dateField] === date,
+          item =>
+            item.id === Number(id) &&
+            alertableStatuses.includes(item.status) &&
+            item[dateField] === date &&
+            JSON.stringify(item.history ?? []) === expectedHistoryJSON,
         );
 
         if (index === -1) {

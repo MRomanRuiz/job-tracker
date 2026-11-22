@@ -2,7 +2,7 @@ import { LABELS } from '../../shared/lib/labels';
 import EmptyState from '../../shared/components/EmptyState';
 import StatusSelect from '../../shared/components/StatusSelect';
 import NoteButton from '../../shared/components/NoteButton';
-import { formatDate } from '../../shared/lib/utils';
+import { formatDate, getCityOrCountry } from '../../shared/lib/utils';
 import sharedConstants from '../../../../shared/constants.json';
 
 function ApplicationsTable({ applications, onStatusChange, onOpenNote, onOpenDetail }) {
@@ -16,7 +16,7 @@ function ApplicationsTable({ applications, onStatusChange, onOpenNote, onOpenDet
         <tr>
           <th>{LABELS.applications.table.company}</th>
           <th>{LABELS.applications.table.position}</th>
-          <th>{LABELS.applications.table.country}</th>
+          <th>{LABELS.applications.table.place}</th>
           <th>{LABELS.applications.table.type}</th>
           <th>{LABELS.applications.table.date}</th>
           <th>{LABELS.applications.table.status}</th>
@@ -45,7 +45,7 @@ function ApplicationsTable({ applications, onStatusChange, onOpenNote, onOpenDet
           >
             <td title={job.company}>{job.company}</td>
             <td title={job.position}>{job.position}</td>
-            <td title={job.country}>{job.country}</td>
+            <td title={getCityOrCountry(job)}>{getCityOrCountry(job)}</td>
             <td title={LABELS.applicationTypes[job.type] || job.type}>
               {LABELS.applicationTypes[job.type] || job.type}
             </td>

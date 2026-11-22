@@ -12,6 +12,7 @@
     "test": "run-s --continue-on-error test:json test:mongodb test:client",
     "test:json": "cross-env TEST_STORAGE_TYPE=json npm test --prefix server",
     "test:mongodb": "cross-env TEST_STORAGE_TYPE=mongodb npm test --prefix server",
+    "test:server": "npm run test:json && npm run test:mongodb",
     "test:client": "npm test --prefix client",
     "build": "npm run build --prefix client"
   },
