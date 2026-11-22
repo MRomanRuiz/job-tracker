@@ -19,7 +19,7 @@
   "RECORD_TRANSITIONS": {
     "application": {
       "pending": ["interview", "rejected", "suspended"],
-      "interview": ["offer", "declined", "rejected"],
+      "interview": ["offer", "declined", "rejected", "suspended"],
       "offer": ["accepted", "declined"],
       "suspended": ["interview", "rejected"],
       "accepted": [],

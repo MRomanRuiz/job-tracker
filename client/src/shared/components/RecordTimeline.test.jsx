@@ -58,7 +58,6 @@ describe('RecordTimeline', () => {
     expect(events[1].textContent).toContain(LABELS.statuses.contact.pending);
     expect(events[1].textContent).toContain(LABELS.statuses.contact.in_conversation);
     expect(within(list).queryByText('Enviar el informe')).toBeNull();
-    expect(within(list).queryByText(LABELS.timeline.notesDeleted)).toBeNull();
     for (const event of events) {
       const marker = event.querySelector('.record-timeline-dot');
       expect(marker.textContent).toBe('');

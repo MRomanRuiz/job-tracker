@@ -163,8 +163,6 @@ const translations = {
     timeline: {
       created: 'Registro creado',
       statusUpdated: 'Estado actualizado',
-      noteAdded: 'Nota añadida',
-      notesDeleted: 'Notas eliminadas',
       title: 'Línea temporal',
     },
     deleteConfirm: {
@@ -346,8 +344,6 @@ const translations = {
     timeline: {
       created: 'Record created',
       statusUpdated: 'Status updated',
-      noteAdded: 'Note added',
-      notesDeleted: 'Notes deleted',
       title: 'Timeline',
     },
     deleteConfirm: {

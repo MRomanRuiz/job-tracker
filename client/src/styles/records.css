@@ -571,17 +571,6 @@
   line-height: 1.6;
 }
 
-.record-timeline-note {
-  margin: 0;
-  padding: 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #f9fafb;
-  font-size: 13px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-
 .record-timeline-event.status .record-timeline-card h4 {
   color: #2563eb;
 }

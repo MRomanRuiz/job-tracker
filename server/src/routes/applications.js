@@ -5,15 +5,12 @@ const {
   parseApplicationChanges,
   suspendIfStale,
 } = require('../domain/records');
-const {
-  APPLICATION_TRANSITIONS,
-  validateApplicationTransition,
-} = require('../domain/transitions');
+const { APPLICATION_TRANSITIONS, validateApplicationTransition } = require('../domain/transitions');
 const { RECORD_STATUSES } = require('../../../shared/constants.json');
 const handle = require('./handle');
 
 const NOT_FOUND_MESSAGE = 'Application not found';
-const APPLICATION_ALERT_STATUSES = ['pending'];
+const APPLICATION_ALERT_STATUSES = ['pending', 'interview'];
 const FINAL_APPLICATION_STATUSES = new Set(
   Object.entries(APPLICATION_TRANSITIONS)
     .filter(([, nextStatuses]) => nextStatuses.length === 0)

@@ -249,8 +249,8 @@ const spec = {
         tags: ['Applications'],
         summary: 'List old applications',
         description:
-          'Returns applications with no relevant changes in more than 30 days; records without history ' +
-          'use their application date.',
+          'Returns pending or interview applications with no relevant changes in more than 30 days; ' +
+          'records without history use their application date.',
         operationId: 'listOldApplications',
         responses: {
           200: jsonResponse('Old applications retrieved', {
@@ -307,7 +307,8 @@ const spec = {
       patch: {
         tags: ['Applications'],
         summary: 'Suspend stale application',
-        description: 'Suspends an eligible stale application if it is older than 30 days.',
+        description:
+          'Suspends an eligible stale pending or interview application if it is older than 30 days.',
         operationId: 'suspendApplication',
         parameters: [idParameter()],
         responses: {

@@ -14,7 +14,7 @@ A small full-stack application for tracking job applications and professional co
 - Open full record details in a dedicated modal to review status, notes, dates, and contact information without leaving the list view.
 - Edit application and contact details from the record view.
 - Delete applications and contacts from the record view, with a confirmation dialog to prevent accidental deletion.
-- Review a timeline of record creation and status changes.
+- Review a timeline of record creation and status changes; notes are not timeline events.
 - Review applications/contacts statuses with no relevant changes in more than 30 days; records without status history use their application/contact date.
 - Add and edit notes for applications and contacts through dedicated modal windows.
 - Persist data using either local JSON files or MongoDB.
@@ -262,7 +262,7 @@ When creating a contact through the frontend, the current timestamp is assigned 
 
 Omit `id` when creating records through the API; the server generates it. The `notes` field may be an empty string.
 
-New records start with an empty `history`. The API updates `updatedAt` whenever a record changes and appends history entries only for changes to `status`. The detail view builds the creation event from `appliedAt` or `contactedAt`; older records without history remain readable.
+New records start with an empty `history`. The API updates `updatedAt` whenever a record changes and appends history entries only for changes to `status`. The timeline displays the creation event and status history. The detail view builds the creation event from `appliedAt` or `contactedAt`; older records without history remain readable.
 
 ## API
 

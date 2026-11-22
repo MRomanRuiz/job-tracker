@@ -599,7 +599,7 @@ describe('applications', () => {
     assert.equal(recent.status, 400);
   });
 
-  it('does not alert on stale interview applications', async () => {
+  it('alerts and suspends stale interview applications', async () => {
     const created = await request('POST', '/api/applications', {
       body: validApplication({
         appliedAt: '2020-01-01T00:00:00.000Z',
@@ -610,15 +610,45 @@ describe('applications', () => {
 
     const old = await request('GET', '/api/applications/old');
 
-    assert.equal(old.body.applications.some(item => item.id === created.body.id), false);
+    assert.equal(
+      old.body.applications.some(item => item.id === created.body.id),
+      true,
+    );
+
+    const suspended = await request('PATCH', `/api/applications/${created.body.id}/suspend`);
+
+    assert.equal(suspended.status, 200);
+    assert.equal(suspended.body.status, 'suspended');
+    const oldAfterSuspension = await request('GET', '/api/applications/old');
+    assert.equal(
+      oldAfterSuspension.body.applications.some(item => item.id === created.body.id),
+      false,
+    );
+  });
+
+  it('does not alert an interview application whose status changed recently', async () => {
+    const created = await request('POST', '/api/applications', {
+      body: validApplication({ appliedAt: '2020-01-01T00:00:00.000Z' }),
+    });
+    const updated = await request('PATCH', `/api/applications/${created.body.id}`, {
+      body: { status: 'interview' },
+    });
+    assert.equal(updated.status, 200);
+
+    const old = await request('GET', '/api/applications/old');
+
+    assert.equal(
+      old.body.applications.some(item => item.id === created.body.id),
+      false,
+    );
 
     const suspended = await request('PATCH', `/api/applications/${created.body.id}/suspend`);
 
     assert.equal(suspended.status, 400);
   });
 
-  it('excludes unconfigured and final application statuses from stale alerts', async () => {
-    for (const status of ['interview', 'offer', 'accepted', 'declined', 'rejected']) {
+  it('excludes offer and final application statuses from stale alerts', async () => {
+    for (const status of ['offer', 'accepted', 'declined', 'rejected']) {
       await request('POST', '/api/applications', {
         body: validApplication({
           appliedAt: '2020-01-01T00:00:00.000Z',
@@ -1006,14 +1036,20 @@ describe('contacts', () => {
 
     const old = await request('GET', '/api/contacts/old');
 
-    assert.equal(old.body.contacts.some(item => item.id === created.body.id), true);
+    assert.equal(
+      old.body.contacts.some(item => item.id === created.body.id),
+      true,
+    );
 
     const suspended = await request('PATCH', `/api/contacts/${created.body.id}/suspend`);
 
     assert.equal(suspended.status, 200);
     assert.equal(suspended.body.status, 'suspended');
     const oldAfterSuspension = await request('GET', '/api/contacts/old');
-    assert.equal(oldAfterSuspension.body.contacts.some(item => item.id === created.body.id), false);
+    assert.equal(
+      oldAfterSuspension.body.contacts.some(item => item.id === created.body.id),
+      false,
+    );
   });
 
   it('excludes final and follow-up contact statuses from stale alerts', async () => {
@@ -1045,7 +1081,10 @@ describe('contacts', () => {
 
     assert.equal(returnedToPending.status, 200);
     assert.equal(returnedToPending.body.history.length, 2);
-    assert.deepEqual(old.body.contacts.map(item => item.id), []);
+    assert.deepEqual(
+      old.body.contacts.map(item => item.id),
+      [],
+    );
   });
 });
 
