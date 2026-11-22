@@ -1,6 +1,6 @@
 # Job Tracker
 
-A small full-stack application for tracking job applications and professional contacts. The React interface lets you review and edit records, follow status and notes changes over time, while an Express API stores records using either local JSON files or MongoDB.
+A small full-stack application for tracking job applications and professional contacts. The React interface lets you review and edit records, follow status changes over time, while an Express API stores records using either local JSON files or MongoDB.
 
 ## Features
 

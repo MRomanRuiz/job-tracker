@@ -2,7 +2,7 @@ import { LABELS } from '../../shared/lib/labels';
 import EmptyState from '../../shared/components/EmptyState';
 import NoteButton from '../../shared/components/NoteButton';
 import StatusSelect from '../../shared/components/StatusSelect';
-import { formatDate } from '../../shared/lib/utils';
+import { formatDate, getCityOrCountry } from '../../shared/lib/utils';
 import sharedConstants from '../../../../shared/constants.json';
 
 function ContactsTable({ contacts, onStatusChange, onOpenNote, onOpenDetail }) {
@@ -48,9 +48,7 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote, onOpenDetail }) {
             <td title={contact.contact}>{contact.contact}</td>
             <td title={contact.email}>{contact.email}</td>
             <td title={contact.institution}>{contact.institution}</td>
-            <td title={contact.city?.trim() || contact.country}>
-              {contact.city?.trim() || contact.country}
-            </td>
+            <td title={getCityOrCountry(contact)}>{getCityOrCountry(contact)}</td>
 
             <td className="date-cell" title={formatDate(contact.contactedAt)}>
               {formatDate(contact.contactedAt)}

@@ -295,6 +295,16 @@ describe('Contacts', () => {
     expect(names()).toEqual(['Luis']);
   });
 
+  it('uses the country when a stored city is not a string', () => {
+    renderContacts({
+      items: [{ ...contacts[0], city: 42, country: 'Portugal' }],
+    });
+
+    const place = within(screen.getAllByRole('row')[1]).getAllByRole('cell')[3];
+    expect(place.textContent).toBe('Portugal');
+    expect(place.title).toBe('Portugal');
+  });
+
   it('edits a note and closes the dialog after saving', async () => {
     const { collection } = renderContacts();
 

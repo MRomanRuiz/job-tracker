@@ -199,5 +199,18 @@ describe('record validation helpers', () => {
         ),
       error => error instanceof HttpError && error.message === 'Too recent',
     );
+
+    assert.throws(
+      () =>
+        suspendIfStale(
+          {
+            status: 'pending',
+            appliedAt: '2025-01-01T00:00:00.000Z',
+            history: [{ field: 'status', changedAt: recentDate }],
+          },
+          ALERTABLE_STATUSES,
+        ),
+      error => error instanceof HttpError && error.details[0].field === 'status',
+    );
   });
 });

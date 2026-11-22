@@ -204,7 +204,7 @@ const getStaleActivityDate = record => {
     }, null);
 
   if (latestStatusChange) {
-    return { date: latestStatusChange, field: 'history' };
+    return { date: latestStatusChange, field: 'status' };
   }
 
   if (record.appliedAt !== undefined) {

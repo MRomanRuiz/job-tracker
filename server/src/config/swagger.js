@@ -189,7 +189,7 @@ const spec = {
 
   info: {
     title: 'Job Tracker API',
-    version: '2.0.1',
+    version: '2.0.2',
     description: 'REST API for managing job applications and professional contacts.',
   },
 

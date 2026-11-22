@@ -10,7 +10,7 @@ describe('RecordTimeline', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('shows creation, status, and note events from oldest to newest', () => {
+  it('shows creation and status events while ignoring non-status history', () => {
     const record = {
       contactedAt: '2026-01-01T10:00:00.000Z',
       history: [
@@ -45,12 +45,10 @@ describe('RecordTimeline', () => {
 
     const list = screen.getByRole('list');
     const events = within(list).getAllByRole('listitem');
-    expect(events).toHaveLength(4);
+    expect(events).toHaveLength(2);
     expect(events.map(event => event.className)).toEqual([
       'record-timeline-event created',
       'record-timeline-event status',
-      'record-timeline-event notes',
-      'record-timeline-event notes',
     ]);
 
     expect(within(events[0]).getByRole('heading', { name: LABELS.timeline.created })).toBeTruthy();
@@ -59,8 +57,8 @@ describe('RecordTimeline', () => {
     ).toBeTruthy();
     expect(events[1].textContent).toContain(LABELS.statuses.contact.pending);
     expect(events[1].textContent).toContain(LABELS.statuses.contact.in_conversation);
-    expect(within(events[2]).getByText('Enviar el informe')).toBeTruthy();
-    expect(within(events[3]).getByText(LABELS.timeline.notesDeleted)).toBeTruthy();
+    expect(within(list).queryByText('Enviar el informe')).toBeNull();
+    expect(within(list).queryByText(LABELS.timeline.notesDeleted)).toBeNull();
     for (const event of events) {
       const marker = event.querySelector('.record-timeline-dot');
       expect(marker.textContent).toBe('');

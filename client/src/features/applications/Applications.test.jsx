@@ -403,6 +403,16 @@ describe('Applications', () => {
     );
   });
 
+  it('uses the country when a stored city is not a string', () => {
+    renderApplications({
+      items: [makeApplication(1, { city: 42, country: 'Portugal' })],
+    });
+
+    const place = within(screen.getAllByRole('row')[1]).getAllByRole('cell')[2];
+    expect(place.textContent).toBe('Portugal');
+    expect(place.title).toBe('Portugal');
+  });
+
   it('restores application details when closing the edit form without changes', () => {
     const { collection } = renderApplications({ items: [makeApplication(1)] });
 
