@@ -28,7 +28,7 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote, onOpenDetail }) {
           <th>{LABELS.contacts.table.name}</th>
           <th>{LABELS.contacts.table.email}</th>
           <th>{LABELS.contacts.table.institution}</th>
-          <th>{LABELS.contacts.table.country}</th>
+          <th>{LABELS.contacts.table.place}</th>
           <th>{LABELS.contacts.table.date}</th>
           <th>{LABELS.contacts.table.status}</th>
           <th>{LABELS.contacts.table.note}</th>
@@ -48,7 +48,9 @@ function ContactsTable({ contacts, onStatusChange, onOpenNote, onOpenDetail }) {
             <td title={contact.contact}>{contact.contact}</td>
             <td title={contact.email}>{contact.email}</td>
             <td title={contact.institution}>{contact.institution}</td>
-            <td title={contact.country}>{contact.country}</td>
+            <td title={contact.city?.trim() || contact.country}>
+              {contact.city?.trim() || contact.country}
+            </td>
 
             <td className="date-cell" title={formatDate(contact.contactedAt)}>
               {formatDate(contact.contactedAt)}

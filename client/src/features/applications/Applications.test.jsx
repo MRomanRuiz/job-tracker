@@ -287,13 +287,17 @@ describe('Applications', () => {
     );
   });
 
-  it('shows the current country and translated application types in the table', () => {
+  it('shows the place and translated application types in the table', () => {
     renderApplications({
-      items: [makeApplication(1), makeApplication(2, { type: 'research' })],
+      items: [
+        makeApplication(1),
+        makeApplication(2, { city: '', type: 'research' }),
+      ],
     });
 
-    expect(screen.getByText(LABELS.fields.country)).toBeTruthy();
-    expect(screen.getAllByText('España')).toHaveLength(2);
+    expect(screen.getByText(LABELS.applications.table.place)).toBeTruthy();
+    expect(screen.getByText('Madrid')).toBeTruthy();
+    expect(screen.getByText('España')).toBeTruthy();
     const rows = screen.getAllByRole('row').slice(1);
     expect(within(rows[0]).getAllByRole('cell')[3].textContent).toBe(
       LABELS.applicationTypes.research,
