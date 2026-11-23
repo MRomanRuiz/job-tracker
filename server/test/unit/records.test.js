@@ -105,16 +105,60 @@ describe('record validation helpers', () => {
     assert.throws(() => parseContact(null), HttpError);
   });
 
-  it('accepts all valid contact statuses', () => {
-    const statuses = ['pending', 'in_conversation', 'follow_up', 'completed', 'rejected'];
-
-    for (const status of statuses) {
-      assert.equal(parseContactChanges({ status }).status, status);
+  it('accepts valid contact status updates', () => {
+    for (const status of ['pending', 'in_conversation', 'completed', 'rejected']) {
+      assert.equal(parseContactChanges({ status }, validContact()).status, status);
     }
   });
 
+  it('requires scheduledAt when entering or remaining in follow_up', () => {
+    assert.throws(
+      () => parseContactChanges({ status: 'follow_up' }, validContact()),
+      error => error instanceof HttpError && error.details[0].field === 'scheduledAt',
+    );
+
+    assert.deepEqual(
+      parseContactChanges(
+        { status: 'follow_up', scheduledAt: '2026-11-25T10:00:00.000Z' },
+        validContact(),
+      ),
+      {
+        status: 'follow_up',
+        scheduledAt: '2026-11-25T10:00:00.000Z',
+      },
+    );
+
+    assert.throws(
+      () =>
+        parseContactChanges(
+          { scheduledAt: '' },
+          validContact({
+            status: 'follow_up',
+            scheduledAt: '2026-11-25T10:00:00.000Z',
+          }),
+        ),
+      error => error instanceof HttpError && error.details[0].field === 'scheduledAt',
+    );
+  });
+
+  it('clears scheduledAt when returning from follow_up to pending', () => {
+    assert.deepEqual(
+      parseContactChanges(
+        { status: 'pending' },
+        validContact({
+          status: 'follow_up',
+          scheduledAt: '2026-11-25T10:00:00.000Z',
+        }),
+      ),
+      {
+        status: 'pending',
+        scheduledAt: null,
+      },
+    );
+  });
+
   it('rejects unknown contact statuses', () => {
-    assert.throws(() => parseContactChanges({ status: 'replied' }), HttpError);
+    assert.throws(() => parseContactChanges({ status: 'replied' }, validContact()), HttpError);
   });
 
   it('reports missing and non-string date and enum fields', () => {
@@ -158,7 +202,7 @@ describe('record validation helpers', () => {
         error => error instanceof HttpError && error.details[0].field === field,
       );
       assert.throws(
-        () => parseContactChanges(body),
+        () => parseContactChanges(body, validContact({ status: 'pending' })),
         error => error instanceof HttpError && error.details[0].field === field,
       );
     }
@@ -229,10 +273,14 @@ describe('record validation helpers', () => {
       error => error instanceof HttpError && error.details[0].field === 'scheduledAt',
     );
     assert.deepEqual(
-      parseContactChanges({ scheduledAt: '2026-11-25T10:00:00.000Z' }),
-      { scheduledAt: '2026-11-25T10:00:00.000Z' },
+      parseContactChanges({ scheduledAt: '2026-11-25T10:00:00.000Z' }, validContact()),
+      {
+        scheduledAt: '2026-11-25T10:00:00.000Z',
+      },
     );
-    assert.deepEqual(parseContactChanges({ scheduledAt: '' }), { scheduledAt: null });
+    assert.deepEqual(parseContactChanges({ scheduledAt: '' }, validContact()), {
+      scheduledAt: null,
+    });
   });
 
   it('uses the supplied messages when a record cannot be suspended', () => {

@@ -6,10 +6,7 @@ const {
   suspendIfStale,
 } = require('../domain/records');
 const handle = require('./handle');
-const {
-  CONTACT_TRANSITIONS,
-  validateContactTransition,
-} = require('../domain/transitions');
+const { CONTACT_TRANSITIONS, validateContactTransition } = require('../domain/transitions');
 const { RECORD_STATUSES } = require('../../../shared/constants.json');
 
 const NOT_FOUND_MESSAGE = 'Contact not found';
@@ -89,7 +86,7 @@ const addContactRoutes = (app, storage) => {
         throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
       }
 
-      const changes = parseContactChanges(requestedChanges);
+      const changes = parseContactChanges(requestedChanges, currentContact);
 
       if (changes.status !== undefined && changes.status !== currentContact.status) {
         validateContactTransition(currentContact.status, changes.status);

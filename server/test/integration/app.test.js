@@ -841,7 +841,10 @@ describe('contacts', () => {
 
   it('allows configured contact status transitions', async () => {
     const followUp = await request('PATCH', '/api/contacts/2', {
-      body: { status: 'follow_up' },
+      body: {
+        status: 'follow_up',
+        scheduledAt: '2026-11-25T10:00:00.000Z',
+      },
     });
 
     assert.equal(followUp.status, 200);
@@ -1098,16 +1101,25 @@ describe('contacts', () => {
   });
 
   it('resets contact expiration when it returns to pending after a status change', async () => {
-    await request('PATCH', '/api/contacts/1', {
-      body: { status: 'follow_up' },
+    const followUp = await request('PATCH', '/api/contacts/1', {
+      body: {
+        status: 'follow_up',
+        scheduledAt: '2026-11-25T10:00:00.000Z',
+      },
     });
+
+    assert.equal(followUp.status, 200);
+
     const returnedToPending = await request('PATCH', '/api/contacts/1', {
       body: { status: 'pending' },
     });
-    const old = await request('GET', '/api/contacts/old');
 
     assert.equal(returnedToPending.status, 200);
-    assert.equal(returnedToPending.body.history.length, 2);
+    assert.equal(returnedToPending.body.status, 'pending');
+    assert.equal(returnedToPending.body.scheduledAt, null);
+
+    const old = await request('GET', '/api/contacts/old');
+
     assert.deepEqual(
       old.body.contacts.map(item => item.id),
       [],

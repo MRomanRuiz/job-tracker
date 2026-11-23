@@ -656,7 +656,7 @@ const CONTACT_CHANGE_HANDLERS = {
   scheduledAt: addOptionalDateFieldChange,
 };
 
-const parseContactChanges = body => {
+const parseContactChanges = (body, currentContact) => {
   const errorMessage = 'Invalid contact data';
 
   assertValidBody(body);
@@ -672,6 +672,19 @@ const parseContactChanges = body => {
     if (handler) {
       handler(field, value, details, changes);
     }
+  }
+
+  const nextStatus = changes.status ?? currentContact.status;
+  const nextScheduledAt = Object.hasOwn(changes, 'scheduledAt')
+    ? changes.scheduledAt
+    : currentContact.scheduledAt;
+
+  if (nextStatus === 'follow_up') {
+    details.push(...validateDateField('scheduledAt', nextScheduledAt));
+  }
+
+  if (currentContact.status === 'follow_up' && nextStatus === 'pending') {
+    changes.scheduledAt = null;
   }
 
   if (details.length > 0) {
