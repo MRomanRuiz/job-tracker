@@ -29,6 +29,7 @@ const validApplication = (overrides = {}) => ({
   country: 'España',
   type: 'research',
   appliedAt: RECENT_DATE,
+  scheduledAt: null,
   ...overrides,
 });
 
@@ -38,6 +39,7 @@ const validContact = (overrides = {}) => ({
   institution: 'Gamma',
   country: 'España',
   contactedAt: RECENT_DATE,
+  scheduledAt: null,
   ...overrides,
 });
 
@@ -53,6 +55,7 @@ const initialApplications = [
     status: 'pending',
     durationType: '',
     durationMonths: null,
+    scheduledAt: null,
     notes: '',
   },
   {
@@ -66,6 +69,7 @@ const initialApplications = [
     status: 'pending',
     durationType: '',
     durationMonths: null,
+    scheduledAt: null,
     notes: '',
   },
 ];
@@ -80,6 +84,7 @@ const initialContacts = [
     city: 'Madrid',
     country: 'España',
     contactedAt: OLD_DATE,
+    scheduledAt: null,
     status: 'pending',
     notes: '',
   },
@@ -92,6 +97,7 @@ const initialContacts = [
     city: 'Málaga',
     country: 'España',
     contactedAt: RECENT_DATE,
+    scheduledAt: null,
     status: 'in_conversation',
     notes: '',
   },
@@ -269,12 +275,13 @@ describe('applications', () => {
 
   it('creates an application with a server-generated numeric ID', async () => {
     const { status, body } = await request('POST', '/api/applications', {
-      body: validApplication(),
+      body: validApplication({ scheduledAt: '2026-11-25T10:00:00.000Z' }),
     });
 
     assert.equal(status, 201);
     assert.equal(typeof body.id, 'number');
     assert.match(body.appliedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    assert.equal(body.scheduledAt, '2026-11-25T10:00:00.000Z');
     assert.equal(body.status, 'pending');
     assert.equal(body._id, undefined);
 
@@ -333,6 +340,9 @@ describe('applications', () => {
       validApplication({ durationType: 'temporary' }),
       validApplication({ durationType: 'fixed', durationMonths: 1.5 }),
       validApplication({ durationType: 'fixed', durationMonths: 0 }),
+      validApplication({ scheduledAt: '2026-02-31T00:00:00.000Z' }),
+      validApplication({ scheduledAt: '2026-11-25' }),
+      validApplication({ scheduledAt: 123 }),
       validApplication({
         durationType: 'indefinite',
         durationMonths: 12,
@@ -472,6 +482,7 @@ describe('applications', () => {
         appliedAt: '2026-10-20T12:30:00.000Z',
         durationType: ' fixed ',
         durationMonths: 12,
+        scheduledAt: '2026-11-25T10:00:00.000Z',
         status: 'interview',
       },
     });
@@ -486,6 +497,7 @@ describe('applications', () => {
     assert.equal(body.appliedAt, '2026-10-20T12:30:00.000Z');
     assert.equal(body.durationType, 'fixed');
     assert.equal(body.durationMonths, 12);
+    assert.equal(body.scheduledAt, '2026-11-25T10:00:00.000Z');
     assert.equal(body.status, 'interview');
   });
 
@@ -513,6 +525,9 @@ describe('applications', () => {
       { durationMonths: 0 },
       { durationMonths: 1.5 },
       { durationType: 'indefinite', durationMonths: 12 },
+      { scheduledAt: '2026-02-31T00:00:00.000Z' },
+      { scheduledAt: '2026-11-25' },
+      { scheduledAt: 123 },
       { status: 'invalid' },
       { unknown: 'value' },
       {},
@@ -732,7 +747,10 @@ describe('contacts', () => {
   it('creates a contact', async () => {
     const { status, body } = await request('POST', '/api/contacts', {
       body: {
-        ...validContact({ institution: 'Gamma' }),
+        ...validContact({
+          institution: 'Gamma',
+          scheduledAt: '2026-11-25T10:00:00.000Z',
+        }),
       },
     });
 
@@ -742,6 +760,7 @@ describe('contacts', () => {
     assert.equal(body.status, 'pending');
     assert.equal(body._id, undefined);
     assert.equal(body.institution, 'Gamma');
+    assert.equal(body.scheduledAt, '2026-11-25T10:00:00.000Z');
     assert.match(body.contactedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
 
     const { body: list } = await request('GET', '/api/contacts');
@@ -759,6 +778,9 @@ describe('contacts', () => {
       validContact({ contactedAt: '2026-02-31T00:00:00.000Z' }),
       validContact({ status: 'bogus' }),
       validContact({ email: 42 }),
+      validContact({ scheduledAt: '2026-02-31T00:00:00.000Z' }),
+      validContact({ scheduledAt: '2026-11-25' }),
+      validContact({ scheduledAt: 123 }),
     ]) {
       const response = await request('POST', '/api/contacts', { body });
 
@@ -908,6 +930,7 @@ describe('contacts', () => {
         country: ' España ',
         notes: '  Contactar en noviembre  ',
         contactedAt: '2026-10-20T12:30:00.000Z',
+        scheduledAt: '2026-11-25T10:00:00.000Z',
         status: 'follow_up',
       },
     });
@@ -921,6 +944,7 @@ describe('contacts', () => {
     assert.equal(body.country, 'España');
     assert.equal(body.notes, 'Contactar en noviembre');
     assert.equal(body.contactedAt, '2026-10-20T12:30:00.000Z');
+    assert.equal(body.scheduledAt, '2026-11-25T10:00:00.000Z');
     assert.equal(body.status, 'follow_up');
   });
 
@@ -945,6 +969,9 @@ describe('contacts', () => {
       { department: 42 },
       { contactedAt: '2026-02-31T00:00:00.000Z' },
       { contactedAt: '2026-10-20' },
+      { scheduledAt: '2026-02-31T00:00:00.000Z' },
+      { scheduledAt: '2026-11-25' },
+      { scheduledAt: 123 },
       { status: 'bogus' },
       { unexpected: 'value' },
       {},

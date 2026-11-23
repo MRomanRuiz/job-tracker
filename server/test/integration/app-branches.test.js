@@ -10,6 +10,7 @@ const records = {
   applications: {
     id: 1,
     appliedAt: '2020-01-01',
+    scheduledAt: null,
     status: 'pending',
   },
   contacts: {
@@ -19,6 +20,7 @@ const records = {
     email: 'ana@example.com',
     institution: 'Acme',
     country: 'España',
+    scheduledAt: null,
     status: 'pending',
     notes: '',
   },
@@ -130,6 +132,16 @@ describe('additional app branches', () => {
     );
     assert.deepEqual(body.components.schemas.Application.properties.durationMonths.type, [
       'integer',
+      'null',
+    ]);
+    assert.ok(body.components.schemas.Application.properties.scheduledAt);
+    assert.ok(body.components.schemas.Contact.properties.scheduledAt);
+    assert.deepEqual(body.components.schemas.Application.properties.scheduledAt.type, [
+      'string',
+      'null',
+    ]);
+    assert.deepEqual(body.components.schemas.Contact.properties.scheduledAt.type, [
+      'string',
       'null',
     ]);
     assert.ok(body.components.schemas.Application.properties.updatedAt);

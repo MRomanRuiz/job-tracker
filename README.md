@@ -182,6 +182,7 @@ A record can contain the following fields:
 | `country`        | Country. Required.                                                                                                     |
 | `city`           | City. Optional.                                                                                                        |
 | `appliedAt`      | Application timestamp in ISO 8601 format; the table displays only `YYYY-MM-DD`.                                        |
+| `scheduledAt`    | Optional scheduled follow-up timestamp in ISO 8601 format; `null` when not scheduled.                                   |
 | `durationType`   | Contract type: `fixed` or `indefinite`. Optional.                                                                      |
 | `durationMonths` | Positive integer for a `fixed` contract; otherwise `null`.                                                             |
 | `notes`          | Free-text notes or follow-up comments. Optional.                                                                       |
@@ -197,6 +198,7 @@ Example `jobs.json`:
     {
       "id": 1,
       "appliedAt": "2026-10-01T09:30:15.123Z",
+      "scheduledAt": "2026-11-25T10:00:00.000Z",
       "company": "Example Company",
       "position": "Software Engineer",
       "type": "industry",
@@ -231,6 +233,7 @@ A record can contain the following fields:
 | `city`        | City. Optional.                                                                                                       |
 | `country`     | Country. Required.                                                                                                    |
 | `contactedAt` | First-contact timestamp in ISO 8601 format; the table displays only `YYYY-MM-DD`.                                     |
+| `scheduledAt`  | Optional scheduled follow-up timestamp in ISO 8601 format; `null` when not scheduled.                                  |
 | `status`      | `pending`, `in_conversation`, `follow_up`, `completed`, `rejected`, or `suspended`. New records default to `pending`. |
 | `notes`       | Free-text notes or follow-up comments. Optional.                                                                      |
 | `updatedAt`   | Server-managed ISO 8601 timestamp for the most recent change.                                                         |
@@ -250,6 +253,7 @@ Example `contacts.json`:
       "city": "Madrid",
       "country": "España",
       "contactedAt": "2026-10-02T14:45:30.456Z",
+      "scheduledAt": "2026-11-25T10:00:00.000Z",
       "status": "pending",
       "notes": "Asked for a meeting next week."
     }

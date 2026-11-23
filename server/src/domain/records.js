@@ -45,12 +45,13 @@ const REQUIRED_CONTACT_FIELDS = ['contact', 'email', 'institution', 'country'];
 const APPLICATION_FIELDS = [
   ...APPLICATION_TEXT_FIELDS,
   'appliedAt',
+  'scheduledAt',
   'durationType',
   'durationMonths',
   'status',
 ];
 
-const CONTACT_FIELDS = [...CONTACT_TEXT_FIELDS, 'contactedAt', 'status'];
+const CONTACT_FIELDS = [...CONTACT_TEXT_FIELDS, 'contactedAt', 'scheduledAt', 'status'];
 
 const APPLICATION_TYPE_LABEL = 'Application type';
 const MUST_BE_STRING_LABEL = 'Must be a string';
@@ -167,6 +168,14 @@ const validateDateField = (field, value) => {
   }
 
   return [];
+};
+
+const validateOptionalDateField = (field, value) => {
+  if (value === undefined || value === null || value === '') {
+    return [];
+  }
+
+  return validateDateField(field, value);
 };
 
 const validateTextField = (field, value, required = false) => {
@@ -386,6 +395,7 @@ const parseApplication = body => {
     ...validateEnumField('status', status, ALLOWED_APPLICATION_STATUSES, 'Status'),
     ...validateDateField('appliedAt', body.appliedAt),
     ...validateApplicationDuration(durationType, durationMonths),
+    ...validateOptionalDateField('scheduledAt', body.scheduledAt),
   );
 
   if (details.length > 0) {
@@ -402,6 +412,7 @@ const parseApplication = body => {
     durationType,
     durationMonths,
     status,
+    scheduledAt: body.scheduledAt ?? null,
   };
 };
 
@@ -424,6 +435,7 @@ const validateUpdatedApplication = application => {
       'Status',
     ),
     ...validateApplicationDuration(application.durationType, application.durationMonths),
+    ...validateOptionalDateField('scheduledAt', application.scheduledAt),
   ];
 
   if (details.length > 0) {
@@ -462,6 +474,17 @@ const addTextFieldChange = (field, value, details, changes) => {
   }
 
   changes[field] = parsedValue;
+};
+
+const addOptionalDateFieldChange = (field, value, details, changes) => {
+  const normalizedValue = value === '' ? null : value;
+  const fieldDetails = validateOptionalDateField(field, normalizedValue);
+
+  if (fieldDetails.length > 0) {
+    details.push(...fieldDetails);
+  }
+
+  changes[field] = normalizedValue;
 };
 
 const addEnumFieldChange = (field, value, details, changes, allowedValues, label) => {
@@ -532,6 +555,7 @@ const APPLICATION_CHANGE_HANDLERS = {
   durationType: addDurationTypeChange,
   durationMonths: addDurationMonthsChange,
   appliedAt: addDateFieldChange,
+  scheduledAt: addOptionalDateFieldChange,
 };
 
 const parseApplicationChanges = (body, currentApplication) => {
@@ -589,6 +613,7 @@ const parseContact = body => {
     ...validateRequiredFields(contactData, REQUIRED_CONTACT_FIELDS, CONTACT_LABELS, textDetails),
     ...validateEnumField('status', status, ALLOWED_CONTACT_STATUSES, 'Status'),
     ...validateDateField('contactedAt', body.contactedAt),
+    ...validateOptionalDateField('scheduledAt', body.scheduledAt),
   );
 
   if (details.length > 0) {
@@ -603,6 +628,7 @@ const parseContact = body => {
     ...contactData,
     contactedAt: body.contactedAt,
     status,
+    scheduledAt: body.scheduledAt ?? null,
   };
 };
 
@@ -627,6 +653,7 @@ const CONTACT_CHANGE_HANDLERS = {
   contactedAt: addDateFieldChange,
   status: (field, value, details, changes) =>
     addEnumFieldChange(field, value, details, changes, ALLOWED_CONTACT_STATUSES, 'Status'),
+  scheduledAt: addOptionalDateFieldChange,
 };
 
 const parseContactChanges = body => {

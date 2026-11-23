@@ -5,6 +5,13 @@ const dateTime = {
   example: '2026-01-15T10:30:00.000Z',
 };
 
+const nullableDateTime = {
+  type: ['string', 'null'],
+  format: 'date-time',
+  pattern: String.raw`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$`,
+  example: '2026-01-15T10:30:00.000Z',
+};
+
 const errorResponse = {
   description: 'Error response',
   content: {
@@ -47,6 +54,7 @@ const applicationProperties = {
   },
   notes: { type: 'string', example: 'Follow up next week' },
   appliedAt: dateTime,
+  scheduledAt: nullableDateTime,
   durationType: {
     type: 'string',
     enum: ['', 'fixed', 'indefinite'],
@@ -74,6 +82,7 @@ const contactProperties = {
   country: { type: 'string', example: 'Spain' },
   notes: { type: 'string', example: 'Met at a conference' },
   contactedAt: dateTime,
+  scheduledAt: nullableDateTime,
   status: {
     type: 'string',
     enum: ['pending', 'in_conversation', 'follow_up', 'completed', 'rejected'],

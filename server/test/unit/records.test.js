@@ -19,9 +19,21 @@ const validApplication = overrides => ({
   country: 'España',
   type: 'research',
   appliedAt: '2026-10-20T12:30:00.000Z',
+  scheduledAt: null,
   status: 'pending',
   durationType: '',
   durationMonths: null,
+  ...overrides,
+});
+
+const validContact = overrides => ({
+  contact: 'Eva',
+  email: 'eva@example.com',
+  institution: 'Acme',
+  country: 'España',
+  contactedAt: '2026-10-20T12:30:00.000Z',
+  scheduledAt: null,
+  status: 'pending',
   ...overrides,
 });
 
@@ -171,32 +183,76 @@ describe('record validation helpers', () => {
     );
   });
 
+  it('parseApplication accepts scheduledAt', () => {
+    const scheduledAt = '2026-11-25T10:00:00.000Z';
+
+    const result = parseApplication(validApplication({ scheduledAt }));
+
+    assert.equal(result.scheduledAt, scheduledAt);
+  });
+
+  it('parseApplication defaults scheduledAt to null', () => {
+    const result = parseApplication(validApplication());
+
+    assert.equal(result.scheduledAt, null);
+  });
+
+  it('validates and updates scheduledAt for applications and contacts', () => {
+    assert.throws(
+      () => parseApplication(validApplication({ scheduledAt: '2026-11-25' })),
+      error => error instanceof HttpError && error.details[0].field === 'scheduledAt',
+    );
+    assert.throws(
+      () => parseApplication(validApplication({ scheduledAt: 123 })),
+      error => error instanceof HttpError && error.details[0].field === 'scheduledAt',
+    );
+
+    assert.deepEqual(
+      parseApplicationChanges(
+        { scheduledAt: '2026-11-25T10:00:00.000Z' },
+        validApplication({ status: 'pending' }),
+      ),
+      { scheduledAt: '2026-11-25T10:00:00.000Z' },
+    );
+    assert.deepEqual(
+      parseApplicationChanges({ scheduledAt: '' }, validApplication({ status: 'pending' })),
+      { scheduledAt: null },
+    );
+
+    assert.equal(
+      parseContact(validContact({ scheduledAt: '2026-11-25T10:00:00.000Z' })).scheduledAt,
+      '2026-11-25T10:00:00.000Z',
+    );
+    assert.equal(parseContact(validContact()).scheduledAt, null);
+    assert.throws(
+      () => parseContact(validContact({ scheduledAt: '2026-11-25' })),
+      error => error instanceof HttpError && error.details[0].field === 'scheduledAt',
+    );
+    assert.deepEqual(
+      parseContactChanges({ scheduledAt: '2026-11-25T10:00:00.000Z' }),
+      { scheduledAt: '2026-11-25T10:00:00.000Z' },
+    );
+    assert.deepEqual(parseContactChanges({ scheduledAt: '' }), { scheduledAt: null });
+  });
+
   it('uses the supplied messages when a record cannot be suspended', () => {
     const recentDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
 
     assert.throws(
       () =>
-        suspendIfStale(
-          { status: 'rejected', appliedAt: '2025-01-01' },
-          ALERTABLE_STATUSES,
-          {
-            notAlertable: 'Not alertable',
-            tooRecent: 'Too recent',
-          },
-        ),
+        suspendIfStale({ status: 'rejected', appliedAt: '2025-01-01' }, ALERTABLE_STATUSES, {
+          notAlertable: 'Not alertable',
+          tooRecent: 'Too recent',
+        }),
       error => error instanceof HttpError && error.message === 'Not alertable',
     );
 
     assert.throws(
       () =>
-        suspendIfStale(
-          { status: 'pending', appliedAt: recentDate },
-          ALERTABLE_STATUSES,
-          {
-            notAlertable: 'Not alertable',
-            tooRecent: 'Too recent',
-          },
-        ),
+        suspendIfStale({ status: 'pending', appliedAt: recentDate }, ALERTABLE_STATUSES, {
+          notAlertable: 'Not alertable',
+          tooRecent: 'Too recent',
+        }),
       error => error instanceof HttpError && error.message === 'Too recent',
     );
 
