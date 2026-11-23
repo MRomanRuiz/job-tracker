@@ -576,6 +576,12 @@ const parseApplicationChanges = (body, currentApplication) => {
     }
   }
 
+  const nextStatus = changes.status ?? currentApplication.status;
+
+  if (currentApplication.status === 'interview' && nextStatus !== 'interview') {
+    changes.scheduledAt = null;
+  }
+
   if (details.length > 0) {
     throwValidationError(
       errorMessage,

@@ -373,6 +373,7 @@ describe('applications', () => {
 
     assert.equal(status, 200);
     assert.equal(body.status, 'interview');
+    assert.equal(body.scheduledAt, null);
   });
 
   it('updates only application notes', async () => {
@@ -383,6 +384,23 @@ describe('applications', () => {
     assert.equal(status, 200);
     assert.equal(body.notes, 'Revisar oferta');
     assert.equal(body.status, 'pending');
+  });
+
+  it('allows clearing scheduledAt while an application remains in interview', async () => {
+    await request('PATCH', '/api/applications/2', {
+      body: {
+        status: 'interview',
+        scheduledAt: '2026-11-25T10:00:00.000Z',
+      },
+    });
+
+    const response = await request('PATCH', '/api/applications/2', {
+      body: { scheduledAt: null },
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.status, 'interview');
+    assert.equal(response.body.scheduledAt, null);
   });
 
   it('preserves concurrent updates and hides the internal revision', async () => {
@@ -499,6 +517,47 @@ describe('applications', () => {
     assert.equal(body.durationMonths, 12);
     assert.equal(body.scheduledAt, '2026-11-25T10:00:00.000Z');
     assert.equal(body.status, 'interview');
+  });
+
+  it('clears scheduledAt when an application leaves interview status', async () => {
+    const interview = await request('PATCH', '/api/applications/2', {
+      body: {
+        status: 'interview',
+        scheduledAt: '2026-11-25T10:00:00.000Z',
+      },
+    });
+
+    assert.equal(interview.status, 200);
+    assert.equal(interview.body.scheduledAt, '2026-11-25T10:00:00.000Z');
+
+    const offer = await request('PATCH', '/api/applications/2', {
+      body: { status: 'offer' },
+    });
+
+    assert.equal(offer.status, 200);
+    assert.equal(offer.body.status, 'offer');
+    assert.equal(offer.body.scheduledAt, null);
+  });
+
+  it('keeps scheduledAt when an application remains in interview status', async () => {
+    const scheduledAt = '2026-11-25T10:00:00.000Z';
+
+    const interview = await request('PATCH', '/api/applications/2', {
+      body: {
+        status: 'interview',
+        scheduledAt,
+      },
+    });
+
+    assert.equal(interview.status, 200);
+
+    const updated = await request('PATCH', '/api/applications/2', {
+      body: { notes: 'Preparing for the next round' },
+    });
+
+    assert.equal(updated.status, 200);
+    assert.equal(updated.body.status, 'interview');
+    assert.equal(updated.body.scheduledAt, scheduledAt);
   });
 
   it('allows partial application updates and preserves omitted fields', async () => {
@@ -786,6 +845,70 @@ describe('contacts', () => {
 
       assert.equal(response.status, 400);
     }
+  });
+
+  it('requires scheduledAt when a contact enters follow_up status', async () => {
+    const response = await request('PATCH', '/api/contacts/1', {
+      body: { status: 'follow_up' },
+    });
+
+    assert.equal(response.status, 400);
+  });
+
+  it('keeps scheduledAt when a contact remains in follow_up status', async () => {
+    const scheduledAt = '2026-11-25T10:00:00.000Z';
+
+    const followUp = await request('PATCH', '/api/contacts/1', {
+      body: {
+        status: 'follow_up',
+        scheduledAt,
+      },
+    });
+
+    assert.equal(followUp.status, 200);
+
+    const updated = await request('PATCH', '/api/contacts/1', {
+      body: { notes: 'Follow-up conversation' },
+    });
+
+    assert.equal(updated.status, 200);
+    assert.equal(updated.body.status, 'follow_up');
+    assert.equal(updated.body.scheduledAt, scheduledAt);
+  });
+
+  it('does not allow clearing scheduledAt while a contact remains in follow_up', async () => {
+    await request('PATCH', '/api/contacts/1', {
+      body: {
+        status: 'follow_up',
+        scheduledAt: '2026-11-25T10:00:00.000Z',
+      },
+    });
+
+    const response = await request('PATCH', '/api/contacts/1', {
+      body: { scheduledAt: null },
+    });
+
+    assert.equal(response.status, 400);
+  });
+
+  it('allows rescheduling a contact while it remains in follow_up', async () => {
+    const firstDate = '2026-11-25T10:00:00.000Z';
+    const nextDate = '2026-11-28T15:30:00.000Z';
+
+    await request('PATCH', '/api/contacts/1', {
+      body: {
+        status: 'follow_up',
+        scheduledAt: firstDate,
+      },
+    });
+
+    const response = await request('PATCH', '/api/contacts/1', {
+      body: { scheduledAt: nextDate },
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.status, 'follow_up');
+    assert.equal(response.body.scheduledAt, nextDate);
   });
 
   it('trims contact text fields', async () => {
