@@ -9,6 +9,7 @@ const { APPLICATION_TRANSITIONS, validateApplicationTransition } = require('../d
 const { RECORD_STATUSES } = require('../../../shared/constants.json');
 const handle = require('./handle');
 
+const ENDPOINT_ID = '/api/applications/:id';
 const NOT_FOUND_MESSAGE = 'Application not found';
 const APPLICATION_ALERT_STATUSES = ['pending', 'interview'];
 const FINAL_APPLICATION_STATUSES = new Set(
@@ -26,9 +27,35 @@ const APPLICATION_ALERTABLE_STATUSES = APPLICATION_ALERT_STATUSES.filter(
 const addApplicationRoutes = (app, storage) => {
   app.get(
     '/api/applications',
-    handle('Could not retrieve applications', async (_req, res) => {
-      res.json({
-        applications: await storage.list('applications'),
+    handle('Could not retrieve applications', async (req, res) => {
+      const applications = await storage.list('applications');
+
+      if (req.query.ids === undefined) {
+        return res.json({ applications });
+      }
+
+      if (typeof req.query.ids !== 'string' || !req.query.ids.trim()) {
+        throw new HttpError(
+          HTTP_STATUS.BAD_REQUEST,
+          'Invalid application IDs',
+          'The ids query parameter must contain one or more IDs.',
+        );
+      }
+
+      const ids = [...new Set(req.query.ids.split(',').map(id => id.trim()))];
+
+      if (ids.some(id => !id)) {
+        throw new HttpError(
+          HTTP_STATUS.BAD_REQUEST,
+          'Invalid application IDs',
+          'The ids query parameter must contain valid IDs.',
+        );
+      }
+
+      const requestedIds = new Set(ids);
+
+      return res.json({
+        applications: applications.filter(application => requestedIds.has(String(application.id))),
       });
     }),
   );
@@ -56,8 +83,21 @@ const addApplicationRoutes = (app, storage) => {
     }),
   );
 
+  app.get(
+    ENDPOINT_ID,
+    handle('Could not retrieve application', async (req, res) => {
+      const application = await storage.getById('applications', req.params.id);
+
+      if (!application) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
+      }
+
+      res.json(application);
+    }),
+  );
+
   app.patch(
-    '/api/applications/:id',
+    ENDPOINT_ID,
     handle('Could not update application', async (req, res) => {
       const requestedChanges = req.body;
 
@@ -138,7 +178,7 @@ const addApplicationRoutes = (app, storage) => {
   );
 
   app.delete(
-    '/api/applications/:id',
+    ENDPOINT_ID,
     handle('Could not delete application', async (req, res) => {
       const deleted = await storage.delete('applications', req.params.id);
 

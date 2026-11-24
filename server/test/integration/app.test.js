@@ -1267,4 +1267,159 @@ describe('CORS', () => {
 
     assert.equal(status, 403);
   });
+
+  describe('alerts', () => {
+    it('returns a scheduled alert for a contact in follow_up', async () => {
+      const created = await request('POST', '/api/contacts', {
+        body: validContact({
+          status: 'follow_up',
+          scheduledAt: '2020-01-01T00:00:00.000Z',
+        }),
+      });
+
+      assert.equal(created.status, 201);
+
+      const { status, body } = await request('GET', '/api/alerts');
+
+      assert.equal(status, 200);
+      assert.ok(
+        body.alerts.some(
+          alert =>
+            alert.type === 'scheduled' &&
+            alert.entity === 'contact' &&
+            alert.recordId === String(created.body.id),
+        ),
+      );
+    });
+
+    it('does not return a stale alert for a contact in follow_up', async () => {
+      const created = await request('POST', '/api/contacts', {
+        body: validContact({
+          contactedAt: '2020-01-01T00:00:00.000Z',
+          scheduledAt: '2020-01-01T00:00:00.000Z',
+          status: 'follow_up',
+        }),
+      });
+
+      assert.equal(created.status, 201);
+
+      const { body } = await request('GET', '/api/alerts');
+
+      assert.ok(
+        !body.alerts.some(
+          alert =>
+            alert.type === 'stale' &&
+            alert.entity === 'contact' &&
+            alert.recordId === String(created.body.id),
+        ),
+      );
+    });
+
+    it('returns a stale alert for an inactive contact', async () => {
+      const created = await request('POST', '/api/contacts', {
+        body: validContact({
+          contactedAt: '2020-01-01T00:00:00.000Z',
+          status: 'pending',
+        }),
+      });
+
+      assert.equal(created.status, 201);
+
+      const { body } = await request('GET', '/api/alerts');
+
+      assert.ok(
+        body.alerts.some(
+          alert =>
+            alert.type === 'stale' &&
+            alert.entity === 'contact' &&
+            alert.recordId === String(created.body.id),
+        ),
+      );
+    });
+
+    it('does not return alerts for terminal contacts or applications', async () => {
+      const contact = await request('POST', '/api/contacts', {
+        body: validContact({
+          contactedAt: '2020-01-01T00:00:00.000Z',
+          status: 'completed',
+        }),
+      });
+
+      const application = await request('POST', '/api/applications', {
+        body: validApplication({
+          appliedAt: '2020-01-01T00:00:00.000Z',
+          scheduledAt: '2020-01-01T00:00:00.000Z',
+          status: 'accepted',
+        }),
+      });
+
+      assert.equal(contact.status, 201);
+      assert.equal(application.status, 201);
+
+      const { body } = await request('GET', '/api/alerts');
+
+      for (const [entity, recordId] of [
+        ['contact', String(contact.body.id)],
+        ['application', String(application.body.id)],
+      ]) {
+        assert.ok(
+          !body.alerts.some(alert => alert.entity === entity && alert.recordId === recordId),
+        );
+      }
+    });
+
+    it('does not return alerts for suspended contacts', async () => {
+      const created = await request('POST', '/api/contacts', {
+        body: validContact({
+          contactedAt: '2020-01-01T00:00:00.000Z',
+          status: 'pending',
+        }),
+      });
+
+      assert.equal(created.status, 201);
+
+      const suspended = await request('PATCH', `/api/contacts/${created.body.id}/suspend`);
+
+      assert.equal(suspended.status, 200);
+      assert.equal(suspended.body.status, 'suspended');
+
+      const { body } = await request('GET', '/api/alerts');
+
+      assert.ok(
+        !body.alerts.some(
+          alert => alert.entity === 'contact' && alert.recordId === String(created.body.id),
+        ),
+      );
+    });
+
+    it('returns both stale and scheduled alerts for an overdue interview application', async () => {
+      const created = await request('POST', '/api/applications', {
+        body: validApplication({
+          appliedAt: '2020-01-01T00:00:00.000Z',
+          scheduledAt: '2020-01-01T00:00:00.000Z',
+          status: 'interview',
+        }),
+      });
+
+      assert.equal(created.status, 201);
+
+      const { status, body } = await request('GET', '/api/alerts');
+
+      assert.equal(status, 200);
+
+      const applicationAlerts = body.alerts.filter(
+        alert => alert.entity === 'application' && alert.recordId === String(created.body.id),
+      );
+
+      assert.deepEqual(applicationAlerts.map(alert => alert.type).sort(), ['scheduled', 'stale']);
+    });
+
+    it('returns only the expected alert fields', async () => {
+      const { body } = await request('GET', '/api/alerts');
+
+      for (const alert of body.alerts) {
+        assert.deepEqual(Object.keys(alert).sort(), ['entity', 'recordId', 'type']);
+      }
+    });
+  });
 });

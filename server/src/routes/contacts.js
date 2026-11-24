@@ -4,11 +4,13 @@ const {
   parseContact,
   parseContactChanges,
   suspendIfStale,
+  isScheduledRecord,
 } = require('../domain/records');
 const handle = require('./handle');
 const { CONTACT_TRANSITIONS, validateContactTransition } = require('../domain/transitions');
 const { RECORD_STATUSES } = require('../../../shared/constants.json');
 
+const ENDPOINT_ID = '/api/contacts/:id';
 const NOT_FOUND_MESSAGE = 'Contact not found';
 const CONTACT_ALERT_STATUSES = ['pending', 'in_conversation'];
 const FINAL_CONTACT_STATUSES = new Set(
@@ -27,9 +29,35 @@ const CONTACT_ALERTABLE_STATUSES = CONTACT_ALERT_STATUSES.filter(
 const addContactRoutes = (app, storage) => {
   app.get(
     '/api/contacts',
-    handle('Could not retrieve contacts', async (_req, res) => {
-      res.json({
-        contacts: await storage.list('contacts'),
+    handle('Could not retrieve contacts', async (req, res) => {
+      const contacts = await storage.list('contacts');
+
+      if (req.query.ids === undefined) {
+        return res.json({ contacts });
+      }
+
+      if (typeof req.query.ids !== 'string' || !req.query.ids.trim()) {
+        throw new HttpError(
+          HTTP_STATUS.BAD_REQUEST,
+          'Invalid contact IDs',
+          'The ids query parameter must contain one or more IDs.',
+        );
+      }
+
+      const ids = [...new Set(req.query.ids.split(',').map(id => id.trim()))];
+
+      if (ids.some(id => !id)) {
+        throw new HttpError(
+          HTTP_STATUS.BAD_REQUEST,
+          'Invalid contact IDs',
+          'The ids query parameter must contain valid IDs.',
+        );
+      }
+
+      const requestedIds = new Set(ids);
+
+      return res.json({
+        contacts: contacts.filter(contact => requestedIds.has(String(contact.id))),
       });
     }),
   );
@@ -55,8 +83,21 @@ const addContactRoutes = (app, storage) => {
     }),
   );
 
+  app.get(
+    ENDPOINT_ID,
+    handle('Could not retrieve contact', async (req, res) => {
+      const contact = await storage.getById('contacts', req.params.id);
+
+      if (!contact) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
+      }
+
+      res.json(contact);
+    }),
+  );
+
   app.patch(
-    '/api/contacts/:id',
+    ENDPOINT_ID,
     handle('Could not update contact', async (req, res) => {
       const requestedChanges = req.body;
 
@@ -138,7 +179,7 @@ const addContactRoutes = (app, storage) => {
   );
 
   app.delete(
-    '/api/contacts/:id',
+    ENDPOINT_ID,
     handle('Could not delete contact', async (req, res) => {
       const deleted = await storage.delete('contacts', req.params.id);
 

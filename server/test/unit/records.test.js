@@ -10,6 +10,7 @@ const {
   parseContact,
   parseContactChanges,
   suspendIfStale,
+  isScheduledRecord,
 } = require('../../src/domain/records');
 const { HttpError } = require('../../src/domain/httpError');
 
@@ -63,6 +64,19 @@ describe('record validation helpers', () => {
       isStaleRecord({ status: 'accepted', appliedAt: '2025-12-01' }, ALERTABLE_STATUSES, now),
       false,
     );
+  });
+
+  it('detects records with scheduled dates that have arrived', () => {
+    const now = new Date('2026-11-25T10:00:00.000Z');
+
+    assert.equal(isScheduledRecord({ scheduledAt: '2026-11-25T09:00:00.000Z' }, now), true);
+
+    assert.equal(isScheduledRecord({ scheduledAt: '2026-11-25T10:00:00.000Z' }, now), true);
+
+    assert.equal(isScheduledRecord({ scheduledAt: '2026-11-25T11:00:00.000Z' }, now), false);
+
+    assert.equal(isScheduledRecord({ scheduledAt: null }, now), false);
+    assert.equal(isScheduledRecord({}, now), false);
   });
 
   it('uses the latest status history date and falls back to the creation date', () => {

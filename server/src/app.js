@@ -8,6 +8,7 @@ const addContactRoutes = require('./routes/contacts');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 const { HTTP_STATUS } = require('../../shared/constants.json');
+const addAlertsRoutes = require('./routes/alerts');
 
 const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:3000',
@@ -23,6 +24,9 @@ const createApp = ({ storage: injectedStorage, allowedOrigins = DEFAULT_ALLOWED_
   addSecurityMiddleware(app, origins);
   addApplicationRoutes(app, storage);
   addContactRoutes(app, storage);
+  addApplicationRoutes(app, storage);
+  addContactRoutes(app, storage);
+  addAlertsRoutes(app, storage);
 
   app.get('/health', (_req, res) => {
     res.status(HTTP_STATUS.OK).json({ status: 'ok' });

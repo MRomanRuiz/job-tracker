@@ -227,6 +227,16 @@ const isStaleRecord = (record, alertableStatuses, now = new Date()) =>
   alertableStatuses.includes(record.status) &&
   isOlderThanStaleLimit(getStaleActivityDate(record).date, now);
 
+const isScheduledRecord = (record, now = new Date()) => {
+  if (!record.scheduledAt) {
+    return false;
+  }
+
+  const scheduledTime = new Date(record.scheduledAt).getTime();
+
+  return !Number.isNaN(scheduledTime) && scheduledTime <= now.getTime();
+};
+
 const isValidDate = value => {
   if (typeof value !== 'string' || !TIMESTAMP_PATTERN.test(value)) {
     return false;
@@ -711,6 +721,7 @@ module.exports = {
   APPLICATION_DURATION_TYPES,
   isOlderThanStaleLimit,
   isStaleRecord,
+  isScheduledRecord,
   isValidDate,
   suspendIfStale,
   parseApplication,
