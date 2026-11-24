@@ -52,6 +52,7 @@ const translations = {
       notes: 'Notas',
       fixed: 'Temporal',
       indefinite: 'Indefinido',
+      scheduledAt: 'Fecha de seguimiento',
     },
     statuses: {
       application: {
@@ -233,6 +234,7 @@ const translations = {
       notes: 'Notes',
       fixed: 'Fixed-term',
       indefinite: 'Indefinite',
+      scheduledAt: 'Follow-up date',
     },
     statuses: {
       application: {

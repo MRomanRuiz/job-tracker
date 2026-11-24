@@ -12,7 +12,7 @@ import {
 import ApplicationsTable from './ApplicationsTable';
 import Pagination from '../../shared/components/Pagination';
 import RecordForm from '../../shared/components/RecordForm';
-import StaleItemsAlert from '../../shared/components/StaleItemsAlert';
+import ItemsAlert from '../../shared/components/ItemsAlert';
 import StatCards from '../../shared/components/StatCards';
 import Toolbar from '../../shared/components/Toolbar';
 import NoteForm from '../../shared/components/NoteForm';
@@ -32,14 +32,19 @@ const STAT_ITEMS = [
   { status: 'rejected', label: LABELS.applications.stats.rejected },
 ];
 
-const renderStaleApplication = application => (
+const renderStaleApplication = (application, alertType) => (
   <>
     <span className="stale-primary" title={application.company}>
       {application.company}
     </span>
+
     <span title={application.position}>{application.position}</span>
+
     <span>{LABELS.applicationTypes[application.type] || application.type}</span>
-    <span className="stale-date">{formatDate(application.appliedAt)}</span>
+
+    <span className="stale-date">
+      {formatDate(alertType === 'scheduled' ? application.scheduledAt : application.appliedAt)}
+    </span>
   </>
 );
 
@@ -132,7 +137,7 @@ function Applications({ collection, showForm, onCloseForm }) {
 
   return (
     <>
-      <StaleItemsAlert
+      <ItemsAlert
         items={staleItems}
         scheduledItems={scheduledItems}
         singularLabel={LABELS.applications.pendingSingular}

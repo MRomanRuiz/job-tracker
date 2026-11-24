@@ -13,13 +13,14 @@ import ContactsTable from './ContactsTable';
 import NoteForm from '../../shared/components/NoteForm';
 import Pagination from '../../shared/components/Pagination';
 import RecordForm from '../../shared/components/RecordForm';
-import StaleItemsAlert from '../../shared/components/StaleItemsAlert';
+import ItemsAlert from '../../shared/components/ItemsAlert';
 import StatCards from '../../shared/components/StatCards';
 import Toolbar from '../../shared/components/Toolbar';
 import RecordDetails from '../../shared/components/RecordDetails';
 import RecordEditForm from '../../shared/components/RecordEditForm';
 import { getRecordCreateFields } from '../../lib/recordFields';
 import DeleteConfirm from '../../shared/components/DeleteConfirm';
+import ScheduleFollowUpModal from '../../shared/components/ScheduleFollowUpModal';
 
 const CONTACT_CREATE_FIELDS = getRecordCreateFields('contact');
 const REQUIRED_FORM_FIELDS = CONTACT_CREATE_FIELDS.filter(field => field.required);
@@ -32,13 +33,17 @@ const STAT_ITEMS = [
   { status: 'rejected', label: LABELS.contacts.stats.rejected },
 ];
 
-const renderStaleContact = contact => (
+const renderStaleContact = (contact, alertType) => (
   <>
     <span className="stale-primary" title={contact.contact}>
       {contact.contact}
     </span>
+
     <span title={contact.institution}>{contact.institution}</span>
-    <span className="stale-date">{formatDate(contact.contactedAt)}</span>
+
+    <span className="stale-date">
+      {formatDate(alertType === 'scheduled' ? contact.scheduledAt : contact.contactedAt)}
+    </span>
   </>
 );
 
@@ -58,6 +63,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
   const [selectedContact, setSelectedContact] = useState(null);
   const [editingContact, setEditingContact] = useState(null);
   const [deletingContact, setDeletingContact] = useState(null);
+  const [followUpContact, setFollowUpContact] = useState(null);
 
   const filteredContacts = useMemo(() => {
     const searchText = search.trim().toLowerCase();
@@ -136,9 +142,34 @@ function Contacts({ collection, showForm, onCloseForm }) {
     }
   };
 
+  const handleStatusChange = (id, status) => {
+    if (status === 'follow_up') {
+      const contact = contacts.find(item => item.id === id);
+
+      if (contact) {
+        setFollowUpContact(contact);
+      }
+
+      return;
+    }
+
+    update(id, { status });
+  };
+
+  const handleSaveFollowUp = async date => {
+    if (
+      await update(followUpContact.id, {
+        status: 'follow_up',
+        scheduledAt: new Date(date).toISOString(),
+      })
+    ) {
+      setFollowUpContact(null);
+    }
+  };
+
   return (
     <>
-      <StaleItemsAlert
+      <ItemsAlert
         items={staleItems}
         scheduledItems={scheduledItems}
         singularLabel={LABELS.contacts.pendingSingular}
@@ -180,7 +211,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
         <section className="table-container">
           <ContactsTable
             contacts={paginatedContacts}
-            onStatusChange={(id, status) => update(id, { status })}
+            onStatusChange={handleStatusChange}
             onOpenNote={setNoteContact}
             onOpenDetail={setSelectedContact}
           />
@@ -237,6 +268,13 @@ function Contacts({ collection, showForm, onCloseForm }) {
           message={LABELS.contacts.deleteMessage}
           onConfirm={confirmDelete}
           onCancel={() => setDeletingContact(null)}
+        />
+      )}
+
+      {followUpContact && (
+        <ScheduleFollowUpModal
+          onSave={handleSaveFollowUp}
+          onCancel={() => setFollowUpContact(null)}
         />
       )}
     </>

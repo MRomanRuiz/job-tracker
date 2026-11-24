@@ -379,14 +379,41 @@
   background: #b91c1c;
 }
 
-/* Paginación */
+.pagination span {
+  min-width: 100px;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+}
 
-.pagination {
+/* Aviso de seguimientos programados */
+
+.scheduled-alert {
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 12px;
-  margin-top: 20px;
+  gap: 10px;
+  margin: 24px 40px 0;
+  padding: 12px 16px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  color: #1e40af;
+}
+
+.scheduled-alert strong {
+  flex: 1;
+  font-size: 14px;
+}
+
+.scheduled-alert button {
+  border: none;
+  background: #2563eb;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .pagination button {
@@ -398,6 +425,47 @@
   color: #374151;
   font-size: 14px;
   cursor: pointer;
+}
+
+.scheduled-alert button:hover {
+  background: #1d4ed8;
+}
+
+/* Panel de seguimientos programados */
+
+.scheduled-panel {
+  margin: 12px 40px 0;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.scheduled-panel .stale-row {
+  background: #f8fbff;
+  border-bottom: 1px solid #dbeafe;
+}
+
+.scheduled-panel .stale-row:last-child {
+  border-bottom: none;
+}
+
+.scheduled-panel .stale-row span {
+  color: #475569;
+}
+
+.scheduled-panel .stale-row .stale-primary {
+  color: #1e40af;
+}
+
+/* Paginación */
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 .pagination button:disabled {
@@ -417,13 +485,6 @@
 .pagination button:hover:not(:disabled) {
   background: #f9fafb;
   border-color: #9ca3af;
-}
-
-.pagination span {
-  min-width: 100px;
-  text-align: center;
-  font-size: 14px;
-  color: #6b7280;
 }
 
 /* Desplegable de línea temporal */

@@ -129,6 +129,14 @@ export const CONTACT_FIELDS = [
     editable: false,
   },
   {
+    name: 'scheduledAt',
+    label: LABELS.fields.scheduledAt,
+    type: 'datetime-local',
+    format: formatDate,
+    create: false,
+    editable: false,
+  },
+  {
     name: 'status',
     label: LABELS.fields.status,
     type: 'select',
