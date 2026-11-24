@@ -71,19 +71,6 @@ const addApplicationRoutes = (app, storage) => {
   );
 
   app.get(
-    '/api/applications/old',
-    handle('Could not retrieve old applications', async (_req, res) => {
-      const applications = await storage.list('applications');
-
-      res.json({
-        applications: applications.filter(item =>
-          isStaleRecord(item, APPLICATION_ALERTABLE_STATUSES),
-        ),
-      });
-    }),
-  );
-
-  app.get(
     ENDPOINT_ID,
     handle('Could not retrieve application', async (req, res) => {
       const application = await storage.getById('applications', req.params.id);

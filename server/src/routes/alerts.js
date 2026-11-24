@@ -27,7 +27,7 @@ const addAlertsRoutes = (app, storage) => {
           });
         }
 
-        if (CONTACT_SCHEDULED_STATUSES.includes(contact.status) && isScheduledRecord(contact)) {
+        if (CONTACT_SCHEDULED_STATUSES.has(contact.status) && isScheduledRecord(contact)) {
           alerts.push({
             type: 'scheduled',
             entity: 'contact',
@@ -46,7 +46,7 @@ const addAlertsRoutes = (app, storage) => {
         }
 
         if (
-          APPLICATION_SCHEDULED_STATUSES.includes(application.status) &&
+          APPLICATION_SCHEDULED_STATUSES.has(application.status) &&
           isScheduledRecord(application)
         ) {
           alerts.push({

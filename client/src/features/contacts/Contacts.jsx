@@ -43,7 +43,15 @@ const renderStaleContact = contact => (
 );
 
 function Contacts({ collection, showForm, onCloseForm }) {
-  const { items: contacts, staleItems, create, update, suspend, remove } = collection;
+  const {
+    items: contacts,
+    staleItems,
+    create,
+    update,
+    suspend,
+    remove,
+    scheduledItems,
+  } = collection;
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
   const [noteContact, setNoteContact] = useState(null);
@@ -132,6 +140,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
     <>
       <StaleItemsAlert
         items={staleItems}
+        scheduledItems={scheduledItems}
         singularLabel={LABELS.contacts.pendingSingular}
         pluralLabel={LABELS.contacts.pendingPlural}
         itemType="contact"

@@ -655,12 +655,14 @@ describe('applications', () => {
     assert.equal(status, 404);
   });
 
-  it('lists and suspends old pending applications', async () => {
-    const old = await request('GET', '/api/applications/old');
+  it('returns a stale alert for an old pending application and allows suspending it', async () => {
+    const { status, body } = await request('GET', '/api/alerts');
 
-    assert.deepEqual(
-      old.body.applications.map(item => item.id),
-      [1],
+    assert.equal(status, 200);
+    assert.ok(
+      body.alerts.some(
+        alert => alert.entity === 'application' && alert.recordId === '1' && alert.type === 'stale',
+      ),
     );
 
     const suspended = await request('PATCH', '/api/applications/1/suspend');
@@ -668,52 +670,75 @@ describe('applications', () => {
     assert.equal(suspended.status, 200);
     assert.equal(suspended.body.status, 'suspended');
 
-    const recent = await request('PATCH', '/api/applications/2/suspend');
+    const { body: updatedAlerts } = await request('GET', '/api/alerts');
 
-    assert.equal(recent.status, 400);
+    assert.ok(
+      !updatedAlerts.alerts.some(
+        alert => alert.entity === 'application' && alert.recordId === '1' && alert.type === 'stale',
+      ),
+    );
   });
 
-  it('alerts and suspends stale interview applications', async () => {
+  it('returns stale alerts for old interview applications', async () => {
     const created = await request('POST', '/api/applications', {
       body: validApplication({
         appliedAt: '2020-01-01T00:00:00.000Z',
         status: 'interview',
       }),
     });
+
     assert.equal(created.status, 201);
 
-    const old = await request('GET', '/api/applications/old');
+    const { body } = await request('GET', '/api/alerts');
 
-    assert.equal(
-      old.body.applications.some(item => item.id === created.body.id),
-      true,
+    assert.ok(
+      body.alerts.some(
+        alert =>
+          alert.entity === 'application' &&
+          alert.recordId === String(created.body.id) &&
+          alert.type === 'stale',
+      ),
     );
 
     const suspended = await request('PATCH', `/api/applications/${created.body.id}/suspend`);
 
     assert.equal(suspended.status, 200);
     assert.equal(suspended.body.status, 'suspended');
-    const oldAfterSuspension = await request('GET', '/api/applications/old');
-    assert.equal(
-      oldAfterSuspension.body.applications.some(item => item.id === created.body.id),
-      false,
+
+    const { body: updatedAlerts } = await request('GET', '/api/alerts');
+
+    assert.ok(
+      !updatedAlerts.alerts.some(
+        alert =>
+          alert.entity === 'application' &&
+          alert.recordId === String(created.body.id) &&
+          alert.type === 'stale',
+      ),
     );
   });
 
   it('does not alert an interview application whose status changed recently', async () => {
     const created = await request('POST', '/api/applications', {
-      body: validApplication({ appliedAt: '2020-01-01T00:00:00.000Z' }),
+      body: validApplication({
+        appliedAt: '2020-01-01T00:00:00.000Z',
+      }),
     });
+
     const updated = await request('PATCH', `/api/applications/${created.body.id}`, {
       body: { status: 'interview' },
     });
+
     assert.equal(updated.status, 200);
 
-    const old = await request('GET', '/api/applications/old');
+    const { body } = await request('GET', '/api/alerts');
 
-    assert.equal(
-      old.body.applications.some(item => item.id === created.body.id),
-      false,
+    assert.ok(
+      !body.alerts.some(
+        alert =>
+          alert.entity === 'application' &&
+          alert.recordId === String(created.body.id) &&
+          alert.type === 'stale',
+      ),
     );
 
     const suspended = await request('PATCH', `/api/applications/${created.body.id}/suspend`);
@@ -722,21 +747,30 @@ describe('applications', () => {
   });
 
   it('excludes offer and final application statuses from stale alerts', async () => {
+    const createdIds = [];
+
     for (const status of ['offer', 'accepted', 'declined', 'rejected']) {
-      await request('POST', '/api/applications', {
+      const created = await request('POST', '/api/applications', {
         body: validApplication({
           appliedAt: '2020-01-01T00:00:00.000Z',
           status,
         }),
       });
+
+      assert.equal(created.status, 201);
+      createdIds.push(String(created.body.id));
     }
 
-    const old = await request('GET', '/api/applications/old');
+    const { body } = await request('GET', '/api/alerts');
 
-    assert.deepEqual(
-      old.body.applications.map(item => item.id),
-      [1],
-    );
+    for (const recordId of createdIds) {
+      assert.ok(
+        !body.alerts.some(
+          alert =>
+            alert.entity === 'application' && alert.recordId === recordId && alert.type === 'stale',
+        ),
+      );
+    }
   });
 
   it('does not reset application expiration when only notes change', async () => {
@@ -744,11 +778,12 @@ describe('applications', () => {
       body: { notes: 'New follow-up detail' },
     });
 
-    const old = await request('GET', '/api/applications/old');
+    const { body } = await request('GET', '/api/alerts');
 
-    assert.deepEqual(
-      old.body.applications.map(item => item.id),
-      [1],
+    assert.ok(
+      body.alerts.some(
+        alert => alert.entity === 'application' && alert.recordId === '1' && alert.type === 'stale',
+      ),
     );
   });
 
@@ -1160,12 +1195,14 @@ describe('contacts', () => {
     assert.equal(status, 404);
   });
 
-  it('suspends old pending contacts', async () => {
-    const old = await request('GET', '/api/contacts/old');
+  it('returns a stale alert for an old pending contact and allows suspending it', async () => {
+    const { status, body } = await request('GET', '/api/alerts');
 
-    assert.deepEqual(
-      old.body.contacts.map(item => item.id),
-      [1],
+    assert.equal(status, 200);
+    assert.ok(
+      body.alerts.some(
+        alert => alert.entity === 'contact' && alert.recordId === '1' && alert.type === 'stale',
+      ),
     );
 
     const suspended = await request('PATCH', '/api/contacts/1/suspend');
@@ -1173,54 +1210,78 @@ describe('contacts', () => {
     assert.equal(suspended.status, 200);
     assert.equal(suspended.body.status, 'suspended');
 
-    const notPending = await request('PATCH', '/api/contacts/2/suspend');
+    const { body: updatedAlerts } = await request('GET', '/api/alerts');
 
-    assert.equal(notPending.status, 400);
+    assert.ok(
+      !updatedAlerts.alerts.some(
+        alert => alert.entity === 'contact' && alert.recordId === '1' && alert.type === 'stale',
+      ),
+    );
   });
 
-  it('alerts and suspends stale in-conversation contacts', async () => {
+  it('returns stale alerts for old in-conversation contacts', async () => {
     const created = await request('POST', '/api/contacts', {
       body: validContact({
         contactedAt: '2020-01-01T00:00:00.000Z',
         status: 'in_conversation',
       }),
     });
+
     assert.equal(created.status, 201);
 
-    const old = await request('GET', '/api/contacts/old');
+    const { body } = await request('GET', '/api/alerts');
 
-    assert.equal(
-      old.body.contacts.some(item => item.id === created.body.id),
-      true,
+    assert.ok(
+      body.alerts.some(
+        alert =>
+          alert.entity === 'contact' &&
+          alert.recordId === String(created.body.id) &&
+          alert.type === 'stale',
+      ),
     );
 
     const suspended = await request('PATCH', `/api/contacts/${created.body.id}/suspend`);
 
     assert.equal(suspended.status, 200);
     assert.equal(suspended.body.status, 'suspended');
-    const oldAfterSuspension = await request('GET', '/api/contacts/old');
-    assert.equal(
-      oldAfterSuspension.body.contacts.some(item => item.id === created.body.id),
-      false,
+
+    const { body: updatedAlerts } = await request('GET', '/api/alerts');
+
+    assert.ok(
+      !updatedAlerts.alerts.some(
+        alert =>
+          alert.entity === 'contact' &&
+          alert.recordId === String(created.body.id) &&
+          alert.type === 'stale',
+      ),
     );
   });
 
   it('excludes final and follow-up contact statuses from stale alerts', async () => {
+    const createdIds = [];
+
     for (const status of ['completed', 'rejected', 'follow_up']) {
-      await request('POST', '/api/contacts', {
+      const created = await request('POST', '/api/contacts', {
         body: validContact({
           contactedAt: '2020-01-01T00:00:00.000Z',
           status,
         }),
       });
+
+      assert.equal(created.status, 201);
+      createdIds.push(String(created.body.id));
     }
 
-    const old = await request('GET', '/api/contacts/old');
+    const { body } = await request('GET', '/api/alerts');
 
-    assert.deepEqual(
-      old.body.contacts.map(item => item.id),
-      [1],
-    );
+    for (const recordId of createdIds) {
+      assert.ok(
+        !body.alerts.some(
+          alert =>
+            alert.entity === 'contact' && alert.recordId === recordId && alert.type === 'stale',
+        ),
+      );
+    }
   });
 
   it('resets contact expiration when it returns to pending after a status change', async () => {
@@ -1241,11 +1302,12 @@ describe('contacts', () => {
     assert.equal(returnedToPending.body.status, 'pending');
     assert.equal(returnedToPending.body.scheduledAt, null);
 
-    const old = await request('GET', '/api/contacts/old');
+    const { body } = await request('GET', '/api/alerts');
 
-    assert.deepEqual(
-      old.body.contacts.map(item => item.id),
-      [],
+    assert.ok(
+      !body.alerts.some(
+        alert => alert.entity === 'contact' && alert.recordId === '1' && alert.type === 'stale',
+      ),
     );
   });
 });

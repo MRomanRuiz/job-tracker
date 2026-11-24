@@ -44,7 +44,15 @@ const renderStaleApplication = application => (
 );
 
 function Applications({ collection, showForm, onCloseForm }) {
-  const { items: applications, staleItems, create, update, suspend, remove } = collection;
+  const {
+    items: applications,
+    staleItems,
+    create,
+    update,
+    suspend,
+    remove,
+    scheduledItems,
+  } = collection;
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
   const [typeFilter, setTypeFilter] = useState('');
@@ -126,6 +134,7 @@ function Applications({ collection, showForm, onCloseForm }) {
     <>
       <StaleItemsAlert
         items={staleItems}
+        scheduledItems={scheduledItems}
         singularLabel={LABELS.applications.pendingSingular}
         pluralLabel={LABELS.applications.pendingPlural}
         itemType="application"

@@ -73,17 +73,6 @@ const addContactRoutes = (app, storage) => {
   );
 
   app.get(
-    '/api/contacts/old',
-    handle('Could not retrieve old contacts', async (_req, res) => {
-      const contacts = await storage.list('contacts');
-
-      res.json({
-        contacts: contacts.filter(item => isStaleRecord(item, CONTACT_ALERTABLE_STATUSES)),
-      });
-    }),
-  );
-
-  app.get(
     ENDPOINT_ID,
     handle('Could not retrieve contact', async (req, res) => {
       const contact = await storage.getById('contacts', req.params.id);

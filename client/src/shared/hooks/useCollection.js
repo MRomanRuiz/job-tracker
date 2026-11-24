@@ -1,24 +1,44 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiRequest } from '../api/apiRequest';
 import { LABELS } from '../lib/labels';
 import { replaceById } from '../lib/utils';
 
 export default function useCollection(name) {
   const [items, setItems] = useState([]);
-  const [staleItems, setStaleItems] = useState([]);
+  const [staleAlerts, setStaleAlerts] = useState([]);
   const [error, setError] = useState('');
   const latestStaleRequest = useRef(0);
+  const [alertsError, setAlertsError] = useState('');
 
-  const reportError = useCallback(
-    requestError => {
-      setError(
-        typeof requestError?.message === 'string' && requestError.message
-          ? requestError.message
-          : LABELS.common.requestError,
-      );
-    },
-    [setError],
-  );
+  const entity = name === 'applications' ? 'application' : 'contact';
+
+  const staleItems = useMemo(() => {
+    const staleIds = new Set(
+      staleAlerts
+        .filter(alert => alert.entity === entity && alert.type === 'stale')
+        .map(alert => String(alert.recordId)),
+    );
+
+    return items.filter(item => staleIds.has(String(item.id)));
+  }, [items, staleAlerts, entity]);
+
+  const scheduledItems = useMemo(() => {
+    const scheduledIds = new Set(
+      staleAlerts
+        .filter(alert => alert.entity === entity && alert.type === 'scheduled')
+        .map(alert => String(alert.recordId)),
+    );
+
+    return items.filter(item => scheduledIds.has(String(item.id)));
+  }, [items, staleAlerts, entity]);
+
+  const reportError = useCallback(requestError => {
+    setError(
+      typeof requestError?.message === 'string' && requestError.message
+        ? requestError.message
+        : LABELS.common.requestError,
+    );
+  }, []);
 
   const request = useCallback(
     async (path = '', options = {}) => {
@@ -29,24 +49,37 @@ export default function useCollection(name) {
     [name],
   );
 
-  // Ignores responses from older requests so the alert never goes back in time.
   const loadStale = useCallback(async () => {
     latestStaleRequest.current += 1;
     const requestId = latestStaleRequest.current;
-    const data = await request('/old');
 
-    if (data && requestId === latestStaleRequest.current) {
-      setStaleItems(data[name]);
+    try {
+      const data = await apiRequest('/alerts');
+
+      if (data && requestId === latestStaleRequest.current) {
+        setStaleAlerts(data.alerts ?? []);
+        setAlertsError('');
+      }
+    } catch (requestError) {
+      if (requestId === latestStaleRequest.current) {
+        setAlertsError(
+          typeof requestError?.message === 'string' && requestError.message
+            ? requestError.message
+            : LABELS.common.requestError,
+        );
+      }
     }
-  }, [name, request]);
+  }, []);
 
   useEffect(() => {
-    void request().then(data => {
-      if (data) {
-        setItems(data[name]);
-        setError('');
-      }
-    }).catch(reportError);
+    void request()
+      .then(data => {
+        if (data) {
+          setItems(data[name]);
+          setError('');
+        }
+      })
+      .catch(reportError);
 
     void loadStale().catch(reportError);
   }, [name, request, loadStale, reportError]);
@@ -134,5 +167,15 @@ export default function useCollection(name) {
     return true;
   };
 
-  return { items, staleItems, error, create, update, suspend, remove };
+  return {
+    items,
+    staleItems,
+    scheduledItems,
+    error,
+    alertsError,
+    create,
+    update,
+    suspend,
+    remove,
+  };
 }
