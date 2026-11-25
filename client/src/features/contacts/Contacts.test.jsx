@@ -41,6 +41,7 @@ const renderContacts = ({
     create: vi.fn().mockResolvedValue(true),
     update: vi.fn().mockResolvedValue(true),
     suspend: vi.fn(),
+    recontact: vi.fn().mockResolvedValue(true),
     remove: vi.fn().mockResolvedValue(true),
   };
   const onCloseForm = vi.fn();
@@ -268,6 +269,33 @@ describe('Contacts', () => {
 
     fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.review }));
     expect(screen.getByText('2026-11-25').textContent).toBe('2026-11-25');
+  });
+
+  it('marks a scheduled follow-up as recontacted from the scheduled alert', async () => {
+    const { collection } = renderContacts({
+      scheduledItems: [
+        { ...contacts[0], status: 'follow_up', scheduledAt: '2026-11-25T10:00:00.000Z' },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.review }));
+    fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.recontacted }));
+
+    await waitFor(() => expect(collection.recontact).toHaveBeenCalledWith(1));
+  });
+
+  it('marks a follow-up contact as recontacted from its details', async () => {
+    const followUp = { ...contacts[0], id: 5, status: 'follow_up' };
+    const { collection } = renderContacts({
+      items: [followUp],
+      scheduledItems: [followUp],
+    });
+
+    fireEvent.click(screen.getAllByRole('row')[1]);
+    fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.recontacted }));
+
+    await waitFor(() => expect(collection.recontact).toHaveBeenCalledWith(5));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
   it('updates a contact status from the table', () => {

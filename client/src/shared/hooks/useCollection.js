@@ -157,6 +157,16 @@ export default function useCollection(name) {
     }
   };
 
+  const recontact = async id => {
+    const updated = await replace(`/${id}`, { status: 'in_conversation' });
+
+    if (updated) {
+      void loadAlerts(true);
+    }
+
+    return Boolean(updated);
+  };
+
   const remove = async id => {
     let deleted;
 
@@ -187,6 +197,7 @@ export default function useCollection(name) {
     create,
     update,
     suspend,
+    recontact,
     remove,
   };
 }

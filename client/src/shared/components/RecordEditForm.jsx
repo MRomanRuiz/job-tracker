@@ -146,7 +146,7 @@ function InputField({ field, value, isSaving, form, onChange }) {
   const isDurationMonths = field.name === 'durationMonths';
   const isRequired =
     field.required ||
-    (field.name === 'scheduledAt' && ['follow_up', 'interview'].includes(form.status));
+    (field.name === 'scheduledAt' && form.status === 'follow_up');
 
   return (
     <input

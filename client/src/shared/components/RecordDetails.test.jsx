@@ -42,18 +42,29 @@ describe('RecordDetails', () => {
     const onSuspend = vi.fn();
 
     render(
-      <RecordDetails
-        item={item}
-        kind={kind}
-        isStale
-        onClose={vi.fn()}
-        onSuspend={onSuspend}
-      />,
+      <RecordDetails item={item} kind={kind} isStale onClose={vi.fn()} onSuspend={onSuspend} />,
     );
 
     expect(screen.getByText(LABELS.alerts.staleRecord)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.suspend }));
     expect(onSuspend).toHaveBeenCalledWith(item.id);
+  });
+
+  it('allows marking a follow-up contact as recontacted', () => {
+    const onRecontact = vi.fn();
+
+    render(
+      <RecordDetails
+        item={{ id: 5, contact: 'Ana', status: 'follow_up' }}
+        kind="contact"
+        isScheduled
+        onClose={vi.fn()}
+        onRecontact={onRecontact}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.recontacted }));
+    expect(onRecontact).toHaveBeenCalledWith(5);
   });
 });

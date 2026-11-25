@@ -51,7 +51,7 @@ function AttentionItemsAlert({
   );
 }
 
-function ScheduledItemsAlert({ items, itemType, renderCells, onOpen }) {
+function ScheduledItemsAlert({ items, itemType, renderCells, onOpen, onRecontact }) {
   const [isOpen, setIsOpen] = useState(false);
   const messageLabel =
     itemType === 'application'
@@ -82,6 +82,16 @@ function ScheduledItemsAlert({ items, itemType, renderCells, onOpen }) {
               >
                 {LABELS.alerts.viewDetails}
               </button>
+
+              {onRecontact && itemType === 'contact' && (
+                <button
+                  type="button"
+                  className="recontact-button"
+                  onClick={() => onRecontact(item.id)}
+                >
+                  {LABELS.alerts.recontacted}
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -98,6 +108,7 @@ function ItemsAlert({
   itemType,
   renderCells,
   onSuspend,
+  onRecontact,
   onOpen,
 }) {
   if (items.length === 0 && scheduledItems.length === 0) {
@@ -124,6 +135,7 @@ function ItemsAlert({
           itemType={itemType}
           renderCells={renderCells}
           onOpen={onOpen}
+          onRecontact={onRecontact}
         />
       )}
     </>

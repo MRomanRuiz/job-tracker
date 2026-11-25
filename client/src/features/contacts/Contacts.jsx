@@ -50,12 +50,13 @@ const renderStaleContact = (contact, alertType) => (
 function Contacts({ collection, showForm, onCloseForm }) {
   const {
     items: contacts,
-    staleItems,
+    staleItems = [],
     create,
     update,
     suspend,
+    recontact,
     remove,
-    scheduledItems,
+    scheduledItems = [],
   } = collection;
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
@@ -170,6 +171,12 @@ function Contacts({ collection, showForm, onCloseForm }) {
     return true;
   };
 
+  const handleRecontact = async id => {
+    if (await recontact(id)) {
+      setSelectedContact(null);
+    }
+  };
+
   return (
     <>
       <ItemsAlert
@@ -181,6 +188,7 @@ function Contacts({ collection, showForm, onCloseForm }) {
         renderCells={renderStaleContact}
         onOpen={setSelectedContact}
         onSuspend={suspend}
+        onRecontact={handleRecontact}
       />
 
       {showForm && (
@@ -236,11 +244,13 @@ function Contacts({ collection, showForm, onCloseForm }) {
           item={selectedContact}
           kind="contact"
           isStale={staleItems.some(item => item.id === selectedContact.id)}
+          isScheduled={scheduledItems.some(item => item.id === selectedContact.id)}
           onClose={() => setSelectedContact(null)}
           onSuspend={async id => {
             await suspend(id);
             setSelectedContact(null);
           }}
+          onRecontact={handleRecontact}
           onEditNotes={item => {
             setSelectedContact(null);
             setNoteContact(item);

@@ -263,6 +263,64 @@ describe('useCollection', () => {
     expect(staleRequests(fetchMock)).toBe(1);
   });
 
+  it('recontacts a scheduled follow-up and reloads its alerts', async () => {
+    let scheduled = true;
+    const followUp = {
+      id: 1,
+      contact: 'Ana',
+      status: 'follow_up',
+      scheduledAt: '2026-11-25T10:00:00.000Z',
+    };
+    const scheduledAlert = { entity: 'contact', recordId: 1, type: 'scheduled' };
+
+    const { result } = renderCollection({
+      'GET /api/contacts': { contacts: [followUp] },
+      'GET /api/alerts': () => ({ alerts: scheduled ? [scheduledAlert] : [] }),
+      'PATCH /api/contacts/1': () => {
+        scheduled = false;
+        return { ...followUp, status: 'in_conversation', scheduledAt: null };
+      },
+    });
+
+    await waitFor(() => {
+      expect(result.current.scheduledItems).toEqual([followUp]);
+    });
+
+    let recontacted;
+    await act(async () => {
+      recontacted = await result.current.recontact(1);
+    });
+
+    expect(recontacted).toBe(true);
+    expect(result.current.items[0].status).toBe('in_conversation');
+
+    await waitFor(() => {
+      expect(result.current.scheduledItems).toEqual([]);
+    });
+  });
+
+  it('does not reload alerts when recontacting fails', async () => {
+    const { result, fetchMock } = renderCollection({
+      'PATCH /api/contacts/1': {
+        httpStatus: 500,
+        body: { error: 'Unavailable' },
+      },
+    });
+
+    await waitFor(() => {
+      expect(result.current.staleItems).toEqual([pending]);
+    });
+
+    let recontacted;
+    await act(async () => {
+      recontacted = await result.current.recontact(1);
+    });
+
+    expect(recontacted).toBe(false);
+    expect(result.current.items).toEqual([pending]);
+    expect(staleRequests(fetchMock)).toBe(1);
+  });
+
   it('propagates detailed update errors and keeps the current items', async () => {
     const { result } = renderCollection({
       'PATCH /api/contacts/1': {

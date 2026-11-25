@@ -379,6 +379,22 @@
   background: #b91c1c;
 }
 
+.recontact-button {
+  border: none;
+  background: #15803d;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.recontact-button:hover {
+  background: #15803d;
+}
+
 .pagination span {
   min-width: 100px;
   text-align: center;

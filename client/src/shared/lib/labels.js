@@ -152,6 +152,7 @@ const translations = {
       hide: 'Ocultar',
       viewDetails: 'Ver detalle',
       suspend: 'Suspender',
+      recontacted: 'Recontactado',
       staleRecord: 'Registro pendiente de más de 30 días',
     },
     followUp: {
@@ -351,6 +352,7 @@ const translations = {
       hide: 'Hide',
       viewDetails: 'View details',
       suspend: 'Suspend',
+      recontacted: 'Recontacted',
       staleRecord: 'Record pending for more than 30 days',
     },
     followUp: {

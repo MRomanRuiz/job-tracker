@@ -141,7 +141,7 @@ describe('RecordEditForm', () => {
 
     expect(input.type).toBe('datetime-local');
     expect(input.value).toBe(localDate.toISOString().slice(0, 16));
-    expect(input.required).toBe(true);
+    expect(input.required).toBe(false);
 
     fireEvent.change(input, { target: { value: '2026-03-05T14:45' } });
     fireEvent.click(screen.getByRole('button', { name: LABELS.common.saveChanges }));
@@ -150,6 +150,28 @@ describe('RecordEditForm', () => {
       expect(onSave).toHaveBeenCalledWith(1, {
         scheduledAt: new Date('2026-03-05T14:45').toISOString(),
       }),
+    );
+  });
+
+  it('saves other application changes when an interview has no scheduled date', async () => {
+    const interviewApplication = {
+      ...application,
+      status: 'interview',
+      scheduledAt: null,
+    };
+    const { onSave } = renderEditForm({ item: interviewApplication });
+    const dateInput = screen.getByLabelText(LABELS.applications.interviewDateTime);
+
+    expect(dateInput.required).toBe(false);
+    expect(dateInput.value).toBe('');
+
+    fireEvent.change(screen.getByLabelText(LABELS.fields.notes), {
+      target: { value: 'Preparar preguntas' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.saveChanges }));
+
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(1, { notes: 'Preparar preguntas' }),
     );
   });
 

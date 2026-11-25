@@ -224,9 +224,17 @@ const getStaleActivityDate = record => {
   return { date: record.contactedAt, field: 'contactedAt' };
 };
 
-const isStaleRecord = (record, alertableStatuses, now = new Date()) =>
-  alertableStatuses.includes(record.status) &&
-  isOlderThanStaleLimit(getStaleActivityDate(record).date, now);
+const isStaleRecord = (record, alertableStatuses, now = new Date()) => {
+  if (!alertableStatuses.includes(record.status)) {
+    return false;
+  }
+
+  if (record.status === 'interview' && record.scheduledAt) {
+    return false;
+  }
+
+  return isOlderThanStaleLimit(getStaleActivityDate(record).date, now);
+};
 
 const isScheduledRecord = (record, now = new Date()) => {
   if (!record.scheduledAt) {
@@ -642,7 +650,9 @@ const parseContact = body => {
     ...validateRequiredFields(contactData, REQUIRED_CONTACT_FIELDS, CONTACT_LABELS, textDetails),
     ...validateEnumField('status', status, ALLOWED_CONTACT_STATUSES, 'Status'),
     ...validateDateField('contactedAt', body.contactedAt),
-    ...validateOptionalDateField('scheduledAt', body.scheduledAt),
+    ...(status === 'follow_up'
+      ? validateDateField('scheduledAt', body.scheduledAt)
+      : validateOptionalDateField('scheduledAt', body.scheduledAt)),
   );
 
   if (details.length > 0) {

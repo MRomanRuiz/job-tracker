@@ -1454,6 +1454,7 @@ describe('CORS', () => {
           appliedAt: '2020-01-01T00:00:00.000Z',
           scheduledAt: '2020-01-01T00:00:00.000Z',
           status: 'interview',
+          scheduledAt: '2026-11-25T10:00:00.000Z',
         }),
       });
 
