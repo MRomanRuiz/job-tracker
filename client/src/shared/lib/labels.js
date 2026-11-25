@@ -23,6 +23,7 @@ const translations = {
       optionalFields: 'campos opcionales',
       hideOptionalFields: 'Ocultar campos opcionales',
       showOptionalFields: 'Mostrar campos opcionales',
+      postpone: 'Posponer',
     },
     header: {
       appName: 'Job Tracker',
@@ -91,6 +92,7 @@ const translations = {
       searchPlaceholder: 'Buscar empresa, puesto...',
       allTypes: 'Todos los tipos',
       showing: 'Mostrando',
+      addInterviewDate: 'Añadir fecha de entrevista',
       stats: {
         total: 'Total',
         pending: 'En espera',
@@ -217,6 +219,7 @@ const translations = {
       optionalFields: 'optional fields',
       hideOptionalFields: 'Hide optional fields',
       showOptionalFields: 'Show optional fields',
+      postpone: 'Pospone',
     },
     header: {
       appName: 'Job Tracker',
@@ -280,6 +283,7 @@ const translations = {
       save: 'Save application',
       interviewDateTime: 'Interview date and time',
       deleteTitle: 'Delete application',
+      addInterviewDate: 'Add interview date',
       deleteMessage:
         'Are you sure you want to permanently delete this application? This cannot be undone.',
       searchPlaceholder: 'Search company, position...',

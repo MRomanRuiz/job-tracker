@@ -2,7 +2,16 @@ import { getRecordFields } from '../../lib/recordFields';
 import { LABELS } from '../lib/labels';
 import RecordTimeline from './RecordTimeline';
 
-function RecordDetails({ item, kind, isStale = false, onClose, onSuspend, onEdit, onDelete }) {
+function RecordDetails({
+  item,
+  kind,
+  isStale = false,
+  onClose,
+  onSuspend,
+  onEdit,
+  onDelete,
+  onScheduleInterview,
+}) {
   if (!item) {
     return null;
   }
@@ -36,6 +45,9 @@ function RecordDetails({ item, kind, isStale = false, onClose, onSuspend, onEdit
       onClose();
     }
   };
+
+  const canScheduleInterview =
+    kind === 'application' && item.status === 'interview' && !item.scheduledAt;
 
   return (
     <div
@@ -116,6 +128,16 @@ function RecordDetails({ item, kind, isStale = false, onClose, onSuspend, onEdit
           </button>
 
           <div className="record-details-actions-right">
+            {canScheduleInterview && (
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => onScheduleInterview?.(item)}
+              >
+                {LABELS.applications.addInterviewDate}
+              </button>
+            )}
+
             <button type="button" className="primary-button" onClick={() => onEdit?.(item)}>
               {LABELS.common.edit}
             </button>

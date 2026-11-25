@@ -19,12 +19,9 @@ function App() {
 
   const errors = [
     ...new Set(
-      [
-        applications.error,
-        contacts.error,
-        applications.alertsError,
-        contacts.alertsError,
-      ].filter(Boolean),
+      [applications.error, contacts.error, applications.alertsError, contacts.alertsError].filter(
+        Boolean,
+      ),
     ),
   ];
 

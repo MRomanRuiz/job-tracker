@@ -4,6 +4,8 @@ import { LABELS } from '../lib/labels';
 import sharedConstants from '../../../../shared/constants.json';
 
 const DATE_CONVERSION = 60000;
+const DATE_FIELD_TYPE = 'date';
+const DATETIME_LOCAL_FIELD_TYPE = 'datetime-local';
 
 const toDateTimeLocalInput = value => {
   if (!value) {
@@ -21,14 +23,17 @@ const toDateTimeLocalInput = value => {
   return localDate.toISOString().slice(0, 16);
 };
 
-const getInputValue = (field, value) =>
-  field.type === 'date'
-    ? value
-      ? String(value).slice(0, 10)
-      : ''
-    : field.type === 'datetime-local'
-      ? toDateTimeLocalInput(value)
-      : value;
+const getInputValue = (field, value) => {
+  if (field.type === DATE_FIELD_TYPE) {
+    return value ? String(value).slice(0, 10) : '';
+  }
+
+  if (field.type === DATETIME_LOCAL_FIELD_TYPE) {
+    return toDateTimeLocalInput(value);
+  }
+
+  return value;
+};
 
 const getInitialValues = (item, kind) => {
   if (!item) {
@@ -43,7 +48,7 @@ const getInitialValues = (item, kind) => {
   };
 
   for (const field of getRecordFields(kind)) {
-    if (field.type === 'date' || field.type === 'datetime-local') {
+    if (field.type === DATE_FIELD_TYPE || field.type === DATETIME_LOCAL_FIELD_TYPE) {
       values[field.name] = getInputValue(field, item[field.name]);
     }
   }
@@ -52,11 +57,11 @@ const getInitialValues = (item, kind) => {
 };
 
 const getChangedValue = (field, value) => {
-  if (field.type === 'date') {
+  if (field.type === DATE_FIELD_TYPE) {
     return value ? new Date(`${value}T00:00:00.000Z`).toISOString() : '';
   }
 
-  if (field.type === 'datetime-local') {
+  if (field.type === DATETIME_LOCAL_FIELD_TYPE) {
     return value ? new Date(value).toISOString() : null;
   }
 

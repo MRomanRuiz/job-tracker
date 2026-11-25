@@ -62,6 +62,7 @@ function Applications({ collection, showForm, onCloseForm }) {
     remove,
     scheduledItems,
   } = collection;
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
   const [typeFilter, setTypeFilter] = useState('');
@@ -70,6 +71,7 @@ function Applications({ collection, showForm, onCloseForm }) {
   const [editingApplication, setEditingApplication] = useState(null);
   const [deletingApplication, setDeletingApplication] = useState(null);
   const [interviewApplication, setInterviewApplication] = useState(null);
+  const [canPostponeInterview, setCanPostponeInterview] = useState(false);
 
   const filteredApplications = useMemo(() => {
     const searchText = search.trim().toLowerCase();
@@ -139,6 +141,7 @@ function Applications({ collection, showForm, onCloseForm }) {
 
       if (application) {
         setInterviewApplication(application);
+        setCanPostponeInterview(true);
       }
 
       return;
@@ -158,6 +161,22 @@ function Applications({ collection, showForm, onCloseForm }) {
     }
 
     setInterviewApplication(null);
+    setCanPostponeInterview(false);
+    return true;
+  };
+
+  const handlePostponeInterview = async () => {
+    const updated = await update(interviewApplication.id, {
+      status: 'interview',
+      scheduledAt: null,
+    });
+
+    if (!updated) {
+      return false;
+    }
+
+    setInterviewApplication(null);
+    setCanPostponeInterview(false);
     return true;
   };
 
@@ -226,6 +245,7 @@ function Applications({ collection, showForm, onCloseForm }) {
 
         <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
       </main>
+
       {noteApplication && (
         <NoteForm
           item={noteApplication}
@@ -253,6 +273,11 @@ function Applications({ collection, showForm, onCloseForm }) {
             setNoteApplication(item);
           }}
           onDelete={handleDelete}
+          onScheduleInterview={item => {
+            setSelectedApplication(null);
+            setInterviewApplication(item);
+            setCanPostponeInterview(false);
+          }}
         />
       )}
 
@@ -282,7 +307,11 @@ function Applications({ collection, showForm, onCloseForm }) {
           item={interviewApplication}
           itemType="application"
           onSave={handleScheduleInterview}
-          onCancel={() => setInterviewApplication(null)}
+          onPostpone={canPostponeInterview ? handlePostponeInterview : undefined}
+          onCancel={() => {
+            setInterviewApplication(null);
+            setCanPostponeInterview(false);
+          }}
         />
       )}
     </>

@@ -21,9 +21,7 @@ describe('DeleteConfirm', () => {
     expect(dialog.getAttribute('aria-describedby')).toBe('delete-confirm-message');
     expect(screen.getByText('No se puede deshacer.')).toBeTruthy();
 
-    fireEvent.click(
-      screen.getByRole('button', { name: LABELS.common.deletePermanently }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.deletePermanently }));
     expect(onConfirm).toHaveBeenCalledOnce();
     expect(onCancel).not.toHaveBeenCalled();
   });

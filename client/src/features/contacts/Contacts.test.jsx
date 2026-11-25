@@ -264,9 +264,7 @@ describe('Contacts', () => {
       scheduledItems: [{ ...contacts[0], scheduledAt: '2026-11-25T10:00:00.000Z' }],
     });
 
-    expect(
-      screen.getByText(LABELS.alerts.scheduledMessage.replace('{count}', '1')),
-    ).toBeTruthy();
+    expect(screen.getByText(LABELS.alerts.scheduledMessage.replace('{count}', '1'))).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.review }));
     expect(screen.getByText('2026-11-25').textContent).toBe('2026-11-25');
@@ -320,13 +318,10 @@ describe('Contacts', () => {
     fireEvent.click(screen.getByRole('button', { name: LABELS.common.save }));
 
     await waitFor(() => {
-      expect(collection.update).toHaveBeenCalledWith(
-        1,
-        {
-          status: 'follow_up',
-          scheduledAt: '2099-01-01T00:00:00.000Z',
-        },
-      );
+      expect(collection.update).toHaveBeenCalledWith(1, {
+        status: 'follow_up',
+        scheduledAt: '2099-01-01T00:00:00.000Z',
+      });
       expect(screen.queryByRole('dialog')).toBeNull();
     });
   });
