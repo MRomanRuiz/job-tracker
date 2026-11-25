@@ -41,6 +41,23 @@ export const sortByDateDesc = (items, dateField) =>
 export const formatDate = value =>
   typeof value === 'string' && value ? value.slice(0, 10) : LABELS.common.unknownDate;
 
+export const formatDateTime = value => {
+  if (typeof value !== 'string' || !value) {
+    return LABELS.common.unknownDate;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return LABELS.common.unknownDate;
+  }
+
+  return new Intl.DateTimeFormat(LABELS.locale, {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(date);
+};
+
 export const replaceById = (items, updatedItem) =>
   items.map(item => (item.id === updatedItem.id ? updatedItem : item));
 

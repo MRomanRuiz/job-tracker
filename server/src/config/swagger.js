@@ -198,7 +198,7 @@ const spec = {
 
   info: {
     title: 'Job Tracker API',
-    version: '2.0.2',
+    version: '2.0.3',
     description: 'REST API for managing job applications and professional contacts.',
   },
 
@@ -248,24 +248,6 @@ const spec = {
           400: errorResponse,
           403: errorResponse,
           413: errorResponse,
-          500: errorResponse,
-        },
-      },
-    },
-
-    [`${applicationPath}/old`]: {
-      get: {
-        tags: ['Applications'],
-        summary: 'List old applications',
-        description:
-          'Returns pending or interview applications with no relevant changes in more than 30 days; ' +
-          'records without history use their application date.',
-        operationId: 'listOldApplications',
-        responses: {
-          200: jsonResponse('Old applications retrieved', {
-            $ref: '#/components/schemas/ApplicationList',
-          }),
-          403: errorResponse,
           500: errorResponse,
         },
       },
@@ -366,23 +348,6 @@ const spec = {
           400: errorResponse,
           403: errorResponse,
           413: errorResponse,
-          500: errorResponse,
-        },
-      },
-    },
-
-    [`${contactPath}/old`]: {
-      get: {
-        tags: ['Contacts'],
-        summary: 'List old contacts',
-        description:
-          'Returns contacts with no relevant changes in more than 30 days; records without status history use their contact date.',
-        operationId: 'listOldContacts',
-        responses: {
-          200: jsonResponse('Old contacts retrieved', {
-            $ref: '#/components/schemas/ContactList',
-          }),
-          403: errorResponse,
           500: errorResponse,
         },
       },

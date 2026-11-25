@@ -1,19 +1,34 @@
 import { useState } from 'react';
 import { LABELS } from '../lib/labels';
 
-const DATE_CONVERION = 60000;
+const DATE_CONVERSION = 60000;
 
-function ScheduleFollowUpModal({ onSave, onCancel }) {
+function ScheduleFollowUpModal({ item, itemType, dateOnly = false, onSave, onCancel }) {
   const [scheduledAt, setScheduledAt] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const minDateTime = (() => {
+  const { minDate, minDateTime } = (() => {
     const now = new Date();
-    const localDate = new Date(now.getTime() - now.getTimezoneOffset() * DATE_CONVERION);
+    const localDate = new Date(now.getTime() - now.getTimezoneOffset() * DATE_CONVERSION);
+    const dateTimeValue = localDate.toISOString().slice(0, 16);
 
-    return localDate.toISOString().slice(0, 16);
+    return {
+      minDate: dateTimeValue.slice(0, 10),
+      minDateTime: dateTimeValue,
+    };
   })();
+
+  const isContact = itemType === 'contact';
+  const title = isContact ? LABELS.followUp.title : LABELS.followUp.interviewTitle;
+  const description = isContact
+    ? LABELS.followUp.forContact.replace('{contact}', item.contact)
+    : LABELS.followUp.forApplication
+        .replace('{position}', item.position)
+        .replace('{company}', item.company);
+  const fieldLabel = dateOnly
+    ? LABELS.fields.scheduledAt
+    : LABELS.applications.interviewDateTime;
 
   const handleSubmit = async event => {
     event.preventDefault();
@@ -22,8 +37,12 @@ function ScheduleFollowUpModal({ onSave, onCancel }) {
       return;
     }
 
-    if (new Date(scheduledAt) < new Date()) {
-      setError('Date must be in the future.');
+    const isInPast = dateOnly
+      ? scheduledAt < minDate
+      : new Date(scheduledAt).getTime() <= Date.now();
+
+    if (isInPast) {
+      setError(dateOnly ? LABELS.followUp.dateCannotBePast : LABELS.followUp.dateMustBeFuture);
       return;
     }
 
@@ -33,11 +52,11 @@ function ScheduleFollowUpModal({ onSave, onCancel }) {
     try {
       const result = await onSave(scheduledAt);
 
-      if (!result) {
-        setError('Could not save the follow-up date.');
+      if (result === false) {
+        setError(LABELS.followUp.saveError);
       }
     } catch (err) {
-      setError(err?.message || 'Error saving follow-up date.');
+      setError(err?.message || LABELS.followUp.genericError);
     } finally {
       setIsSaving(false);
     }
@@ -59,14 +78,17 @@ function ScheduleFollowUpModal({ onSave, onCancel }) {
         aria-labelledby="follow-up-title"
       >
         <header className="record-details-header">
-          <h2 id="follow-up-title">Programar seguimiento</h2>
+          <div>
+            <h2 id="follow-up-title">{title}</h2>
+            <p>{description}</p>
+          </div>
 
           <button
             type="button"
             className="secondary-button"
             onClick={onCancel}
             disabled={isSaving}
-            aria-label="Cerrar"
+            aria-label={LABELS.common.close}
           >
             ✕
           </button>
@@ -75,15 +97,15 @@ function ScheduleFollowUpModal({ onSave, onCancel }) {
         <form onSubmit={handleSubmit}>
           <div className="record-details-field">
             <label className="record-details-label" htmlFor="follow-up-date">
-              Fecha y hora del seguimiento
+              {fieldLabel}
             </label>
 
             <input
               id="follow-up-date"
               className="record-details-input"
-              type="datetime-local"
+              type={dateOnly ? 'date' : 'datetime-local'}
               value={scheduledAt}
-              min={minDateTime}
+              min={dateOnly ? minDate : minDateTime}
               onChange={event => {
                 setScheduledAt(event.target.value);
                 setError('');
@@ -101,7 +123,7 @@ function ScheduleFollowUpModal({ onSave, onCancel }) {
 
           <footer className="record-details-actions">
             <button type="submit" className="primary-button" disabled={isSaving || !scheduledAt}>
-              {isSaving ? 'Guardando...' : 'Guardar'}
+              {isSaving ? LABELS.common.saving : LABELS.common.save}
             </button>
 
             <button

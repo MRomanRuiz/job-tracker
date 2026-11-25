@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { LABELS } from '../lib/labels';
 
-function StaleItemsAlert({
+function AttentionItemsAlert({
   items,
   singularLabel,
   pluralLabel,
@@ -53,10 +53,7 @@ function StaleItemsAlert({
 
 function ScheduledItemsAlert({ items, itemType, renderCells, onOpen }) {
   const [isOpen, setIsOpen] = useState(false);
-  const message = (LABELS.alerts?.scheduledMessage ?? '{count} seguimientos programados.').replace(
-    '{count}',
-    items.length,
-  );
+  const message = LABELS.alerts.scheduledMessage.replace('{count}', items.length);
 
   return (
     <>
@@ -106,7 +103,7 @@ function ItemsAlert({
   return (
     <>
       {items.length > 0 && (
-        <StaleItemsAlert
+        <AttentionItemsAlert
           items={items}
           singularLabel={singularLabel}
           pluralLabel={pluralLabel}

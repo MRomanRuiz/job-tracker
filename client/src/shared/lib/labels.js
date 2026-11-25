@@ -84,6 +84,7 @@ const translations = {
       pendingPlural: 'candidaturas pendientes',
       newTitle: 'Nueva candidatura',
       save: 'Guardar candidatura',
+      interviewDateTime: 'Fecha y hora de la entrevista',
       deleteTitle: 'Eliminar candidatura',
       deleteMessage:
         '¿Quieres eliminar definitivamente esta candidatura? Esta acción no se puede deshacer.',
@@ -143,11 +144,22 @@ const translations = {
     },
     alerts: {
       staleMessage: 'Hay {count} {label} de más de 30 días.',
+      scheduledMessage: 'Hay {count} seguimientos programados.',
       review: 'Revisar',
       hide: 'Ocultar',
       viewDetails: 'Ver detalle',
       suspend: 'Suspender',
       staleRecord: 'Registro pendiente de más de 30 días',
+    },
+    followUp: {
+      title: 'Programar seguimiento',
+      interviewTitle: 'Programar entrevista',
+      forContact: 'Para: {contact}',
+      forApplication: 'Entrevista para {position} en {company}',
+      dateCannotBePast: 'La fecha no puede ser anterior a hoy.',
+      dateMustBeFuture: 'La fecha debe estar en el futuro.',
+      saveError: 'No se pudo guardar la fecha de seguimiento.',
+      genericError: 'Se produjo un error al guardar la fecha de seguimiento.',
     },
     noteForm: {
       viewAndEdit: 'Ver y editar nota',
@@ -266,6 +278,7 @@ const translations = {
       pendingPlural: 'pending applications',
       newTitle: 'New application',
       save: 'Save application',
+      interviewDateTime: 'Interview date and time',
       deleteTitle: 'Delete application',
       deleteMessage:
         'Are you sure you want to permanently delete this application? This cannot be undone.',
@@ -325,11 +338,22 @@ const translations = {
     },
     alerts: {
       staleMessage: '{count} {label} older than 30 days.',
+      scheduledMessage: '{count} scheduled follow-ups.',
       review: 'Review',
       hide: 'Hide',
       viewDetails: 'View details',
       suspend: 'Suspend',
       staleRecord: 'Record pending for more than 30 days',
+    },
+    followUp: {
+      title: 'Schedule follow-up',
+      interviewTitle: 'Schedule interview',
+      forContact: 'For: {contact}',
+      forApplication: 'Interview for {position} at {company}',
+      dateCannotBePast: 'The date cannot be before today.',
+      dateMustBeFuture: 'The date must be in the future.',
+      saveError: 'Could not save the follow-up date.',
+      genericError: 'An error occurred while saving the follow-up date.',
     },
     noteForm: {
       viewAndEdit: 'View and edit note',

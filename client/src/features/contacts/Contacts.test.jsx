@@ -28,10 +28,16 @@ const contacts = [
   },
 ];
 
-const renderContacts = ({ items = contacts, staleItems = [], ...props } = {}) => {
+const renderContacts = ({
+  items = contacts,
+  staleItems = [],
+  scheduledItems = [],
+  ...props
+} = {}) => {
   const collection = {
     items,
     staleItems,
+    scheduledItems,
     create: vi.fn().mockResolvedValue(true),
     update: vi.fn().mockResolvedValue(true),
     suspend: vi.fn(),
@@ -253,6 +259,19 @@ describe('Contacts', () => {
     ).toBeTruthy();
   });
 
+  it('shows the localized scheduled-follow-up alert message', () => {
+    renderContacts({
+      scheduledItems: [{ ...contacts[0], scheduledAt: '2026-11-25T10:00:00.000Z' }],
+    });
+
+    expect(
+      screen.getByText(LABELS.alerts.scheduledMessage.replace('{count}', '1')),
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.review }));
+    expect(screen.getByText('2026-11-25').textContent).toBe('2026-11-25');
+  });
+
   it('updates a contact status from the table', () => {
     const { collection } = renderContacts();
 
@@ -275,6 +294,59 @@ describe('Contacts', () => {
     expect(collection.update).toHaveBeenCalledWith(1, {
       status: 'in_conversation',
     });
+  });
+
+  it('shows which contact the follow-up is being scheduled for', () => {
+    renderContacts();
+
+    fireEvent.change(screen.getByDisplayValue(LABELS.statuses.contact.pending), {
+      target: { value: 'follow_up' },
+    });
+
+    expect(
+      screen.getByText(LABELS.followUp.forContact.replace('{contact}', contacts[0].contact)),
+    ).toBeTruthy();
+  });
+
+  it('saves the scheduled follow-up and closes the modal', async () => {
+    const { collection } = renderContacts();
+
+    fireEvent.change(screen.getByDisplayValue(LABELS.statuses.contact.pending), {
+      target: { value: 'follow_up' },
+    });
+    fireEvent.change(screen.getByLabelText(LABELS.fields.scheduledAt), {
+      target: { value: '2099-01-01' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.save }));
+
+    await waitFor(() => {
+      expect(collection.update).toHaveBeenCalledWith(
+        1,
+        {
+          status: 'follow_up',
+          scheduledAt: '2099-01-01T00:00:00.000Z',
+        },
+      );
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+  });
+
+  it('keeps the follow-up modal open and shows an error when saving fails', async () => {
+    const { collection } = renderContacts();
+    collection.update.mockResolvedValue(false);
+
+    fireEvent.change(screen.getByDisplayValue(LABELS.statuses.contact.pending), {
+      target: { value: 'follow_up' },
+    });
+    fireEvent.change(screen.getByLabelText(LABELS.fields.scheduledAt), {
+      target: { value: '2099-01-01' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.save }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert').textContent).toBe(LABELS.followUp.saveError);
+    });
+    expect(screen.getByRole('dialog')).toBeTruthy();
   });
 
   it('shows the new contact fields in the table and searches by email', () => {

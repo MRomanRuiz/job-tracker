@@ -1,11 +1,5 @@
 const { HTTP_STATUS, HttpError } = require('../domain/httpError');
-const {
-  isStaleRecord,
-  parseContact,
-  parseContactChanges,
-  suspendIfStale,
-  isScheduledRecord,
-} = require('../domain/records');
+const { parseContact, parseContactChanges, suspendIfStale } = require('../domain/records');
 const handle = require('./handle');
 const { CONTACT_TRANSITIONS, validateContactTransition } = require('../domain/transitions');
 const { RECORD_STATUSES } = require('../../../shared/constants.json');

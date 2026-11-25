@@ -24,8 +24,6 @@ const createApp = ({ storage: injectedStorage, allowedOrigins = DEFAULT_ALLOWED_
   addSecurityMiddleware(app, origins);
   addApplicationRoutes(app, storage);
   addContactRoutes(app, storage);
-  addApplicationRoutes(app, storage);
-  addContactRoutes(app, storage);
   addAlertsRoutes(app, storage);
 
   app.get('/health', (_req, res) => {

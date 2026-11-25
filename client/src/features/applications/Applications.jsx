@@ -5,6 +5,7 @@ import usePagination from '../../shared/hooks/usePagination';
 import {
   countByStatus,
   formatDate,
+  formatDateTime,
   matchesStatus,
   matchesText,
   sortByDateDesc,
@@ -20,6 +21,7 @@ import RecordDetails from '../../shared/components/RecordDetails';
 import RecordEditForm from '../../shared/components/RecordEditForm';
 import { getRecordCreateFields } from '../../lib/recordFields';
 import DeleteConfirm from '../../shared/components/DeleteConfirm';
+import ScheduleFollowUpModal from '../../shared/components/ScheduleFollowUpModal';
 
 const APPLICATION_CREATE_FIELDS = getRecordCreateFields('application');
 const REQUIRED_FORM_FIELDS = APPLICATION_CREATE_FIELDS.filter(field => field.required);
@@ -43,7 +45,9 @@ const renderStaleApplication = (application, alertType) => (
     <span>{LABELS.applicationTypes[application.type] || application.type}</span>
 
     <span className="stale-date">
-      {formatDate(alertType === 'scheduled' ? application.scheduledAt : application.appliedAt)}
+      {alertType === 'scheduled'
+        ? formatDateTime(application.scheduledAt)
+        : formatDate(application.appliedAt)}
     </span>
   </>
 );
@@ -65,6 +69,7 @@ function Applications({ collection, showForm, onCloseForm }) {
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [editingApplication, setEditingApplication] = useState(null);
   const [deletingApplication, setDeletingApplication] = useState(null);
+  const [interviewApplication, setInterviewApplication] = useState(null);
 
   const filteredApplications = useMemo(() => {
     const searchText = search.trim().toLowerCase();
@@ -128,6 +133,34 @@ function Applications({ collection, showForm, onCloseForm }) {
     setDeletingApplication(id);
   };
 
+  const handleStatusChange = (id, status) => {
+    if (status === 'interview') {
+      const application = applications.find(item => item.id === id);
+
+      if (application) {
+        setInterviewApplication(application);
+      }
+
+      return;
+    }
+
+    update(id, { status });
+  };
+
+  const handleScheduleInterview = async scheduledAt => {
+    const updated = await update(interviewApplication.id, {
+      status: 'interview',
+      scheduledAt: new Date(scheduledAt).toISOString(),
+    });
+
+    if (!updated) {
+      return false;
+    }
+
+    setInterviewApplication(null);
+    return true;
+  };
+
   const confirmDelete = async () => {
     if (await remove(deletingApplication)) {
       setSelectedApplication(null);
@@ -185,7 +218,7 @@ function Applications({ collection, showForm, onCloseForm }) {
         <section className="table-container">
           <ApplicationsTable
             applications={paginatedApplications}
-            onStatusChange={(id, status) => update(id, { status })}
+            onStatusChange={handleStatusChange}
             onOpenNote={setNoteApplication}
             onOpenDetail={setSelectedApplication}
           />
@@ -241,6 +274,15 @@ function Applications({ collection, showForm, onCloseForm }) {
           message={LABELS.applications.deleteMessage}
           onConfirm={confirmDelete}
           onCancel={() => setDeletingApplication(null)}
+        />
+      )}
+
+      {interviewApplication && (
+        <ScheduleFollowUpModal
+          item={interviewApplication}
+          itemType="application"
+          onSave={handleScheduleInterview}
+          onCancel={() => setInterviewApplication(null)}
         />
       )}
     </>

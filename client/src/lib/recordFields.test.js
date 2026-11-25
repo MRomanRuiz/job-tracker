@@ -34,4 +34,28 @@ describe('recordFields', () => {
     expect(status.format('in_conversation')).toBe(LABELS.statuses.contact.in_conversation);
     expect(status.format('legacy-status')).toBe('legacy-status');
   });
+
+  it('keeps scheduled contact dates editable and formats only the date', () => {
+    const scheduledAt = '2026-03-04T12:30:00.000Z';
+    const field = CONTACT_FIELDS.find(item => item.name === 'scheduledAt');
+
+    expect(field.editable).toBe(true);
+    expect(field.type).toBe('date');
+    expect(field.format(scheduledAt)).toBe('2026-03-04');
+  });
+
+  it('keeps scheduled application date-times editable and formats the time', () => {
+    const scheduledAt = '2026-03-04T12:30:00.000Z';
+    const field = APPLICATION_FIELDS.find(item => item.name === 'scheduledAt');
+
+    expect(field.editable).toBe(true);
+    expect(field.type).toBe('datetime-local');
+    expect(field.format(scheduledAt)).toBe(
+      new Intl.DateTimeFormat(LABELS.locale, {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      }).format(new Date(scheduledAt)),
+    );
+    expect(field.format(scheduledAt)).not.toBe(scheduledAt.slice(0, 10));
+  });
 });

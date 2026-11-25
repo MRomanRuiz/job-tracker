@@ -21,6 +21,7 @@ const renderApp = () => {
       ],
     },
     'GET /api/applications/old': { applications: [] },
+    'GET /api/alerts': { alerts: [] },
     'GET /api/contacts': {
       contacts: [
         {
@@ -81,6 +82,7 @@ describe('App', () => {
         body: { message: 'No se pudieron cargar las candidaturas' },
       },
       'GET /api/applications/old': { applications: [] },
+      'GET /api/alerts': { alerts: [] },
       'GET /api/contacts': { contacts: [] },
       'GET /api/contacts/old': { contacts: [] },
     });
@@ -94,6 +96,7 @@ describe('App', () => {
     mockApi({
       'GET /api/applications': { httpStatus: 502, body: {} },
       'GET /api/applications/old': { applications: [] },
+      'GET /api/alerts': { alerts: [] },
       'GET /api/contacts': { httpStatus: 502, body: {} },
       'GET /api/contacts/old': { contacts: [] },
     });
@@ -103,5 +106,22 @@ describe('App', () => {
     const alerts = await screen.findAllByRole('alert');
     expect(alerts).toHaveLength(1);
     expect(alerts[0].textContent).toBe(LABELS.common.badGatewayError);
+  });
+
+  it('shows the server message when alerts fail to load', async () => {
+    mockApi({
+      'GET /api/applications': { applications: [] },
+      'GET /api/applications/old': { applications: [] },
+      'GET /api/contacts': { contacts: [] },
+      'GET /api/contacts/old': { contacts: [] },
+      'GET /api/alerts': {
+        httpStatus: 500,
+        body: { message: 'No se pudieron cargar las alertas' },
+      },
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText('No se pudieron cargar las alertas')).toBeTruthy();
   });
 });

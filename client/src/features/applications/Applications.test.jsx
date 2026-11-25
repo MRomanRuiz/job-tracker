@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { describe, expect, it, vi } from 'vitest';
 import Applications from './Applications';
 import { LABELS } from '../../shared/lib/labels';
+import { formatDateTime } from '../../shared/lib/utils';
 
 const makeApplication = (id, overrides = {}) => ({
   id,
@@ -15,10 +16,16 @@ const makeApplication = (id, overrides = {}) => ({
   ...overrides,
 });
 
-const renderApplications = ({ items = [], staleItems = [], ...props } = {}) => {
+const renderApplications = ({
+  items = [],
+  staleItems = [],
+  scheduledItems = [],
+  ...props
+} = {}) => {
   const collection = {
     items,
     staleItems,
+    scheduledItems,
     create: vi.fn().mockResolvedValue(true),
     update: vi.fn().mockResolvedValue(true),
     suspend: vi.fn(),
@@ -316,6 +323,17 @@ describe('Applications', () => {
     expect(screen.getAllByText('legacy-type')).toHaveLength(2);
   });
 
+  it('shows the scheduled interview date and time in the alert panel', () => {
+    const scheduledAt = '2026-11-25T10:30:00.000Z';
+
+    renderApplications({
+      scheduledItems: [makeApplication(1, { status: 'interview', scheduledAt })],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.review }));
+    expect(screen.getByText(formatDateTime(scheduledAt))).toBeTruthy();
+  });
+
   it('disables duration months when the contract is indefinite', () => {
     renderApplications({ showForm: true });
 
@@ -338,15 +356,30 @@ describe('Applications', () => {
     expect(screen.getByPlaceholderText(LABELS.fields.conditionalDuration).disabled).toBe(false);
   });
 
-  it('updates the status from the table', () => {
+  it('asks for an interview time when changing status from the table', async () => {
     const { collection } = renderApplications({ items: [makeApplication(7)] });
 
     fireEvent.change(screen.getByDisplayValue(LABELS.statuses.application.pending), {
       target: { value: 'interview' },
     });
 
-    expect(collection.update).toHaveBeenCalledWith(7, { status: 'interview' });
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(collection.update).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('heading', { name: LABELS.followUp.interviewTitle }),
+    ).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText(LABELS.applications.interviewDateTime), {
+      target: { value: '2099-01-01T10:30' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.save }));
+
+    await waitFor(() => {
+      expect(collection.update).toHaveBeenCalledWith(7, {
+        status: 'interview',
+        scheduledAt: new Date('2099-01-01T10:30').toISOString(),
+      });
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
   });
 
   it('opens full application details from the table and closes with Escape', () => {

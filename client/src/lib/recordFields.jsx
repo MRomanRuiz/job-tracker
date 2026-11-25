@@ -1,5 +1,5 @@
 import { LABELS } from '../shared/lib/labels';
-import { formatDate } from '../shared/lib/utils';
+import { formatDate, formatDateTime } from '../shared/lib/utils';
 
 export const APPLICATION_FIELDS = [
   {
@@ -40,6 +40,14 @@ export const APPLICATION_FIELDS = [
     format: formatDate,
     create: false,
     editable: false,
+  },
+  {
+    name: 'scheduledAt',
+    label: LABELS.applications.interviewDateTime,
+    type: 'datetime-local',
+    format: formatDateTime,
+    create: false,
+    editable: true,
   },
   {
     name: 'durationType',
@@ -131,10 +139,10 @@ export const CONTACT_FIELDS = [
   {
     name: 'scheduledAt',
     label: LABELS.fields.scheduledAt,
-    type: 'datetime-local',
+    type: 'date',
     format: formatDate,
     create: false,
-    editable: false,
+    editable: true,
   },
   {
     name: 'status',

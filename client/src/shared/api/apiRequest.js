@@ -3,8 +3,9 @@ import { LABELS } from '../lib/labels';
 
 const API_URL = '/api';
 const { HTTP_STATUS } = sharedConstants;
+const pendingRequests = new Map();
 
-export const apiRequest = async (path, { method = 'GET', body } = {}) => {
+const performApiRequest = async (path, { method = 'GET', body } = {}) => {
   const options = { method };
 
   if (body !== undefined) {
@@ -35,4 +36,29 @@ export const apiRequest = async (path, { method = 'GET', body } = {}) => {
   }
 
   return data;
+};
+
+export const apiRequest = (path, options = {}) => {
+  const { deduplicate = false, ...requestOptions } = options;
+  const method = requestOptions.method ?? 'GET';
+
+  if (!deduplicate || path !== '/alerts' || method !== 'GET') {
+    return performApiRequest(path, requestOptions);
+  }
+
+  const requestKey = `${method} ${path}`;
+  const pendingRequest = pendingRequests.get(requestKey);
+
+  if (pendingRequest) {
+    return pendingRequest;
+  }
+
+  const request = performApiRequest(path, requestOptions);
+  pendingRequests.set(requestKey, request);
+  request.then(
+    () => pendingRequests.delete(requestKey),
+    () => pendingRequests.delete(requestKey),
+  );
+
+  return request;
 };

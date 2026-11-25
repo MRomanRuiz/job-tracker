@@ -157,14 +157,17 @@ function Contacts({ collection, showForm, onCloseForm }) {
   };
 
   const handleSaveFollowUp = async date => {
-    if (
-      await update(followUpContact.id, {
-        status: 'follow_up',
-        scheduledAt: new Date(date).toISOString(),
-      })
-    ) {
-      setFollowUpContact(null);
+    const updated = await update(followUpContact.id, {
+      status: 'follow_up',
+      scheduledAt: new Date(date).toISOString(),
+    });
+
+    if (!updated) {
+      return false;
     }
+
+    setFollowUpContact(null);
+    return true;
   };
 
   return (
@@ -273,6 +276,9 @@ function Contacts({ collection, showForm, onCloseForm }) {
 
       {followUpContact && (
         <ScheduleFollowUpModal
+          item={followUpContact}
+          itemType="contact"
+          dateOnly
           onSave={handleSaveFollowUp}
           onCancel={() => setFollowUpContact(null)}
         />

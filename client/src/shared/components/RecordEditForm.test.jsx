@@ -102,6 +102,76 @@ describe('RecordEditForm', () => {
     expect(visibleOptions).toEqual(['in_conversation', 'follow_up', 'rejected']);
   });
 
+  it('initializes and saves an editable contact follow-up date at midnight', async () => {
+    const scheduledContact = {
+      ...contact,
+      status: 'follow_up',
+      scheduledAt: '2026-03-04T12:30:00.000Z',
+    };
+    const { onSave } = renderEditForm({
+      item: scheduledContact,
+      kind: 'contact',
+    });
+    const input = screen.getByLabelText(LABELS.fields.scheduledAt);
+
+    expect(input.type).toBe('date');
+    expect(input.value).toBe('2026-03-04');
+    expect(input.required).toBe(true);
+
+    fireEvent.change(input, { target: { value: '2026-03-05' } });
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.saveChanges }));
+
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(2, {
+        scheduledAt: '2026-03-05T00:00:00.000Z',
+      }),
+    );
+  });
+
+  it('initializes and saves an editable application interview date and time', async () => {
+    const scheduledApplication = {
+      ...application,
+      status: 'interview',
+      scheduledAt: '2026-03-04T12:30:00.000Z',
+    };
+    const { onSave } = renderEditForm({ item: scheduledApplication });
+    const input = screen.getByLabelText(LABELS.applications.interviewDateTime);
+    const date = new Date(scheduledApplication.scheduledAt);
+    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+
+    expect(input.type).toBe('datetime-local');
+    expect(input.value).toBe(localDate.toISOString().slice(0, 16));
+    expect(input.required).toBe(true);
+
+    fireEvent.change(input, { target: { value: '2026-03-05T14:45' } });
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.saveChanges }));
+
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(1, {
+        scheduledAt: new Date('2026-03-05T14:45').toISOString(),
+      }),
+    );
+  });
+
+  it('does not resubmit an unchanged scheduled date when editing another contact field', async () => {
+    const scheduledContact = {
+      ...contact,
+      status: 'follow_up',
+      scheduledAt: '2026-03-04T12:30:45.000Z',
+    };
+    const { onSave } = renderEditForm({
+      item: scheduledContact,
+      kind: 'contact',
+    });
+
+    fireEvent.change(screen.getByLabelText(LABELS.fields.notes), {
+      target: { value: 'Call tomorrow' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.saveChanges }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(2, { notes: 'Call tomorrow' }));
+  });
+
   it('initializes nullable contact fields to empty values', () => {
     renderEditForm({
       item: { id: 3, contactedAt: '', durationMonths: null, durationType: null, notes: null },

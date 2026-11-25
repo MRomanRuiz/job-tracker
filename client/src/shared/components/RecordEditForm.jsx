@@ -3,19 +3,61 @@ import { getRecordFields } from '../../lib/recordFields';
 import { LABELS } from '../lib/labels';
 import sharedConstants from '../../../../shared/constants.json';
 
-const getInitialValues = item =>
-  item
-    ? {
-        ...item,
-        durationMonths: item.durationMonths ?? '',
-        durationType: item.durationType ?? '',
-        notes: item.notes ?? '',
-      }
-    : {};
+const DATE_CONVERSION = 60000;
+
+const toDateTimeLocalInput = value => {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * DATE_CONVERSION);
+
+  return localDate.toISOString().slice(0, 16);
+};
+
+const getInputValue = (field, value) =>
+  field.type === 'date'
+    ? value
+      ? String(value).slice(0, 10)
+      : ''
+    : field.type === 'datetime-local'
+      ? toDateTimeLocalInput(value)
+      : value;
+
+const getInitialValues = (item, kind) => {
+  if (!item) {
+    return {};
+  }
+
+  const values = {
+    ...item,
+    durationMonths: item.durationMonths ?? '',
+    durationType: item.durationType ?? '',
+    notes: item.notes ?? '',
+  };
+
+  for (const field of getRecordFields(kind)) {
+    if (field.type === 'date' || field.type === 'datetime-local') {
+      values[field.name] = getInputValue(field, item[field.name]);
+    }
+  }
+
+  return values;
+};
 
 const getChangedValue = (field, value) => {
   if (field.type === 'date') {
     return value ? new Date(`${value}T00:00:00.000Z`).toISOString() : '';
+  }
+
+  if (field.type === 'datetime-local') {
+    return value ? new Date(value).toISOString() : null;
   }
 
   if (field.type === 'number') {
@@ -30,7 +72,7 @@ const getChanges = (fields, form, item) => {
 
   for (const field of fields) {
     const value = form[field.name] ?? '';
-    const original = item[field.name] ?? '';
+    const original = getInputValue(field, item[field.name] ?? '');
 
     if (String(value) !== String(original)) {
       changes[field.name] = getChangedValue(field, value);
@@ -97,6 +139,9 @@ function TextareaField({ field, value, isSaving, onChange }) {
 
 function InputField({ field, value, isSaving, form, onChange }) {
   const isDurationMonths = field.name === 'durationMonths';
+  const isRequired =
+    field.required ||
+    (field.name === 'scheduledAt' && ['follow_up', 'interview'].includes(form.status));
 
   return (
     <input
@@ -104,7 +149,7 @@ function InputField({ field, value, isSaving, form, onChange }) {
       className="record-details-input"
       type={field.type || 'text'}
       min={field.min}
-      required={field.required}
+      required={isRequired}
       disabled={isSaving || (isDurationMonths && form.durationType !== 'fixed')}
       value={value}
       onChange={event => onChange(field.name, event.target.value)}
@@ -154,7 +199,7 @@ function RecordField({ field, options, form, item, hasStatusTransitions, isSavin
 }
 
 function RecordEditForm({ item, kind, onSave, onClose }) {
-  const [form, setForm] = useState(() => getInitialValues(item));
+  const [form, setForm] = useState(() => getInitialValues(item, kind));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
 

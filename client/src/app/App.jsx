@@ -17,7 +17,16 @@ function App() {
     closeForm();
   };
 
-  const errors = [...new Set([applications.error, contacts.error].filter(Boolean))];
+  const errors = [
+    ...new Set(
+      [
+        applications.error,
+        contacts.error,
+        applications.alertsError,
+        contacts.alertsError,
+      ].filter(Boolean),
+    ),
+  ];
 
   return (
     <div className="app">

@@ -41,6 +41,43 @@ describe('useCollection', () => {
     });
   });
 
+  it('shares the initial alerts request across collections', async () => {
+    const application = { id: 2, company: 'Acme', status: 'pending' };
+    const applicationAlert = {
+      entity: 'application',
+      recordId: application.id,
+      type: 'stale',
+    };
+    let resolveAlerts;
+    const fetchMock = mockApi({
+      'GET /api/contacts': { contacts: [pending] },
+      'GET /api/applications': { applications: [application] },
+      'GET /api/alerts': () =>
+        new Promise(resolve => {
+          resolveAlerts = resolve;
+        }),
+    });
+
+    const { result } = renderHook(() => ({
+      contacts: useCollection('contacts'),
+      applications: useCollection('applications'),
+    }));
+
+    await waitFor(() => {
+      expect(staleRequests(fetchMock)).toBe(1);
+      expect(resolveAlerts).toBeDefined();
+    });
+
+    await act(async () => {
+      resolveAlerts({ alerts: [contactAlert, applicationAlert] });
+    });
+
+    await waitFor(() => {
+      expect(result.current.contacts.staleItems).toEqual([pending]);
+      expect(result.current.applications.staleItems).toEqual([application]);
+    });
+  });
+
   it('filters alerts by entity and stale type', async () => {
     const applicationAlert = {
       entity: 'application',

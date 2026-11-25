@@ -81,8 +81,26 @@ export default function useCollection(name) {
       })
       .catch(reportError);
 
-    void loadStale().catch(reportError);
-  }, [name, request, loadStale, reportError]);
+    latestStaleRequest.current += 1;
+    const staleRequestId = latestStaleRequest.current;
+
+    void apiRequest('/alerts', { deduplicate: true })
+      .then(data => {
+        if (data && staleRequestId === latestStaleRequest.current) {
+          setStaleAlerts(data.alerts ?? []);
+          setAlertsError('');
+        }
+      })
+      .catch(requestError => {
+        if (staleRequestId === latestStaleRequest.current) {
+          setAlertsError(
+            typeof requestError?.message === 'string' && requestError.message
+              ? requestError.message
+              : LABELS.common.requestError,
+          );
+        }
+      });
+  }, [name, request, reportError]);
 
   const replace = async (path, body, { throwErrors = false } = {}) => {
     let updated;
@@ -125,7 +143,7 @@ export default function useCollection(name) {
 
     setError('');
     setItems(current => [...current, created]);
-    void loadStale().catch(reportError);
+    void loadStale();
 
     return true;
   };
@@ -134,7 +152,7 @@ export default function useCollection(name) {
     const updated = await replace(`/${id}`, changes, { throwErrors: true });
 
     if (updated && changes.status !== undefined) {
-      void loadStale().catch(reportError);
+      void loadStale();
     }
 
     return updated;
@@ -142,7 +160,7 @@ export default function useCollection(name) {
 
   const suspend = async id => {
     if (await replace(`/${id}/suspend`)) {
-      void loadStale().catch(reportError);
+      void loadStale();
     }
   };
 
@@ -162,7 +180,7 @@ export default function useCollection(name) {
 
     setError('');
     setItems(current => current.filter(item => item.id !== Number(id)));
-    void loadStale().catch(reportError);
+    void loadStale();
 
     return true;
   };

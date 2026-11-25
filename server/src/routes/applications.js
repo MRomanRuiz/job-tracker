@@ -1,10 +1,5 @@
 const { HTTP_STATUS, HttpError } = require('../domain/httpError');
-const {
-  isStaleRecord,
-  parseApplication,
-  parseApplicationChanges,
-  suspendIfStale,
-} = require('../domain/records');
+const { parseApplication, parseApplicationChanges, suspendIfStale } = require('../domain/records');
 const { APPLICATION_TRANSITIONS, validateApplicationTransition } = require('../domain/transitions');
 const { RECORD_STATUSES } = require('../../../shared/constants.json');
 const handle = require('./handle');
