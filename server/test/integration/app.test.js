@@ -1024,25 +1024,35 @@ describe('contacts', () => {
   });
 
   it('rejects invalid contact status transitions', async () => {
+    const created = await request('POST', '/api/contacts', {
+      body: validContact({
+        status: 'in_conversation',
+      }),
+    });
+
+    assert.equal(created.status, 201);
+
+    const contactId = created.body.id;
+
     for (const status of ['pending', 'bogus']) {
-      const response = await request('PATCH', '/api/contacts/2', {
+      const response = await request('PATCH', `/api/contacts/${contactId}`, {
         body: { status },
       });
 
       assert.equal(response.status, status === 'bogus' ? 400 : 409);
       assert.equal(
         response.body.message,
-        status === 'bogus' ? 'Invalid contact data' : 'Invalid contact status transition',
+        status === 'bogus' ? 'Invalid contact status' : 'Invalid contact status transition',
       );
     }
 
-    const completed = await request('PATCH', '/api/contacts/2', {
+    const completed = await request('PATCH', `/api/contacts/${contactId}`, {
       body: { status: 'completed' },
     });
 
     assert.equal(completed.status, 200);
 
-    const fromCompleted = await request('PATCH', '/api/contacts/2', {
+    const fromCompleted = await request('PATCH', `/api/contacts/${contactId}`, {
       body: { status: 'pending' },
     });
 
@@ -1258,6 +1268,7 @@ describe('contacts', () => {
       const created = await request('POST', '/api/contacts', {
         body: validContact({
           contactedAt: '2020-01-01T00:00:00.000Z',
+          scheduledAt: status === 'follow_up' ? '2020-01-01T00:00:00.000Z' : null,
           status,
         }),
       });
@@ -1266,7 +1277,9 @@ describe('contacts', () => {
       createdIds.push(String(created.body.id));
     }
 
-    const { body } = await request('GET', '/api/alerts');
+    const { status, body } = await request('GET', '/api/alerts');
+
+    assert.equal(status, 200);
 
     for (const recordId of createdIds) {
       assert.ok(
@@ -1276,6 +1289,15 @@ describe('contacts', () => {
         ),
       );
     }
+
+    const followUpId = createdIds[2];
+
+    assert.ok(
+      body.alerts.some(
+        alert =>
+          alert.entity === 'contact' && alert.recordId === followUpId && alert.type === 'scheduled',
+      ),
+    );
   });
 
   it('resets contact expiration when it returns to in_conversation after follow_up', async () => {
@@ -1454,7 +1476,6 @@ describe('CORS', () => {
           appliedAt: '2020-01-01T00:00:00.000Z',
           scheduledAt: '2020-01-01T00:00:00.000Z',
           status: 'interview',
-          scheduledAt: '2026-11-25T10:00:00.000Z',
         }),
       });
 
@@ -1468,7 +1489,10 @@ describe('CORS', () => {
         alert => alert.entity === 'application' && alert.recordId === String(created.body.id),
       );
 
-      assert.deepEqual(applicationAlerts.map(alert => alert.type).sort(), ['scheduled', 'stale']);
+      assert.deepEqual(
+        applicationAlerts.map(alert => alert.type),
+        ['scheduled'],
+      );
     });
 
     it('returns only the expected alert fields', async () => {

@@ -89,20 +89,21 @@ describe('record validation helpers', () => {
   });
 
   it('uses the contact follow-up calendar date in the local timezone', () => {
-    const beforeLocalDate = new Date('2026-11-25T01:00:00.000Z');
-    beforeLocalDate.getTimezoneOffset = () => 8 * 60;
+    const scheduledDate = new Date('2026-11-25T00:00:00.000Z');
 
-    const scheduledDate = {
+    const beforeLocalDate = new Date(scheduledDate);
+    beforeLocalDate.setDate(beforeLocalDate.getDate() - 1);
+
+    const onLocalDate = new Date(scheduledDate);
+    onLocalDate.setHours(12, 0, 0, 0);
+
+    const scheduledRecord = {
       status: 'follow_up',
-      scheduledAt: '2026-11-25T00:00:00.000Z',
+      scheduledAt: scheduledDate.toISOString(),
     };
 
-    assert.equal(isScheduledRecord(scheduledDate, beforeLocalDate), false);
-
-    const onLocalDate = new Date('2026-11-25T08:00:00.000Z');
-    onLocalDate.getTimezoneOffset = () => 8 * 60;
-
-    assert.equal(isScheduledRecord(scheduledDate, onLocalDate), true);
+    assert.equal(isScheduledRecord(scheduledRecord, beforeLocalDate), false);
+    assert.equal(isScheduledRecord(scheduledRecord, onLocalDate), true);
   });
 
   it('uses the latest status history date and falls back to the creation date', () => {
@@ -286,6 +287,7 @@ describe('record validation helpers', () => {
       () => parseApplication(validApplication({ scheduledAt: '2026-11-25' })),
       error => error instanceof HttpError && error.details[0].field === 'scheduledAt',
     );
+
     assert.throws(
       () => parseApplication(validApplication({ scheduledAt: 123 })),
       error => error instanceof HttpError && error.details[0].field === 'scheduledAt',
@@ -294,33 +296,69 @@ describe('record validation helpers', () => {
     assert.deepEqual(
       parseApplicationChanges(
         { scheduledAt: '2026-11-25T10:00:00.000Z' },
-        validApplication({ status: 'pending' }),
+        validApplication({ status: 'interview' }),
       ),
       { scheduledAt: '2026-11-25T10:00:00.000Z' },
     );
+
     assert.deepEqual(
-      parseApplicationChanges({ scheduledAt: '' }, validApplication({ status: 'pending' })),
+      parseApplicationChanges({ scheduledAt: '' }, validApplication({ status: 'interview' })),
+      { scheduledAt: null },
+    );
+
+    assert.deepEqual(
+      parseContactChanges(
+        {
+          status: 'follow_up',
+          scheduledAt: '2026-11-25T10:00:00.000Z',
+        },
+        validContact(),
+      ),
+      {
+        status: 'follow_up',
+        scheduledAt: '2026-11-25T10:00:00.000Z',
+      },
+    );
+
+    assert.throws(
+      () =>
+        parseContactChanges(
+          { scheduledAt: '' },
+          validContact({
+            status: 'follow_up',
+            scheduledAt: '2026-11-25T10:00:00.000Z',
+          }),
+        ),
+      error => error instanceof HttpError && error.details[0].field === 'scheduledAt',
+    );
+
+    assert.deepEqual(
+      parseContactChanges({ scheduledAt: '2026-11-25T10:00:00.000Z' }, validContact()),
       { scheduledAt: null },
     );
 
     assert.equal(
-      parseContact(validContact({ scheduledAt: '2026-11-25T10:00:00.000Z' })).scheduledAt,
+      parseContact(
+        validContact({
+          status: 'follow_up',
+          scheduledAt: '2026-11-25T10:00:00.000Z',
+        }),
+      ).scheduledAt,
       '2026-11-25T10:00:00.000Z',
     );
+
     assert.equal(parseContact(validContact()).scheduledAt, null);
+
     assert.throws(
-      () => parseContact(validContact({ scheduledAt: '2026-11-25' })),
+      () =>
+        parseContact(
+          validContact({
+            status: 'follow_up',
+            scheduledAt: '2026-11-25',
+          }),
+        ),
       error => error instanceof HttpError && error.details[0].field === 'scheduledAt',
     );
-    assert.deepEqual(
-      parseContactChanges({ scheduledAt: '2026-11-25T10:00:00.000Z' }, validContact()),
-      {
-        scheduledAt: '2026-11-25T10:00:00.000Z',
-      },
-    );
-    assert.deepEqual(parseContactChanges({ scheduledAt: '' }, validContact()), {
-      scheduledAt: null,
-    });
   });
 
   it('uses the supplied messages when a record cannot be suspended', () => {

@@ -3,7 +3,6 @@ const { RECORD_STATUSES } = require('../../../shared/constants.json');
 
 const MAX_STALE_DAYS = 30;
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
-const MS_PER_MINUTE = 60 * 1000;
 const TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
 const VALIDATION_ERROR_CODES = {
@@ -224,17 +223,19 @@ const getStaleActivityDate = record => {
   return { date: record.contactedAt, field: 'contactedAt' };
 };
 
-const isStaleRecord = (record, alertableStatuses, now = new Date()) => {
-  if (!alertableStatuses.includes(record.status)) {
-    return false;
-  }
+const hasScheduledInterview = record =>
+  record.status === 'interview' && Boolean(record.scheduledAt);
 
-  if (record.status === 'interview' && record.scheduledAt) {
+const canBeSuspendedAsStale = (record, alertableStatuses, now = new Date()) => {
+  if (!alertableStatuses.includes(record.status) || hasScheduledInterview(record)) {
     return false;
   }
 
   return isOlderThanStaleLimit(getStaleActivityDate(record).date, now);
 };
+
+const isStaleRecord = (record, alertableStatuses, now = new Date()) =>
+  canBeSuspendedAsStale(record, alertableStatuses, now);
 
 const isScheduledRecord = (record, now = new Date()) => {
   if (!record.scheduledAt) {
@@ -248,14 +249,20 @@ const isScheduledRecord = (record, now = new Date()) => {
   }
 
   if (record.status === 'follow_up') {
-    const scheduledDate = new Date(scheduledTime).toISOString().slice(0, 10);
-    const localNow = new Date(now.getTime() - now.getTimezoneOffset() * MS_PER_MINUTE);
-    const localDate = localNow.toISOString().slice(0, 10);
+    const scheduledDate = new Date(record.scheduledAt);
+    const today = new Date(now);
 
-    return Date.parse(scheduledDate) <= Date.parse(localDate);
+    scheduledDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    return scheduledDate.getTime() <= today.getTime();
   }
 
-  return scheduledTime <= now.getTime();
+  if (record.status === 'interview') {
+    return scheduledTime <= now.getTime();
+  }
+
+  return false;
 };
 
 const isValidDate = value => {
@@ -275,6 +282,7 @@ const isValidDate = value => {
 const DEFAULT_SUSPEND_IF_STALE_MESSAGES = {
   notAlertable: 'The record status is not eligible for stale alerts',
   tooRecent: 'The record has not exceeded the stale limit',
+  scheduledInterview: 'The record has a scheduled interview',
 };
 
 const suspendIfStale = (
@@ -294,6 +302,20 @@ const suspendIfStale = (
         ),
       ],
       'Only records eligible for stale alerts can be suspended.',
+    );
+  }
+
+  if (hasScheduledInterview(record)) {
+    throwValidationError(
+      messages.scheduledInterview ?? DEFAULT_SUSPEND_IF_STALE_MESSAGES.scheduledInterview,
+      [
+        createDetail(
+          'scheduledAt',
+          VALIDATION_ERROR_CODES.INVALID_VALUE,
+          'A scheduled interview cannot be suspended as stale',
+        ),
+      ],
+      'Records with a scheduled interview cannot be suspended as stale.',
     );
   }
 
@@ -609,7 +631,10 @@ const parseApplicationChanges = (body, currentApplication) => {
 
   const nextStatus = changes.status ?? currentApplication.status;
 
-  if (currentApplication.status === 'interview' && nextStatus !== 'interview') {
+  if (
+    nextStatus !== 'interview' &&
+    (Object.hasOwn(changes, 'status') || Object.hasOwn(changes, 'scheduledAt'))
+  ) {
     changes.scheduledAt = null;
   }
 
@@ -695,6 +720,24 @@ const CONTACT_CHANGE_HANDLERS = {
   scheduledAt: addOptionalDateFieldChange,
 };
 
+const validateContactScheduleChanges = (changes, currentContact, details) => {
+  const nextStatus = changes.status ?? currentContact.status;
+  const nextScheduledAt = Object.hasOwn(changes, 'scheduledAt')
+    ? changes.scheduledAt
+    : currentContact.scheduledAt;
+
+  if (nextStatus === 'follow_up') {
+    details.push(...validateDateField('scheduledAt', nextScheduledAt));
+  }
+
+  if (
+    nextStatus !== 'follow_up' &&
+    (Object.hasOwn(changes, 'status') || Object.hasOwn(changes, 'scheduledAt'))
+  ) {
+    changes.scheduledAt = null;
+  }
+};
+
 const parseContactChanges = (body, currentContact) => {
   const errorMessage = 'Invalid contact data';
 
@@ -713,18 +756,7 @@ const parseContactChanges = (body, currentContact) => {
     }
   }
 
-  const nextStatus = changes.status ?? currentContact.status;
-  const nextScheduledAt = Object.hasOwn(changes, 'scheduledAt')
-    ? changes.scheduledAt
-    : currentContact.scheduledAt;
-
-  if (nextStatus === 'follow_up') {
-    details.push(...validateDateField('scheduledAt', nextScheduledAt));
-  }
-
-  if (currentContact.status === 'follow_up' && nextStatus === 'in_conversation') {
-    changes.scheduledAt = null;
-  }
+  validateContactScheduleChanges(changes, currentContact, details);
 
   if (details.length > 0) {
     throwValidationError(

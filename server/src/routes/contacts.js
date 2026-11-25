@@ -110,11 +110,14 @@ const addContactRoutes = (app, storage) => {
         throw new HttpError(HTTP_STATUS.NOT_FOUND, NOT_FOUND_MESSAGE);
       }
 
-      const changes = parseContactChanges(requestedChanges, currentContact);
-
-      if (changes.status !== undefined && changes.status !== currentContact.status) {
-        validateContactTransition(currentContact.status, changes.status);
+      if (
+        requestedChanges.status !== undefined &&
+        requestedChanges.status !== currentContact.status
+      ) {
+        validateContactTransition(currentContact.status, requestedChanges.status);
       }
+
+      const changes = parseContactChanges(requestedChanges, currentContact);
 
       const updated = await storage.update('contacts', req.params.id, changes);
 

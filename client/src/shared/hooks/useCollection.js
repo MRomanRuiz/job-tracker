@@ -51,13 +51,13 @@ export default function useCollection(name) {
   );
 
   const loadAlerts = useCallback(async (refreshAfterPending = false) => {
-    if (refreshAfterPending && pendingAlertsRequest.current) {
-      await Promise.allSettled([pendingAlertsRequest.current]);
-    }
-
     latestAlertsRequest.current += 1;
     const requestId = latestAlertsRequest.current;
-    const pendingRequest = apiRequest('/alerts', { deduplicate: true });
+
+    const pendingRequest = apiRequest('/alerts', {
+      deduplicate: !refreshAfterPending,
+    });
+
     pendingAlertsRequest.current = pendingRequest;
 
     try {
@@ -81,7 +81,6 @@ export default function useCollection(name) {
       }
     }
   }, []);
-
   useEffect(() => {
     void request()
       .then(data => {

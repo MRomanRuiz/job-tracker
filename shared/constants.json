@@ -14,7 +14,11 @@
   "RECORD_STATUSES": {
     "application": ["pending", "interview", "offer", "accepted", "declined", "rejected"],
     "contact": ["pending", "in_conversation", "follow_up", "completed", "rejected"],
-    "suspended": "suspended"
+    "suspended": "suspended",
+    "alertable": {
+      "application": ["pending", "interview"],
+      "contact": ["pending", "in_conversation"]
+    }
   },
   "RECORD_TRANSITIONS": {
     "application": {

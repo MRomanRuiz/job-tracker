@@ -144,9 +144,9 @@ function TextareaField({ field, value, isSaving, onChange }) {
 
 function InputField({ field, value, isSaving, form, onChange }) {
   const isDurationMonths = field.name === 'durationMonths';
+
   const isRequired =
-    field.required ||
-    (field.name === 'scheduledAt' && form.status === 'follow_up');
+    field.required || (field.name === 'scheduledAt' && form.status === 'follow_up');
 
   return (
     <input
@@ -164,6 +164,7 @@ function InputField({ field, value, isSaving, form, onChange }) {
 
 function RecordField({ field, options, form, item, hasStatusTransitions, isSaving, onChange }) {
   const value = form[field.name] ?? '';
+
   const commonProps = {
     field,
     value,
@@ -212,7 +213,9 @@ function RecordEditForm({ item, kind, onSave, onClose }) {
     return null;
   }
 
-  const fields = getRecordFields(kind).filter(field => field.editable !== false);
+  const fields = getRecordFields(kind).filter(
+    field => field.editable !== false && (!field.visibleWhen || field.visibleWhen(form)),
+  );
 
   const fieldsWithOptions = fields.map(field => ({
     field,
@@ -230,6 +233,14 @@ function RecordEditForm({ item, kind, onSave, onClose }) {
 
       if (name === 'durationType' && value !== 'fixed') {
         next.durationMonths = '';
+      }
+
+      if (name === 'status') {
+        const scheduledStatus = kind === 'application' ? 'interview' : 'follow_up';
+
+        if (value !== scheduledStatus || current.status !== scheduledStatus) {
+          next.scheduledAt = '';
+        }
       }
 
       return next;

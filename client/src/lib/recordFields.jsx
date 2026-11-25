@@ -32,7 +32,11 @@ export const APPLICATION_FIELDS = [
     placeholder: LABELS.fields.country,
     required: true,
   },
-  { name: 'city', label: LABELS.fields.city, placeholder: LABELS.fields.city },
+  {
+    name: 'city',
+    label: LABELS.fields.city,
+    placeholder: LABELS.fields.city,
+  },
   {
     name: 'appliedAt',
     label: LABELS.fields.appliedAt,
@@ -48,6 +52,7 @@ export const APPLICATION_FIELDS = [
     format: formatDateTime,
     create: false,
     editable: true,
+    visibleWhen: form => form.status === 'interview',
   },
   {
     name: 'durationType',
@@ -60,7 +65,10 @@ export const APPLICATION_FIELDS = [
       { value: 'indefinite', label: LABELS.fields.indefinite },
     ],
     format: value =>
-      ({ fixed: LABELS.fields.fixed, indefinite: LABELS.fields.indefinite })[value] || '—',
+      ({
+        fixed: LABELS.fields.fixed,
+        indefinite: LABELS.fields.indefinite,
+      })[value] || '—',
   },
   {
     name: 'durationMonths',
@@ -126,7 +134,11 @@ export const CONTACT_FIELDS = [
     label: LABELS.fields.department,
     placeholder: LABELS.fields.department,
   },
-  { name: 'city', label: LABELS.fields.city, placeholder: LABELS.fields.city },
+  {
+    name: 'city',
+    label: LABELS.fields.city,
+    placeholder: LABELS.fields.city,
+  },
   {
     name: 'contactedAt',
     label: LABELS.fields.contactedAt,
@@ -143,6 +155,7 @@ export const CONTACT_FIELDS = [
     format: formatDate,
     create: false,
     editable: true,
+    visibleWhen: form => form.status === 'follow_up',
   },
   {
     name: 'status',

@@ -1,11 +1,8 @@
 import { getRecordFields } from '../../lib/recordFields';
 import { LABELS } from '../lib/labels';
 import RecordTimeline from './RecordTimeline';
-
-const STALE_ALERT_STATUSES = {
-  application: ['pending', 'interview'],
-  contact: ['pending', 'in_conversation'],
-};
+import sharedConstants from '../../../../shared/constants.json';
+const STALE_ALERT_STATUSES = sharedConstants.RECORD_STATUSES.alertable;
 
 function getRecordTitle(item, kind) {
   if (kind === 'application') {
