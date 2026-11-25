@@ -3,6 +3,7 @@ const { RECORD_STATUSES } = require('../../../shared/constants.json');
 
 const MAX_STALE_DAYS = 30;
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const MS_PER_MINUTE = 60 * 1000;
 const TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
 const VALIDATION_ERROR_CODES = {
@@ -234,7 +235,19 @@ const isScheduledRecord = (record, now = new Date()) => {
 
   const scheduledTime = new Date(record.scheduledAt).getTime();
 
-  return !Number.isNaN(scheduledTime) && scheduledTime <= now.getTime();
+  if (Number.isNaN(scheduledTime)) {
+    return false;
+  }
+
+  if (record.status === 'follow_up') {
+    const scheduledDate = new Date(scheduledTime).toISOString().slice(0, 10);
+    const localNow = new Date(now.getTime() - now.getTimezoneOffset() * MS_PER_MINUTE);
+    const localDate = localNow.toISOString().slice(0, 10);
+
+    return Date.parse(scheduledDate) <= Date.parse(localDate);
+  }
+
+  return scheduledTime <= now.getTime();
 };
 
 const isValidDate = value => {
@@ -699,7 +712,7 @@ const parseContactChanges = (body, currentContact) => {
     details.push(...validateDateField('scheduledAt', nextScheduledAt));
   }
 
-  if (currentContact.status === 'follow_up' && nextStatus === 'pending') {
+  if (currentContact.status === 'follow_up' && nextStatus === 'in_conversation') {
     changes.scheduledAt = null;
   }
 

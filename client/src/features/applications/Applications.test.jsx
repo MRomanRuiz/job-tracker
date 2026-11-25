@@ -330,6 +330,10 @@ describe('Applications', () => {
       scheduledItems: [makeApplication(1, { status: 'interview', scheduledAt })],
     });
 
+    expect(
+      screen.getByText(LABELS.alerts.scheduledInterviewMessage.replace('{count}', '1')),
+    ).toBeTruthy();
+
     fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.review }));
     expect(screen.getByText(formatDateTime(scheduledAt))).toBeTruthy();
   });

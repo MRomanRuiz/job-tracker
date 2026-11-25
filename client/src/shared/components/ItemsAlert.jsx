@@ -53,7 +53,11 @@ function AttentionItemsAlert({
 
 function ScheduledItemsAlert({ items, itemType, renderCells, onOpen }) {
   const [isOpen, setIsOpen] = useState(false);
-  const message = LABELS.alerts.scheduledMessage.replace('{count}', items.length);
+  const messageLabel =
+    itemType === 'application'
+      ? LABELS.alerts.scheduledInterviewMessage
+      : LABELS.alerts.scheduledMessage;
+  const message = messageLabel.replace('{count}', items.length);
 
   return (
     <>

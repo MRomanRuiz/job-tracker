@@ -79,6 +79,7 @@ describe('contact status transitions', () => {
       ['pending', 'completed'],
       ['pending', 'pending'],
       ['in_conversation', 'pending'],
+      ['follow_up', 'pending'],
       ['follow_up', 'completed'],
       ['suspended', 'completed'],
       ['completed', 'pending'],
@@ -117,6 +118,10 @@ describe('contact status transitions', () => {
 
     assert.doesNotThrow(() => {
       validateContactTransition('pending', 'follow_up');
+    });
+
+    assert.doesNotThrow(() => {
+      validateContactTransition('follow_up', 'in_conversation');
     });
 
     assert.doesNotThrow(() => {

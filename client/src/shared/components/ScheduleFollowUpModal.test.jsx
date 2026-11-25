@@ -33,6 +33,24 @@ describe('ScheduleFollowUpModal', () => {
     expect(screen.getByRole('button', { name: LABELS.common.close })).toBeTruthy();
   });
 
+  it('closes when Escape is pressed', () => {
+    const onCancel = vi.fn();
+
+    render(
+      <ScheduleFollowUpModal
+        item={contact}
+        itemType="contact"
+        dateOnly
+        onSave={vi.fn()}
+        onCancel={onCancel}
+      />,
+    );
+
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
+
   it('allows scheduling a contact for today', async () => {
     const onSave = vi.fn().mockResolvedValue(true);
 
@@ -129,6 +147,27 @@ describe('ScheduleFollowUpModal', () => {
     });
   });
 
+  it('uses interview-specific errors when saving fails', async () => {
+    const onSave = vi.fn().mockResolvedValue(false);
+
+    render(
+      <ScheduleFollowUpModal
+        item={application}
+        itemType="application"
+        onSave={onSave}
+        onCancel={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(LABELS.applications.interviewDateTime), {
+      target: { value: '2099-01-01T10:00' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.save }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert').textContent).toBe(LABELS.followUp.interviewSaveError);
+    });
+  });
+
   it('accepts a successful save callback with no return value', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
 
@@ -171,6 +210,27 @@ describe('ScheduleFollowUpModal', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('alert').textContent).toBe(LABELS.followUp.genericError);
+    });
+  });
+
+  it('uses the interview-specific generic error when saving throws without a message', async () => {
+    const onSave = vi.fn().mockRejectedValue(new Error());
+
+    render(
+      <ScheduleFollowUpModal
+        item={application}
+        itemType="application"
+        onSave={onSave}
+        onCancel={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(LABELS.applications.interviewDateTime), {
+      target: { value: '2099-01-01T10:00' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: LABELS.common.save }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert').textContent).toBe(LABELS.followUp.interviewGenericError);
     });
   });
 });

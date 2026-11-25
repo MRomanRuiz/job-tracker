@@ -69,14 +69,40 @@ describe('record validation helpers', () => {
   it('detects records with scheduled dates that have arrived', () => {
     const now = new Date('2026-11-25T10:00:00.000Z');
 
-    assert.equal(isScheduledRecord({ scheduledAt: '2026-11-25T09:00:00.000Z' }, now), true);
+    assert.equal(
+      isScheduledRecord({ status: 'interview', scheduledAt: '2026-11-25T09:00:00.000Z' }, now),
+      true,
+    );
 
-    assert.equal(isScheduledRecord({ scheduledAt: '2026-11-25T10:00:00.000Z' }, now), true);
+    assert.equal(
+      isScheduledRecord({ status: 'interview', scheduledAt: '2026-11-25T10:00:00.000Z' }, now),
+      true,
+    );
 
-    assert.equal(isScheduledRecord({ scheduledAt: '2026-11-25T11:00:00.000Z' }, now), false);
+    assert.equal(
+      isScheduledRecord({ status: 'interview', scheduledAt: '2026-11-25T11:00:00.000Z' }, now),
+      false,
+    );
 
     assert.equal(isScheduledRecord({ scheduledAt: null }, now), false);
     assert.equal(isScheduledRecord({}, now), false);
+  });
+
+  it('uses the contact follow-up calendar date in the local timezone', () => {
+    const beforeLocalDate = new Date('2026-11-25T01:00:00.000Z');
+    beforeLocalDate.getTimezoneOffset = () => 8 * 60;
+
+    const scheduledDate = {
+      status: 'follow_up',
+      scheduledAt: '2026-11-25T00:00:00.000Z',
+    };
+
+    assert.equal(isScheduledRecord(scheduledDate, beforeLocalDate), false);
+
+    const onLocalDate = new Date('2026-11-25T08:00:00.000Z');
+    onLocalDate.getTimezoneOffset = () => 8 * 60;
+
+    assert.equal(isScheduledRecord(scheduledDate, onLocalDate), true);
   });
 
   it('uses the latest status history date and falls back to the creation date', () => {
@@ -155,17 +181,17 @@ describe('record validation helpers', () => {
     );
   });
 
-  it('clears scheduledAt when returning from follow_up to pending', () => {
+  it('clears scheduledAt when returning from follow_up to in_conversation', () => {
     assert.deepEqual(
       parseContactChanges(
-        { status: 'pending' },
+        { status: 'in_conversation' },
         validContact({
           status: 'follow_up',
           scheduledAt: '2026-11-25T10:00:00.000Z',
         }),
       ),
       {
-        status: 'pending',
+        status: 'in_conversation',
         scheduledAt: null,
       },
     );

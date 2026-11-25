@@ -147,6 +147,7 @@ const translations = {
     alerts: {
       staleMessage: 'Hay {count} {label} de más de 30 días.',
       scheduledMessage: 'Hay {count} seguimientos programados.',
+      scheduledInterviewMessage: 'Hay {count} entrevistas programadas.',
       review: 'Revisar',
       hide: 'Ocultar',
       viewDetails: 'Ver detalle',
@@ -162,6 +163,8 @@ const translations = {
       dateMustBeFuture: 'La fecha debe estar en el futuro.',
       saveError: 'No se pudo guardar la fecha de seguimiento.',
       genericError: 'Se produjo un error al guardar la fecha de seguimiento.',
+      interviewSaveError: 'No se pudo guardar la fecha de la entrevista.',
+      interviewGenericError: 'Se produjo un error al guardar la fecha de la entrevista.',
     },
     noteForm: {
       viewAndEdit: 'Ver y editar nota',
@@ -219,7 +222,7 @@ const translations = {
       optionalFields: 'optional fields',
       hideOptionalFields: 'Hide optional fields',
       showOptionalFields: 'Show optional fields',
-      postpone: 'Pospone',
+      postpone: 'Postpone',
     },
     header: {
       appName: 'Job Tracker',
@@ -343,6 +346,7 @@ const translations = {
     alerts: {
       staleMessage: '{count} {label} older than 30 days.',
       scheduledMessage: '{count} scheduled follow-ups.',
+      scheduledInterviewMessage: '{count} scheduled interviews.',
       review: 'Review',
       hide: 'Hide',
       viewDetails: 'View details',
@@ -358,6 +362,8 @@ const translations = {
       dateMustBeFuture: 'The date must be in the future.',
       saveError: 'Could not save the follow-up date.',
       genericError: 'An error occurred while saving the follow-up date.',
+      interviewSaveError: 'Could not save the interview date.',
+      interviewGenericError: 'An error occurred while saving the interview date.',
     },
     noteForm: {
       viewAndEdit: 'View and edit note',

@@ -320,7 +320,7 @@ Contact status transitions are:
 | ----------------- | ------------------------------------------------------- |
 | `pending`         | `in_conversation`, `follow_up`, `rejected`, `suspended` |
 | `in_conversation` | `follow_up`, `completed`, `rejected`, `suspended`       |
-| `follow_up`       | `pending`                                               |
+| `follow_up`       | `in_conversation`                                       |
 | `suspended`       | `in_conversation`, `follow_up`, `rejected`              |
 | `completed`       | None                                                    |
 | `rejected`        | None                                                    |

@@ -28,4 +28,32 @@ describe('RecordDetails', () => {
       screen.getByRole('heading', { name: LABELS.recordDetails.contactFallback }),
     ).toBeTruthy();
   });
+
+  it.each([
+    {
+      kind: 'application',
+      item: { id: 3, company: 'Acme', position: 'Developer', status: 'interview' },
+    },
+    {
+      kind: 'contact',
+      item: { id: 4, contact: 'Ana', status: 'in_conversation' },
+    },
+  ])('shows and allows suspending a stale $kind', ({ kind, item }) => {
+    const onSuspend = vi.fn();
+
+    render(
+      <RecordDetails
+        item={item}
+        kind={kind}
+        isStale
+        onClose={vi.fn()}
+        onSuspend={onSuspend}
+      />,
+    );
+
+    expect(screen.getByText(LABELS.alerts.staleRecord)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: LABELS.alerts.suspend }));
+    expect(onSuspend).toHaveBeenCalledWith(item.id);
+  });
 });

@@ -106,6 +106,18 @@ function ScheduleFollowUpModal({ item, itemType, dateOnly = false, onSave, onCan
         .replace('{company}', item.company);
 
   const fieldLabel = dateOnly ? LABELS.fields.scheduledAt : LABELS.applications.interviewDateTime;
+  const saveError = isContact
+    ? LABELS.followUp.saveError
+    : LABELS.followUp.interviewSaveError;
+  const genericError = isContact
+    ? LABELS.followUp.genericError
+    : LABELS.followUp.interviewGenericError;
+
+  const handleKeyDown = event => {
+    if (event.key === 'Escape' && !canPostpone && !isSaving) {
+      onCancel();
+    }
+  };
 
   const handleSubmit = async event => {
     event.preventDefault();
@@ -130,10 +142,10 @@ function ScheduleFollowUpModal({ item, itemType, dateOnly = false, onSave, onCan
       const result = await onSave(scheduledAt);
 
       if (result === false) {
-        setError(LABELS.followUp.saveError);
+        setError(saveError);
       }
     } catch (err) {
-      setError(err?.message || LABELS.followUp.genericError);
+      setError(err?.message || genericError);
     } finally {
       setIsSaving(false);
     }
@@ -147,10 +159,10 @@ function ScheduleFollowUpModal({ item, itemType, dateOnly = false, onSave, onCan
       const result = await onPostpone();
 
       if (result === false) {
-        setError(LABELS.followUp.saveError);
+        setError(saveError);
       }
     } catch (err) {
-      setError(err?.message || LABELS.followUp.genericError);
+      setError(err?.message || genericError);
     } finally {
       setIsSaving(false);
     }
@@ -159,6 +171,7 @@ function ScheduleFollowUpModal({ item, itemType, dateOnly = false, onSave, onCan
   return (
     <div
       className="record-details-backdrop"
+      onKeyDown={handleKeyDown}
       onMouseDown={event => {
         if (!canPostpone && event.target === event.currentTarget && !isSaving) {
           onCancel();

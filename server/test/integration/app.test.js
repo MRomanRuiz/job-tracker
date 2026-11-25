@@ -1008,18 +1008,12 @@ describe('contacts', () => {
     assert.equal(followUp.status, 200);
     assert.equal(followUp.body.status, 'follow_up');
 
-    const backToPending = await request('PATCH', '/api/contacts/2', {
-      body: { status: 'pending' },
-    });
-
-    assert.equal(backToPending.status, 200);
-    assert.equal(backToPending.body.status, 'pending');
-
-    const completed = await request('PATCH', '/api/contacts/2', {
+    const backToConversation = await request('PATCH', '/api/contacts/2', {
       body: { status: 'in_conversation' },
     });
 
-    assert.equal(completed.status, 200);
+    assert.equal(backToConversation.status, 200);
+    assert.equal(backToConversation.body.status, 'in_conversation');
 
     const complete = await request('PATCH', '/api/contacts/2', {
       body: { status: 'completed' },
@@ -1284,7 +1278,7 @@ describe('contacts', () => {
     }
   });
 
-  it('resets contact expiration when it returns to pending after a status change', async () => {
+  it('resets contact expiration when it returns to in_conversation after follow_up', async () => {
     const followUp = await request('PATCH', '/api/contacts/1', {
       body: {
         status: 'follow_up',
@@ -1294,13 +1288,13 @@ describe('contacts', () => {
 
     assert.equal(followUp.status, 200);
 
-    const returnedToPending = await request('PATCH', '/api/contacts/1', {
-      body: { status: 'pending' },
+    const returnedToConversation = await request('PATCH', '/api/contacts/1', {
+      body: { status: 'in_conversation' },
     });
 
-    assert.equal(returnedToPending.status, 200);
-    assert.equal(returnedToPending.body.status, 'pending');
-    assert.equal(returnedToPending.body.scheduledAt, null);
+    assert.equal(returnedToConversation.status, 200);
+    assert.equal(returnedToConversation.body.status, 'in_conversation');
+    assert.equal(returnedToConversation.body.scheduledAt, null);
 
     const { body } = await request('GET', '/api/alerts');
 

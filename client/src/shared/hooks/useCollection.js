@@ -5,32 +5,33 @@ import { replaceById } from '../lib/utils';
 
 export default function useCollection(name) {
   const [items, setItems] = useState([]);
-  const [staleAlerts, setStaleAlerts] = useState([]);
+  const [alerts, setAlerts] = useState([]);
   const [error, setError] = useState('');
-  const latestStaleRequest = useRef(0);
+  const latestAlertsRequest = useRef(0);
+  const pendingAlertsRequest = useRef(null);
   const [alertsError, setAlertsError] = useState('');
 
   const entity = name === 'applications' ? 'application' : 'contact';
 
   const staleItems = useMemo(() => {
     const staleIds = new Set(
-      staleAlerts
+      alerts
         .filter(alert => alert.entity === entity && alert.type === 'stale')
         .map(alert => String(alert.recordId)),
     );
 
     return items.filter(item => staleIds.has(String(item.id)));
-  }, [items, staleAlerts, entity]);
+  }, [items, alerts, entity]);
 
   const scheduledItems = useMemo(() => {
     const scheduledIds = new Set(
-      staleAlerts
+      alerts
         .filter(alert => alert.entity === entity && alert.type === 'scheduled')
         .map(alert => String(alert.recordId)),
     );
 
     return items.filter(item => scheduledIds.has(String(item.id)));
-  }, [items, staleAlerts, entity]);
+  }, [items, alerts, entity]);
 
   const reportError = useCallback(requestError => {
     setError(
@@ -49,24 +50,34 @@ export default function useCollection(name) {
     [name],
   );
 
-  const loadStale = useCallback(async () => {
-    latestStaleRequest.current += 1;
-    const requestId = latestStaleRequest.current;
+  const loadAlerts = useCallback(async (refreshAfterPending = false) => {
+    if (refreshAfterPending && pendingAlertsRequest.current) {
+      await Promise.allSettled([pendingAlertsRequest.current]);
+    }
+
+    latestAlertsRequest.current += 1;
+    const requestId = latestAlertsRequest.current;
+    const pendingRequest = apiRequest('/alerts', { deduplicate: true });
+    pendingAlertsRequest.current = pendingRequest;
 
     try {
-      const data = await apiRequest('/alerts');
+      const data = await pendingRequest;
 
-      if (data && requestId === latestStaleRequest.current) {
-        setStaleAlerts(data.alerts ?? []);
+      if (data && requestId === latestAlertsRequest.current) {
+        setAlerts(data.alerts ?? []);
         setAlertsError('');
       }
     } catch (requestError) {
-      if (requestId === latestStaleRequest.current) {
+      if (requestId === latestAlertsRequest.current) {
         setAlertsError(
           typeof requestError?.message === 'string' && requestError.message
             ? requestError.message
             : LABELS.common.requestError,
         );
+      }
+    } finally {
+      if (pendingAlertsRequest.current === pendingRequest) {
+        pendingAlertsRequest.current = null;
       }
     }
   }, []);
@@ -81,26 +92,8 @@ export default function useCollection(name) {
       })
       .catch(reportError);
 
-    latestStaleRequest.current += 1;
-    const staleRequestId = latestStaleRequest.current;
-
-    void apiRequest('/alerts', { deduplicate: true })
-      .then(data => {
-        if (data && staleRequestId === latestStaleRequest.current) {
-          setStaleAlerts(data.alerts ?? []);
-          setAlertsError('');
-        }
-      })
-      .catch(requestError => {
-        if (staleRequestId === latestStaleRequest.current) {
-          setAlertsError(
-            typeof requestError?.message === 'string' && requestError.message
-              ? requestError.message
-              : LABELS.common.requestError,
-          );
-        }
-      });
-  }, [name, request, reportError]);
+    void Promise.resolve().then(() => loadAlerts());
+  }, [name, request, reportError, loadAlerts]);
 
   const replace = async (path, body, { throwErrors = false } = {}) => {
     let updated;
@@ -143,7 +136,7 @@ export default function useCollection(name) {
 
     setError('');
     setItems(current => [...current, created]);
-    void loadStale();
+    void loadAlerts(true);
 
     return true;
   };
@@ -151,8 +144,8 @@ export default function useCollection(name) {
   const update = async (id, changes) => {
     const updated = await replace(`/${id}`, changes, { throwErrors: true });
 
-    if (updated && changes.status !== undefined) {
-      void loadStale();
+    if (updated && (changes.status !== undefined || changes.scheduledAt !== undefined)) {
+      void loadAlerts(true);
     }
 
     return updated;
@@ -160,7 +153,7 @@ export default function useCollection(name) {
 
   const suspend = async id => {
     if (await replace(`/${id}/suspend`)) {
-      void loadStale();
+      void loadAlerts(true);
     }
   };
 
@@ -180,7 +173,7 @@ export default function useCollection(name) {
 
     setError('');
     setItems(current => current.filter(item => item.id !== Number(id)));
-    void loadStale();
+    void loadAlerts(true);
 
     return true;
   };

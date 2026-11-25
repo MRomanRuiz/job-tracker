@@ -2,6 +2,11 @@ import { getRecordFields } from '../../lib/recordFields';
 import { LABELS } from '../lib/labels';
 import RecordTimeline from './RecordTimeline';
 
+const STALE_ALERT_STATUSES = {
+  application: ['pending', 'interview'],
+  contact: ['pending', 'in_conversation'],
+};
+
 function RecordDetails({
   item,
   kind,
@@ -48,6 +53,8 @@ function RecordDetails({
 
   const canScheduleInterview =
     kind === 'application' && item.status === 'interview' && !item.scheduledAt;
+  const canShowStaleAlert =
+    isStale && STALE_ALERT_STATUSES[kind]?.includes(item.status);
 
   return (
     <div
@@ -76,7 +83,7 @@ function RecordDetails({
           </button>
         </header>
 
-        {isStale && item.status === 'pending' && (
+        {canShowStaleAlert && (
           <div className="stale-alert record-details-alert">
             <span className="warning-icon">⚠️</span>
 

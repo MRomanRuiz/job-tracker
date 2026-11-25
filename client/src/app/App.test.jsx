@@ -20,7 +20,6 @@ const renderApp = () => {
         },
       ],
     },
-    'GET /api/applications/old': { applications: [] },
     'GET /api/alerts': { alerts: [] },
     'GET /api/contacts': {
       contacts: [
@@ -36,7 +35,6 @@ const renderApp = () => {
         },
       ],
     },
-    'GET /api/contacts/old': { contacts: [] },
   });
 
   render(<App />);
@@ -81,10 +79,8 @@ describe('App', () => {
         httpStatus: 500,
         body: { message: 'No se pudieron cargar las candidaturas' },
       },
-      'GET /api/applications/old': { applications: [] },
       'GET /api/alerts': { alerts: [] },
       'GET /api/contacts': { contacts: [] },
-      'GET /api/contacts/old': { contacts: [] },
     });
 
     render(<App />);
@@ -95,10 +91,8 @@ describe('App', () => {
   it('shows one specific alert when both collections fail with a bad gateway', async () => {
     mockApi({
       'GET /api/applications': { httpStatus: 502, body: {} },
-      'GET /api/applications/old': { applications: [] },
       'GET /api/alerts': { alerts: [] },
       'GET /api/contacts': { httpStatus: 502, body: {} },
-      'GET /api/contacts/old': { contacts: [] },
     });
 
     render(<App />);
@@ -111,9 +105,7 @@ describe('App', () => {
   it('shows the server message when alerts fail to load', async () => {
     mockApi({
       'GET /api/applications': { applications: [] },
-      'GET /api/applications/old': { applications: [] },
       'GET /api/contacts': { contacts: [] },
-      'GET /api/contacts/old': { contacts: [] },
       'GET /api/alerts': {
         httpStatus: 500,
         body: { message: 'No se pudieron cargar las alertas' },

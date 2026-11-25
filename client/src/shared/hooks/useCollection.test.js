@@ -166,6 +166,59 @@ describe('useCollection', () => {
     });
   });
 
+  it('reloads scheduled alerts when scheduledAt changes or is cleared', async () => {
+    const scheduledAt = '2026-11-25T10:00:00.000Z';
+    const updatedScheduledAt = '2026-11-26T10:00:00.000Z';
+    const scheduledApplication = {
+      id: 1,
+      company: 'Acme',
+      status: 'interview',
+      scheduledAt,
+    };
+    const scheduledAlert = {
+      entity: 'application',
+      recordId: scheduledApplication.id,
+      type: 'scheduled',
+    };
+    let application = scheduledApplication;
+    let alerts = [scheduledAlert];
+
+    const fetchMock = mockApi({
+      'GET /api/applications': { applications: [scheduledApplication] },
+      'GET /api/alerts': () => ({ alerts }),
+      'PATCH /api/applications/1': changes => {
+        application = { ...application, ...changes };
+        alerts = application.scheduledAt ? [scheduledAlert] : [];
+        return application;
+      },
+    });
+    const { result } = renderHook(() => useCollection('applications'));
+
+    await waitFor(() => {
+      expect(result.current.scheduledItems).toEqual([scheduledApplication]);
+    });
+
+    await act(async () => {
+      await result.current.update(1, { scheduledAt: updatedScheduledAt });
+    });
+
+    await waitFor(() => {
+      expect(result.current.items[0].scheduledAt).toBe(updatedScheduledAt);
+      expect(result.current.scheduledItems).toHaveLength(1);
+    });
+    expect(staleRequests(fetchMock)).toBe(2);
+
+    await act(async () => {
+      await result.current.update(1, { scheduledAt: null });
+    });
+
+    await waitFor(() => {
+      expect(result.current.items[0].scheduledAt).toBeNull();
+      expect(result.current.scheduledItems).toEqual([]);
+    });
+    expect(staleRequests(fetchMock)).toBe(3);
+  });
+
   it('suspends an item and reloads its alerts', async () => {
     let stale = true;
 
