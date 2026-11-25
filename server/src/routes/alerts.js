@@ -1,10 +1,7 @@
 const { isStaleRecord, isScheduledRecord } = require('../domain/records');
 const handle = require('./handle');
-
-const CONTACT_STALE_STATUSES = ['pending', 'in_conversation'];
+const { ALERTABLE_STATUSES } = require('../../../shared/constants.json');
 const CONTACT_SCHEDULED_STATUSES = new Set(['follow_up']);
-
-const APPLICATION_STALE_STATUSES = ['pending', 'interview'];
 const APPLICATION_SCHEDULED_STATUSES = new Set(['interview']);
 
 const addAlertsRoutes = (app, storage) => {
@@ -19,7 +16,7 @@ const addAlertsRoutes = (app, storage) => {
       const alerts = [];
 
       for (const contact of contacts) {
-        if (isStaleRecord(contact, CONTACT_STALE_STATUSES)) {
+        if (isStaleRecord(contact, ALERTABLE_STATUSES.contact)) {
           alerts.push({
             type: 'stale',
             entity: 'contact',
@@ -37,7 +34,7 @@ const addAlertsRoutes = (app, storage) => {
       }
 
       for (const application of applications) {
-        if (isStaleRecord(application, APPLICATION_STALE_STATUSES)) {
+        if (isStaleRecord(application, ALERTABLE_STATUSES.application)) {
           alerts.push({
             type: 'stale',
             entity: 'application',

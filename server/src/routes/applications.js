@@ -110,9 +110,6 @@ const addApplicationRoutes = (app, storage) => {
       }
 
       const changes = parseApplicationChanges(requestedChanges, currentApplication);
-      if (changes.status !== undefined && changes.status !== currentApplication.status) {
-        validateApplicationTransition(currentApplication.status, changes.status);
-      }
 
       const application = await storage.update('applications', req.params.id, changes);
 

@@ -11,14 +11,14 @@
     "PAYLOAD_TOO_LARGE": 413,
     "OK": 200
   },
+  "ALERTABLE_STATUSES": {
+    "application": ["pending", "interview"],
+    "contact": ["pending", "in_conversation"]
+  },
   "RECORD_STATUSES": {
     "application": ["pending", "interview", "offer", "accepted", "declined", "rejected"],
     "contact": ["pending", "in_conversation", "follow_up", "completed", "rejected"],
-    "suspended": "suspended",
-    "alertable": {
-      "application": ["pending", "interview"],
-      "contact": ["pending", "in_conversation"]
-    }
+    "suspended": "suspended"
   },
   "RECORD_TRANSITIONS": {
     "application": {

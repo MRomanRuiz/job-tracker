@@ -8,7 +8,6 @@ export default function useCollection(name) {
   const [alerts, setAlerts] = useState([]);
   const [error, setError] = useState('');
   const latestAlertsRequest = useRef(0);
-  const pendingAlertsRequest = useRef(null);
   const [alertsError, setAlertsError] = useState('');
 
   const entity = name === 'applications' ? 'application' : 'contact';
@@ -50,18 +49,14 @@ export default function useCollection(name) {
     [name],
   );
 
-  const loadAlerts = useCallback(async (refreshAfterPending = false) => {
+  const loadAlerts = useCallback(async (forceRefresh = false) => {
     latestAlertsRequest.current += 1;
     const requestId = latestAlertsRequest.current;
 
-    const pendingRequest = apiRequest('/alerts', {
-      deduplicate: !refreshAfterPending,
-    });
-
-    pendingAlertsRequest.current = pendingRequest;
-
     try {
-      const data = await pendingRequest;
+      const data = await apiRequest('/alerts', {
+        deduplicate: !forceRefresh,
+      });
 
       if (data && requestId === latestAlertsRequest.current) {
         setAlerts(data.alerts ?? []);
@@ -74,10 +69,6 @@ export default function useCollection(name) {
             ? requestError.message
             : LABELS.common.requestError,
         );
-      }
-    } finally {
-      if (pendingAlertsRequest.current === pendingRequest) {
-        pendingAlertsRequest.current = null;
       }
     }
   }, []);

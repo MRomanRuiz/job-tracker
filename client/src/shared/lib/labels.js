@@ -81,8 +81,8 @@ const translations = {
     applications: {
       singular: 'candidatura',
       plural: 'candidaturas',
-      pendingSingular: 'candidatura pendiente',
-      pendingPlural: 'candidaturas pendientes',
+      pendingSingular: 'candidatura sin actualización',
+      pendingPlural: 'candidaturas sin actualizaciones',
       newTitle: 'Nueva candidatura',
       save: 'Guardar candidatura',
       interviewDateTime: 'Fecha y hora de la entrevista',
@@ -145,7 +145,7 @@ const translations = {
       noMatches: 'No hay {label} que coincidan con los criterios seleccionados.',
     },
     alerts: {
-      staleMessage: 'Hay {count} {label} de más de 30 días.',
+      staleMessage: 'Hay {count} {label} en más de 30 días.',
       scheduledMessage: 'Hay {count} seguimientos programados.',
       scheduledInterviewMessage: 'Hay {count} entrevistas programadas.',
       review: 'Revisar',
@@ -281,8 +281,8 @@ const translations = {
     applications: {
       singular: 'application',
       plural: 'applications',
-      pendingSingular: 'pending application',
-      pendingPlural: 'pending applications',
+      pendingSingular: 'application without updates',
+      pendingPlural: 'applications without updates',
       newTitle: 'New application',
       save: 'Save application',
       interviewDateTime: 'Interview date and time',
@@ -345,7 +345,7 @@ const translations = {
       noMatches: 'No {label} match the selected criteria.',
     },
     alerts: {
-      staleMessage: '{count} {label} older than 30 days.',
+      staleMessage: '{count} {label} for more than 30 days.',
       scheduledMessage: '{count} scheduled follow-ups.',
       scheduledInterviewMessage: '{count} scheduled interviews.',
       review: 'Review',

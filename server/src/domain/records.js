@@ -190,16 +190,24 @@ const validateTextField = (field, value, required = false) => {
   return [];
 };
 
-// Date and stale-record validation
+const utcDay = value => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+};
 
 const isOlderThanStaleLimit = (date, now = new Date()) => {
-  const parsedDate = new Date(date);
+  const activityDay = utcDay(date);
+  const todayDay = utcDay(now);
 
-  if (Number.isNaN(parsedDate.getTime())) {
+  if (activityDay === null || todayDay === null) {
     return false;
   }
 
-  return (now - parsedDate) / MS_PER_DAY > MAX_STALE_DAYS;
+  return (todayDay - activityDay) / MS_PER_DAY > MAX_STALE_DAYS;
 };
 
 const getStaleActivityDate = record => {
@@ -237,29 +245,31 @@ const canBeSuspendedAsStale = (record, alertableStatuses, now = new Date()) => {
 const isStaleRecord = (record, alertableStatuses, now = new Date()) =>
   canBeSuspendedAsStale(record, alertableStatuses, now);
 
+const utcDate = value => new Date(value).toISOString().slice(0, 10);
+
 const isScheduledRecord = (record, now = new Date()) => {
   if (!record.scheduledAt) {
     return false;
   }
 
-  const scheduledTime = new Date(record.scheduledAt).getTime();
-
-  if (Number.isNaN(scheduledTime)) {
+  const scheduled = new Date(record.scheduledAt);
+  if (Number.isNaN(scheduled.getTime())) {
     return false;
   }
 
   if (record.status === 'follow_up') {
-    const scheduledDate = new Date(record.scheduledAt);
-    const today = new Date(now);
+    const scheduledDay = Date.UTC(
+      scheduled.getUTCFullYear(),
+      scheduled.getUTCMonth(),
+      scheduled.getUTCDate(),
+    );
+    const currentDay = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
 
-    scheduledDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
-
-    return scheduledDate.getTime() <= today.getTime();
+    return scheduledDay <= currentDay;
   }
 
   if (record.status === 'interview') {
-    return scheduledTime <= now.getTime();
+    return scheduled.getTime() <= now.getTime();
   }
 
   return false;

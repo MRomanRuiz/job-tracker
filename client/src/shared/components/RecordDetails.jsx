@@ -2,7 +2,7 @@ import { getRecordFields } from '../../lib/recordFields';
 import { LABELS } from '../lib/labels';
 import RecordTimeline from './RecordTimeline';
 import sharedConstants from '../../../../shared/constants.json';
-const STALE_ALERT_STATUSES = sharedConstants.RECORD_STATUSES.alertable;
+const STALE_ALERT_STATUSES = sharedConstants.ALERTABLE_STATUSES;
 
 function getRecordTitle(item, kind) {
   if (kind === 'application') {
