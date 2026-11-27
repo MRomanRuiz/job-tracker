@@ -3,9 +3,7 @@ function createStorage(type = process.env.STORAGE_TYPE || 'json') {
     throw new TypeError('STORAGE_TYPE must be "json" or "mongodb".');
   }
 
-  const storageType = type.trim().toLowerCase();
-
-  switch (storageType) {
+  switch (type) {
     case 'json':
       return require('./json').createJSONStorage();
 

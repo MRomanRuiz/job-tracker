@@ -38,6 +38,15 @@ describe('record history', () => {
     );
   });
 
+  it('does not generate a timestamp when there are no effective changes', () => {
+    const current = {
+      status: 'pending',
+      history: [],
+    };
+
+    assert.strictEqual(prepareRecordUpdate(current, { status: 'pending' }, null), current);
+  });
+
   it('returns the original record when no values change', () => {
     const current = { status: 'pending', notes: '', history: [] };
 

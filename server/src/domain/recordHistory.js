@@ -11,8 +11,6 @@ const createHistoryEvents = (current, changes, changedAt) =>
   }));
 
 const prepareRecordUpdate = (current, changes, now = new Date()) => {
-  const changedAt = now.toISOString();
-
   const effectiveChanges = Object.fromEntries(
     Object.entries(changes).filter(([field, value]) => value !== current[field]),
   );
@@ -21,6 +19,7 @@ const prepareRecordUpdate = (current, changes, now = new Date()) => {
     return current;
   }
 
+  const changedAt = now.toISOString();
   const historyEvents = createHistoryEvents(current, effectiveChanges, changedAt);
 
   return {

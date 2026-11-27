@@ -5,23 +5,12 @@ const {
   parseApplicationChanges,
   suspendIfStale,
 } = require('../domain/records');
-const { APPLICATION_TRANSITIONS, validateApplicationTransition } = require('../domain/transitions');
-const { RECORD_STATUSES } = require('../../../shared/constants.json');
+const { validateApplicationTransition } = require('../domain/transitions');
 const handle = require('./handle');
+const { ALERTABLE_STALE_STATUSES } = require('../../../shared/constants.json');
 
 const NOT_FOUND_MESSAGE = 'Application not found';
-const APPLICATION_ALERT_STATUSES = ['pending', 'interview'];
-const FINAL_APPLICATION_STATUSES = new Set(
-  Object.entries(APPLICATION_TRANSITIONS)
-    .filter(([, nextStatuses]) => nextStatuses.length === 0)
-    .map(([status]) => status),
-);
-const APPLICATION_ALERTABLE_STATUSES = APPLICATION_ALERT_STATUSES.filter(
-  status =>
-    Object.hasOwn(APPLICATION_TRANSITIONS, status) &&
-    status !== RECORD_STATUSES.suspended &&
-    !FINAL_APPLICATION_STATUSES.has(status),
-);
+const APPLICATION_ALERTABLE_STATUSES = ALERTABLE_STALE_STATUSES.application;
 
 const addApplicationRoutes = (app, storage) => {
   app.get(

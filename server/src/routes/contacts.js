@@ -6,23 +6,11 @@ const {
   suspendIfStale,
 } = require('../domain/records');
 const handle = require('./handle');
-const { CONTACT_TRANSITIONS, validateContactTransition } = require('../domain/transitions');
-const { RECORD_STATUSES } = require('../../../shared/constants.json');
+const { validateContactTransition } = require('../domain/transitions');
+const { ALERTABLE_STALE_STATUSES } = require('../../../shared/constants.json');
 
 const NOT_FOUND_MESSAGE = 'Contact not found';
-const CONTACT_ALERT_STATUSES = ['pending', 'in_conversation'];
-const FINAL_CONTACT_STATUSES = new Set(
-  Object.entries(CONTACT_TRANSITIONS)
-    .filter(([, nextStatuses]) => nextStatuses.length === 0)
-    .map(([status]) => status),
-);
-const CONTACT_ALERTABLE_STATUSES = CONTACT_ALERT_STATUSES.filter(
-  status =>
-    Object.hasOwn(CONTACT_TRANSITIONS, status) &&
-    status !== RECORD_STATUSES.suspended &&
-    status !== 'follow_up' &&
-    !FINAL_CONTACT_STATUSES.has(status),
-);
+const CONTACT_ALERTABLE_STATUSES = ALERTABLE_STALE_STATUSES.contact;
 
 const addContactRoutes = (app, storage) => {
   app.get(

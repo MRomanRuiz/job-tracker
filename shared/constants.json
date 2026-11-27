@@ -16,6 +16,10 @@
     "contact": ["pending", "in_conversation", "follow_up", "completed", "rejected"],
     "suspended": "suspended"
   },
+  "ALERTABLE_STALE_STATUSES": {
+    "application": ["pending", "interview"],
+    "contact": ["pending", "in_conversation"]
+  },
   "RECORD_TRANSITIONS": {
     "application": {
       "pending": ["interview", "rejected", "suspended"],

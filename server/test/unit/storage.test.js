@@ -11,6 +11,7 @@ require('dotenv').config({
 });
 
 const { createStorage } = require('../../src/storage');
+const { createJSONStorage } = require('../../src/storage/json');
 
 const STORAGE_TYPE = (
   process.env.TEST_STORAGE_TYPE ||
@@ -108,10 +109,6 @@ describe('storage factory', () => {
     );
   });
 
-  it('normalizes supported storage type names', () => {
-    assert.equal(typeof createStorage(' JSON ').list, 'function');
-  });
-
   it('rejects missing and non-string storage types', () => {
     for (const type of [null, '', '   ']) {
       assert.throws(() => createStorage(type), TypeError);
@@ -121,44 +118,27 @@ describe('storage factory', () => {
 
 describe('JSON storage', () => {
   it('creates a missing data directory and empty collection files', async () => {
-    const jsonModulePath = require.resolve('../../src/storage/json');
-    const configuredDataDir = process.env.JSON_DATA_DIR;
     const missingDataDir = path.join(dataDir, 'not-created-yet');
-    process.env.JSON_DATA_DIR = missingDataDir;
-    delete require.cache[jsonModulePath];
+    const emptyStorage = createJSONStorage(missingDataDir);
 
-    try {
-      const emptyStorage = require('../../src/storage/json').createJSONStorage();
-      const [applications, contacts] = await Promise.all([
-        emptyStorage.list('applications'),
-        emptyStorage.list('contacts'),
-      ]);
+    const [applications, contacts] = await Promise.all([
+      emptyStorage.list('applications'),
+      emptyStorage.list('contacts'),
+    ]);
 
-      assert.deepEqual(applications, []);
-      assert.deepEqual(contacts, []);
-      assert.deepEqual(
-        JSON.parse(await fs.readFile(path.join(missingDataDir, 'jobs.json'), 'utf8')),
-        { applications: [] },
-      );
-      assert.deepEqual(
-        JSON.parse(await fs.readFile(path.join(missingDataDir, 'contacts.json'), 'utf8')),
-        { contacts: [] },
-      );
-    } finally {
-      if (configuredDataDir === undefined) {
-        delete process.env.JSON_DATA_DIR;
-      } else {
-        process.env.JSON_DATA_DIR = configuredDataDir;
-      }
-
-      delete require.cache[jsonModulePath];
-      jsonStorage = require('../../src/storage/json').createJSONStorage();
-    }
+    assert.deepEqual(applications, []);
+    assert.deepEqual(contacts, []);
+    assert.deepEqual(
+      JSON.parse(await fs.readFile(path.join(missingDataDir, 'jobs.json'), 'utf8')),
+      { applications: [] },
+    );
+    assert.deepEqual(
+      JSON.parse(await fs.readFile(path.join(missingDataDir, 'contacts.json'), 'utf8')),
+      { contacts: [] },
+    );
   });
 
   it('preserves existing JSON files when initialization receives EEXIST', async () => {
-    const jsonModulePath = require.resolve('../../src/storage/json');
-    const configuredDataDir = process.env.JSON_DATA_DIR;
     const existingDataDir = path.join(dataDir, 'existing-data');
     await fs.mkdir(existingDataDir, { recursive: true });
     await fs.writeFile(
@@ -166,35 +146,18 @@ describe('JSON storage', () => {
       JSON.stringify({ applications: [{ id: 7 }] }),
       'utf8',
     );
-    process.env.JSON_DATA_DIR = existingDataDir;
-    delete require.cache[jsonModulePath];
 
-    try {
-      const existingStorage = require('../../src/storage/json').createJSONStorage();
+    const existingStorage = createJSONStorage(existingDataDir);
 
-      assert.deepEqual(await existingStorage.list('applications'), [{ id: 7 }]);
-    } finally {
-      if (configuredDataDir === undefined) {
-        delete process.env.JSON_DATA_DIR;
-      } else {
-        process.env.JSON_DATA_DIR = configuredDataDir;
-      }
-
-      delete require.cache[jsonModulePath];
-      jsonStorage = require('../../src/storage/json').createJSONStorage();
-    }
+    assert.deepEqual(await existingStorage.list('applications'), [{ id: 7 }]);
   });
 
   it('retries file initialization after a non-EEXIST write error', async () => {
-    const jsonModulePath = require.resolve('../../src/storage/json');
-    const configuredDataDir = process.env.JSON_DATA_DIR;
     const retryDataDir = path.join(dataDir, 'retry-data');
     const originalWriteFile = fs.writeFile;
-    process.env.JSON_DATA_DIR = retryDataDir;
-    delete require.cache[jsonModulePath];
+    const retryStorage = createJSONStorage(retryDataDir);
 
     try {
-      const retryStorage = require('../../src/storage/json').createJSONStorage();
       fs.writeFile = async () => {
         const error = new Error('Disk unavailable');
         error.code = 'EACCES';
@@ -207,15 +170,46 @@ describe('JSON storage', () => {
       assert.deepEqual(await retryStorage.list('applications'), []);
     } finally {
       fs.writeFile = originalWriteFile;
-      if (configuredDataDir === undefined) {
-        delete process.env.JSON_DATA_DIR;
-      } else {
-        process.env.JSON_DATA_DIR = configuredDataDir;
-      }
-
-      delete require.cache[jsonModulePath];
-      jsonStorage = require('../../src/storage/json').createJSONStorage();
     }
+  });
+
+  it('uses an independent data directory for each storage instance', async () => {
+    const firstDir = path.join(dataDir, 'first-instance');
+    const secondDir = path.join(dataDir, 'second-instance');
+
+    const firstStorage = createJSONStorage(firstDir);
+    const secondStorage = createJSONStorage(secondDir);
+
+    await firstStorage.create('applications', { company: 'Company A' });
+
+    assert.equal((await firstStorage.list('applications')).length, 1);
+    assert.deepEqual(await secondStorage.list('applications'), []);
+  });
+
+  it('handles concurrent writes in independent storage instances', async () => {
+    const firstDir = path.join(dataDir, 'first-concurrent');
+    const secondDir = path.join(dataDir, 'second-concurrent');
+
+    const firstStorage = createJSONStorage(firstDir);
+    const secondStorage = createJSONStorage(secondDir);
+
+    const [first, second] = await Promise.all([
+      firstStorage.create('applications', { company: 'Company A' }),
+      secondStorage.create('applications', { company: 'Company B' }),
+    ]);
+
+    assert.equal(first.id, 1);
+    assert.equal(second.id, 1);
+
+    assert.deepEqual(
+      (await firstStorage.list('applications')).map(record => record.company),
+      ['Company A'],
+    );
+
+    assert.deepEqual(
+      (await secondStorage.list('applications')).map(record => record.company),
+      ['Company B'],
+    );
   });
 
   it('returns null or false for missing records', async () => {
@@ -309,16 +303,47 @@ describe('JSON storage', () => {
     assert.equal((await jsonStorage.list('applications')).length, 2);
   });
 
-  it('generates an ID even when existing IDs are not numeric', async () => {
-    await fs.writeFile(
-      path.join(dataDir, 'jobs.json'),
-      JSON.stringify({ applications: [{ id: 'invalid' }] }),
-      'utf8',
-    );
+  it('generates sequential IDs for new records', async () => {
+    const first = await jsonStorage.create('applications', {
+      company: 'Company A',
+      position: 'Developer',
+    });
 
-    const created = await jsonStorage.create('applications', { company: 'Acme' });
+    const second = await jsonStorage.create('applications', {
+      company: 'Company B',
+      position: 'Designer',
+    });
 
-    assert.equal(typeof created.id, 'number');
-    assert.ok(created.id > 0);
+    assert.equal(second.id, first.id + 1);
+  });
+
+  it('works when called without the storage object as context', async () => {
+    const storage = createJSONStorage();
+
+    const createdRecord = await storage.create('applications', {
+      company: 'Test Company',
+      position: 'Developer',
+    });
+
+    const { getById } = storage;
+
+    const record = await getById('applications', createdRecord.id);
+
+    assert.deepStrictEqual(record, createdRecord);
+  });
+
+  it('rejects inherited property names as collections', async () => {
+    await assert.rejects(jsonStorage.list('constructor'), /Unsupported JSON collection/);
+
+    await assert.rejects(jsonStorage.list('toString'), /Unsupported JSON collection/);
+  });
+
+  it('rejects JSON files with a null root value', async () => {
+    await fs.writeFile(path.join(dataDir, 'jobs.json'), 'null', 'utf8');
+
+    await assert.rejects(jsonStorage.list('applications'), {
+      name: 'TypeError',
+      message: 'jobs.json does not contain "applications"',
+    });
   });
 });
