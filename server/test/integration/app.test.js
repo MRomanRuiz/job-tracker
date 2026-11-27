@@ -20,7 +20,7 @@ process.env.STORAGE_TYPE = STORAGE_TYPE;
 
 const TEST_DATABASE_NAME = 'job_tracker_test';
 
-const OLD_DATE = '2020-01-01';
+const OLD_DATE = '2020-01-01T00:00:00.000Z';
 const RECENT_DATE = new Date().toISOString();
 
 const validApplication = (overrides = {}) => ({
@@ -246,12 +246,27 @@ after(async () => {
 });
 
 describe('isOlderThanStaleLimit', () => {
-  it('detects dates older than 30 days', () => {
-    const { isOlderThanStaleLimit } = require('../../src/domain/records');
-    const now = new Date('2026-02-01');
+  const { isOlderThanStaleLimit } = require('../../src/domain/records');
 
-    assert.equal(isOlderThanStaleLimit('2025-12-01', now), true);
-    assert.equal(isOlderThanStaleLimit('2026-01-15', now), false);
+  it('detects dates older than 30 calendar days, ignoring time', () => {
+    const now = new Date('2026-02-01T00:01:00.000Z');
+
+    assert.equal(isOlderThanStaleLimit('2026-01-01T23:59:00.000Z', now), true);
+
+    assert.equal(isOlderThanStaleLimit('2026-01-02T23:59:00.000Z', now), false);
+
+    assert.equal(
+      isOlderThanStaleLimit('2026-01-02T00:01:00.000Z', new Date('2026-02-01T23:59:00.000Z')),
+      false,
+    );
+  });
+
+  it('rejects invalid dates and timestamps that are not in the expected ISO format', () => {
+    const now = new Date('2026-02-01T00:00:00.000Z');
+
+    assert.equal(isOlderThanStaleLimit('2025-12-01T00:00:00.000Z', now), true);
+    assert.equal(isOlderThanStaleLimit('2026-01-15T00:00:00.000Z', now), false);
+    assert.equal(isOlderThanStaleLimit('2026-01-01', now), false);
     assert.equal(isOlderThanStaleLimit('not-a-date', now), false);
   });
 });
@@ -305,20 +320,6 @@ describe('applications', () => {
     assert.equal(body.type, 'research');
     assert.equal(body.durationType, 'fixed');
     assert.equal(body.durationMonths, 6);
-  });
-
-  it('allows a fixed-duration application without a specified duration', async () => {
-    const { status, body } = await request('POST', '/api/applications', {
-      body: {
-        ...validApplication(),
-        durationType: 'fixed',
-        durationMonths: null,
-      },
-    });
-
-    assert.equal(status, 201);
-    assert.equal(body.durationType, 'fixed');
-    assert.equal(body.durationMonths, null);
   });
 
   it('rejects invalid applications', async () => {
@@ -951,7 +952,11 @@ describe('contacts', () => {
     ]) {
       const response = await request('PATCH', '/api/contacts/2', { body });
 
-      assert.equal(response.status, 400);
+      assert.equal(
+        response.status,
+        400,
+        `Expected 400 for body: ${JSON.stringify(body)}, received ${response.status}`,
+      );
     }
   });
 
@@ -1009,7 +1014,7 @@ describe('contacts', () => {
 
   it('suspends old pending contacts', async () => {
     const old = await request('GET', '/api/contacts/old');
-
+    console.log('GET /api/contacts/old:', old.status, old.body);
     assert.deepEqual(
       old.body.contacts.map(item => item.id),
       [1],

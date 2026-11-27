@@ -88,11 +88,11 @@ const throwValidationError = (
 };
 
 const assertValidBody = body => {
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length === 0) {
     throw new HttpError(
       HTTP_STATUS.BAD_REQUEST,
       'Invalid request body',
-      'The request body must be a valid JSON object.',
+      'The request body must be a non-empty JSON object.',
     );
   }
 };
@@ -109,7 +109,7 @@ const parseTextFields = (body, fields) => {
   const details = [];
 
   for (const field of fields) {
-    const value = body[field] ?? '';
+    const value = body[field] === undefined ? '' : body[field];
 
     if (typeof value === 'string') {
       data[field] = value.trim();
@@ -184,27 +184,35 @@ const validateTextField = (field, value, required = false) => {
 // Date and stale-record validation
 
 const isOlderThanStaleLimit = (date, now = new Date()) => {
-  const parsedDate = new Date(date);
-
-  if (Number.isNaN(parsedDate.getTime())) {
+  if (!isValidDate(date)) {
     return false;
   }
 
-  return (now - parsedDate) / MS_PER_DAY > MAX_STALE_DAYS;
+  const parsedDate = new Date(date);
+
+  const dateDay = Date.UTC(
+    parsedDate.getUTCFullYear(),
+    parsedDate.getUTCMonth(),
+    parsedDate.getUTCDate(),
+  );
+
+  const nowDay = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+
+  return (nowDay - dateDay) / MS_PER_DAY > MAX_STALE_DAYS;
 };
 
 const getStaleActivityDate = record => {
-  const latestStatusChange = (record.history ?? [])
-    .filter(event => event.field === 'status' && typeof event.changedAt === 'string')
+  const latestChange = (record.history ?? [])
+    .filter(event => event && isValidDate(event.changedAt))
     .reduce((latest, event) => {
       const eventTime = new Date(event.changedAt).getTime();
-      const latestTime = latest ? new Date(latest).getTime() : Number.NEGATIVE_INFINITY;
+      const latestTime = latest ? new Date(latest.changedAt).getTime() : Number.NEGATIVE_INFINITY;
 
-      return !Number.isNaN(eventTime) && eventTime > latestTime ? event.changedAt : latest;
+      return eventTime > latestTime ? event : latest;
     }, null);
 
-  if (latestStatusChange) {
-    return { date: latestStatusChange, field: 'status' };
+  if (latestChange) {
+    return { date: latestChange.changedAt, field: latestChange.field };
   }
 
   if (record.appliedAt !== undefined) {
@@ -223,13 +231,9 @@ const isValidDate = value => {
     return false;
   }
 
-  const date = new Date(value.slice(0, 10));
+  const date = new Date(value);
 
-  return (
-    !Number.isNaN(date.getTime()) &&
-    date.toISOString().slice(0, 10) === value.slice(0, 10) &&
-    !Number.isNaN(new Date(value).getTime())
-  );
+  return !Number.isNaN(date.getTime()) && date.toISOString() === value;
 };
 
 const DEFAULT_SUSPEND_IF_STALE_MESSAGES = {
@@ -274,45 +278,53 @@ const suspendIfStale = (
   }
 };
 
-// Application validation
-
-const validateDurationType = durationType => {
+const validateApplicationDuration = (durationType, durationMonths) => {
   if (typeof durationType !== 'string') {
     return [
       createDetail('durationType', VALIDATION_ERROR_CODES.INVALID_TYPE, DURATION_TYPE_ERROR_LABEL),
     ];
   }
 
-  if (durationType === '') {
-    return [];
-  }
-
-  if (!APPLICATION_DURATION_TYPES.has(durationType)) {
+  if (durationType !== '' && !APPLICATION_DURATION_TYPES.has(durationType)) {
     return [
       createDetail('durationType', VALIDATION_ERROR_CODES.INVALID_VALUE, DURATION_TYPE_ERROR_LABEL),
     ];
   }
 
-  return [];
-};
+  if (durationType === 'fixed') {
+    if (!Number.isInteger(durationMonths)) {
+      return [
+        createDetail(
+          'durationMonths',
+          durationMonths === null
+            ? VALIDATION_ERROR_CODES.REQUIRED_FIELD
+            : VALIDATION_ERROR_CODES.INVALID_TYPE,
+          durationMonths === null
+            ? 'Duration months are required for fixed-duration applications'
+            : 'Must be an integer',
+        ),
+      ];
+    }
 
-const validateFixedDurationMonths = durationMonths => {
-  if (durationMonths === null) {
+    if (durationMonths <= 0) {
+      return [
+        createDetail(
+          'durationMonths',
+          VALIDATION_ERROR_CODES.INVALID_VALUE,
+          'Must be a positive integer',
+        ),
+      ];
+    }
+
     return [];
   }
 
-  if (!Number.isInteger(durationMonths)) {
-    return [
-      createDetail('durationMonths', VALIDATION_ERROR_CODES.INVALID_TYPE, 'Must be an integer'),
-    ];
-  }
-
-  if (durationMonths <= 0) {
+  if (durationMonths !== null) {
     return [
       createDetail(
         'durationMonths',
         VALIDATION_ERROR_CODES.INVALID_VALUE,
-        'Must be a positive integer',
+        'Duration months can only be specified for fixed-duration applications',
       ),
     ];
   }
@@ -320,37 +332,7 @@ const validateFixedDurationMonths = durationMonths => {
   return [];
 };
 
-const validateNonFixedDurationMonths = durationMonths => {
-  if (durationMonths === null) {
-    return [];
-  }
-
-  return [
-    createDetail(
-      'durationMonths',
-      VALIDATION_ERROR_CODES.INVALID_VALUE,
-      'Duration months can only be specified for fixed-duration applications',
-    ),
-  ];
-};
-
-const validateApplicationDuration = (durationType, durationMonths) => {
-  const durationTypeDetails = validateDurationType(durationType);
-
-  if (durationTypeDetails.length > 0) {
-    return durationTypeDetails;
-  }
-
-  if (durationType === 'fixed') {
-    return validateFixedDurationMonths(durationMonths);
-  }
-
-  return validateNonFixedDurationMonths(durationMonths);
-};
-
 const parseApplication = body => {
-  const errorMessage = INVALID_APPLICATION_DATA_LABEL;
-
   assertValidBody(body);
 
   const details = validateAllowedFields(body, APPLICATION_FIELDS);
@@ -368,33 +350,17 @@ const parseApplication = body => {
   const durationMonths =
     body.durationMonths === '' || body.durationMonths == null ? null : body.durationMonths;
 
-  details.push(
-    ...validateRequiredFields(
-      application,
-      REQUIRED_APPLICATION_FIELDS,
-      APPLICATION_LABELS,
-      textDetails,
-    ),
-    ...(application.type
-      ? validateEnumField(
-          'type',
-          application.type,
-          ALLOWED_APPLICATION_TYPES,
-          APPLICATION_TYPE_LABEL,
-        )
-      : []),
-    ...validateEnumField('status', status, ALLOWED_APPLICATION_STATUSES, 'Status'),
-    ...validateDateField('appliedAt', body.appliedAt),
-    ...validateApplicationDuration(durationType, durationMonths),
+  validateApplicationFields(
+    {
+      ...application,
+      appliedAt: body.appliedAt,
+      durationType,
+      durationMonths,
+      status,
+    },
+    ALLOWED_APPLICATION_STATUSES,
+    details,
   );
-
-  if (details.length > 0) {
-    throwValidationError(
-      errorMessage,
-      details,
-      'The application could not be created because some fields contain invalid values.',
-    );
-  }
 
   return {
     ...application,
@@ -405,9 +371,15 @@ const parseApplication = body => {
   };
 };
 
-const validateUpdatedApplication = application => {
+const validateApplicationFields = (application, allowedStatuses, existingDetails = []) => {
   const details = [
-    ...validateRequiredFields(application, REQUIRED_APPLICATION_FIELDS, APPLICATION_LABELS),
+    ...existingDetails,
+    ...validateRequiredFields(
+      application,
+      REQUIRED_APPLICATION_FIELDS,
+      APPLICATION_LABELS,
+      existingDetails,
+    ),
     ...(application.type
       ? validateEnumField(
           'type',
@@ -417,12 +389,7 @@ const validateUpdatedApplication = application => {
         )
       : []),
     ...validateDateField('appliedAt', application.appliedAt),
-    ...validateEnumField(
-      'status',
-      application.status,
-      ALLOWED_APPLICATION_RECORD_STATUSES,
-      'Status',
-    ),
+    ...validateEnumField('status', application.status, allowedStatuses, 'Status'),
     ...validateApplicationDuration(application.durationType, application.durationMonths),
   ];
 
@@ -430,54 +397,82 @@ const validateUpdatedApplication = application => {
     throwValidationError(
       INVALID_APPLICATION_DATA_LABEL,
       details,
-      'The updated application contains invalid values.',
+      'The application contains invalid values.',
     );
+  }
+};
+
+const validateContactFields = (contact, existingDetails = []) => {
+  const details = [
+    ...existingDetails,
+    ...validateRequiredFields(contact, REQUIRED_CONTACT_FIELDS, CONTACT_LABELS, existingDetails),
+    ...validateEnumField('status', contact.status, ALLOWED_CONTACT_STATUSES, 'Status'),
+    ...validateDateField('contactedAt', contact.contactedAt),
+  ];
+
+  if (details.length > 0) {
+    throwValidationError('Invalid contact data', details, 'The contact contains invalid values.');
   }
 };
 
 const normalizeStringValue = value => (typeof value === 'string' ? value.trim() : value);
 
-const addTextFieldChange = (field, value, details, changes) => {
-  const fieldDetails = validateTextField(field, value, REQUIRED_APPLICATION_FIELDS.includes(field));
+const addTextFieldChange = (field, value, details, changes, requiredFields) => {
+  const required = requiredFields.includes(field);
+  const fieldDetails = validateTextField(field, value, required);
+
+  details.push(...fieldDetails);
 
   if (fieldDetails.length > 0) {
-    details.push(...fieldDetails);
+    return false;
   }
 
-  const parsedValue = normalizeStringValue(value);
+  changes[field] = normalizeStringValue(value);
+  return true;
+};
 
-  if (
-    field === 'type' &&
-    typeof value === 'string' &&
-    parsedValue &&
-    !ALLOWED_APPLICATION_TYPES.has(parsedValue)
-  ) {
+const addApplicationTextFieldChange = (field, value, details, changes) => {
+  const isValid = addTextFieldChange(field, value, details, changes, REQUIRED_APPLICATION_FIELDS);
+
+  if (!isValid) {
+    return;
+  }
+
+  if (field === 'type') {
     details.push(
-      createDetail(
+      ...validateEnumField(
         field,
-        VALIDATION_ERROR_CODES.INVALID_VALUE,
-        'Application type must be industry or research',
+        changes[field],
+        ALLOWED_APPLICATION_TYPES,
+        APPLICATION_TYPE_LABEL,
       ),
     );
   }
-
-  changes[field] = parsedValue;
 };
+
+const addContactTextFieldChange = (field, value, details, changes) =>
+  addTextFieldChange(field, value, details, changes, REQUIRED_CONTACT_FIELDS);
 
 const addEnumFieldChange = (field, value, details, changes, allowedValues, label) => {
   const fieldDetails = validateEnumField(field, value, allowedValues, label);
+  details.push(...fieldDetails);
 
   if (fieldDetails.length > 0) {
-    details.push(...fieldDetails);
+    return;
   }
 
   changes[field] = value;
 };
 
+const addApplicationStatusChange = (field, value, details, changes) =>
+  addEnumFieldChange(field, value, details, changes, ALLOWED_APPLICATION_STATUSES, 'Status');
+
+const addContactStatusChange = (field, value, details, changes) =>
+  addEnumFieldChange(field, value, details, changes, ALLOWED_CONTACT_STATUSES, 'Status');
+
 const addDurationTypeChange = (field, value, details, changes) => {
   if (typeof value !== 'string') {
     details.push(createDetail(field, VALIDATION_ERROR_CODES.INVALID_TYPE, MUST_BE_STRING_LABEL));
-    changes[field] = value;
     return;
   }
 
@@ -487,6 +482,7 @@ const addDurationTypeChange = (field, value, details, changes) => {
     details.push(
       createDetail(field, VALIDATION_ERROR_CODES.INVALID_VALUE, DURATION_TYPE_ERROR_LABEL),
     );
+    return;
   }
 
   changes[field] = parsedValue;
@@ -498,12 +494,14 @@ const addDurationMonthsChange = (field, value, details, changes) => {
   if (parsedValue !== null) {
     if (!Number.isInteger(parsedValue)) {
       details.push(createDetail(field, VALIDATION_ERROR_CODES.INVALID_TYPE, 'Must be an integer'));
-    } else if (parsedValue <= 0) {
+      return;
+    }
+
+    if (parsedValue <= 0) {
       details.push(
         createDetail(field, VALIDATION_ERROR_CODES.INVALID_VALUE, 'Must be a positive integer'),
       );
-    } else {
-      // The value is a valid positive integer.
+      return;
     }
   }
 
@@ -515,28 +513,26 @@ const addDateFieldChange = (field, value, details, changes) => {
 
   if (fieldDetails.length > 0) {
     details.push(...fieldDetails);
+    return;
   }
 
   changes[field] = value;
 };
 
 const APPLICATION_CHANGE_HANDLERS = {
-  company: addTextFieldChange,
-  position: addTextFieldChange,
-  city: addTextFieldChange,
-  country: addTextFieldChange,
-  type: addTextFieldChange,
-  notes: addTextFieldChange,
-  status: (field, value, details, changes) =>
-    addEnumFieldChange(field, value, details, changes, ALLOWED_APPLICATION_STATUSES, 'Status'),
+  company: addApplicationTextFieldChange,
+  position: addApplicationTextFieldChange,
+  city: addApplicationTextFieldChange,
+  country: addApplicationTextFieldChange,
+  type: addApplicationTextFieldChange,
+  notes: addApplicationTextFieldChange,
+  status: addApplicationStatusChange,
   durationType: addDurationTypeChange,
   durationMonths: addDurationMonthsChange,
   appliedAt: addDateFieldChange,
 };
 
 const parseApplicationChanges = (body, currentApplication) => {
-  const errorMessage = INVALID_APPLICATION_DATA_LABEL;
-
   assertValidBody(body);
 
   const details = validateAllowedFields(body, APPLICATION_FIELDS);
@@ -554,66 +550,42 @@ const parseApplicationChanges = (body, currentApplication) => {
 
   if (details.length > 0) {
     throwValidationError(
-      errorMessage,
+      INVALID_APPLICATION_DATA_LABEL,
       details,
       'The application could not be updated because some fields contain invalid values.',
     );
   }
 
   if (Object.keys(changes).some(field => !['status', 'notes'].includes(field))) {
-    validateUpdatedApplication({
-      ...currentApplication,
-      ...changes,
-    });
+    validateApplicationFields(
+      {
+        ...currentApplication,
+        ...changes,
+      },
+      ALLOWED_APPLICATION_RECORD_STATUSES,
+    );
   }
 
   return changes;
 };
 
-// Contact validation
-
 const parseContact = body => {
-  const errorMessage = 'Invalid contact data';
-
   assertValidBody(body);
 
   const details = validateAllowedFields(body, CONTACT_FIELDS);
-
   const { data: contactData, details: textDetails } = parseTextFields(body, CONTACT_TEXT_FIELDS);
 
   details.push(...textDetails);
 
-  const status = body.status ?? 'pending';
-
-  details.push(
-    ...validateRequiredFields(contactData, REQUIRED_CONTACT_FIELDS, CONTACT_LABELS, textDetails),
-    ...validateEnumField('status', status, ALLOWED_CONTACT_STATUSES, 'Status'),
-    ...validateDateField('contactedAt', body.contactedAt),
-  );
-
-  if (details.length > 0) {
-    throwValidationError(
-      errorMessage,
-      details,
-      'The contact could not be created because some fields contain invalid values.',
-    );
-  }
-
-  return {
+  const contact = {
     ...contactData,
     contactedAt: body.contactedAt,
-    status,
+    status: body.status ?? 'pending',
   };
-};
 
-const addContactTextFieldChange = (field, value, details, changes) => {
-  const fieldDetails = validateTextField(field, value, REQUIRED_CONTACT_FIELDS.includes(field));
+  validateContactFields(contact, details);
 
-  if (fieldDetails.length > 0) {
-    details.push(...fieldDetails);
-  }
-
-  changes[field] = normalizeStringValue(value);
+  return contact;
 };
 
 const CONTACT_CHANGE_HANDLERS = {
@@ -625,13 +597,10 @@ const CONTACT_CHANGE_HANDLERS = {
   country: addContactTextFieldChange,
   notes: addContactTextFieldChange,
   contactedAt: addDateFieldChange,
-  status: (field, value, details, changes) =>
-    addEnumFieldChange(field, value, details, changes, ALLOWED_CONTACT_STATUSES, 'Status'),
+  status: addContactStatusChange,
 };
 
-const parseContactChanges = body => {
-  const errorMessage = 'Invalid contact data';
-
+const parseContactChanges = (body, currentContact) => {
   assertValidBody(body);
 
   const details = validateAllowedFields(body, CONTACT_FIELDS);
@@ -649,10 +618,17 @@ const parseContactChanges = body => {
 
   if (details.length > 0) {
     throwValidationError(
-      errorMessage,
+      'Invalid contact data',
       details,
       'The contact could not be updated because some fields contain invalid values.',
     );
+  }
+
+  if (Object.keys(changes).some(field => !['status', 'notes'].includes(field))) {
+    validateContactFields({
+      ...currentContact,
+      ...changes,
+    });
   }
 
   return changes;

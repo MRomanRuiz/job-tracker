@@ -9,12 +9,12 @@ const { createApp } = require('../../src/app');
 const records = {
   applications: {
     id: 1,
-    appliedAt: '2020-01-01',
+    appliedAt: '2020-01-01T00:00:00.000Z',
     status: 'pending',
   },
   contacts: {
     id: 1,
-    contactedAt: '2020-01-01',
+    contactedAt: '2020-01-01T00:00:00.000Z',
     contact: 'Ana',
     email: 'ana@example.com',
     institution: 'Acme',
@@ -145,12 +145,8 @@ describe('additional app branches', () => {
     assert.ok(body.paths['/api/applications'].get.responses[403]);
     assert.ok(body.paths['/api/applications/{id}'].patch.responses[413]);
     assert.ok(body.paths['/api/applications/{id}'].patch.responses[409]);
-    assert.ok(
-      body.components.schemas.ApplicationInput.properties.status.enum.includes('accepted'),
-    );
-    assert.ok(
-      body.components.schemas.ApplicationInput.properties.status.enum.includes('declined'),
-    );
+    assert.ok(body.components.schemas.ApplicationInput.properties.status.enum.includes('accepted'));
+    assert.ok(body.components.schemas.ApplicationInput.properties.status.enum.includes('declined'));
     assert.ok(body.paths['/api/contacts'].get.responses[403]);
     assert.ok(body.paths['/api/contacts/{id}'].patch.responses[413]);
   });
